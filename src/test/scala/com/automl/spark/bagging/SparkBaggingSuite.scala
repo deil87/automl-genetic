@@ -1,0 +1,81 @@
+package com.automl.spark.bagging
+
+import com.automl.spark.SparkSessionProvider
+import com.automl.template._
+import com.automl.template.ensemble.bagging.Bagging
+import com.automl.template.simple._
+import ml.dmlc.xgboost4j.scala.spark.XGBoostEstimator
+import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.evaluation.RegressionEvaluator
+import org.apache.spark.ml.feature.VectorAssembler
+import org.apache.spark.ml.param.ParamMap
+import org.apache.spark.ml.tuning.ParamGridBuilder
+import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.catalyst.expressions.MonotonicallyIncreasingID
+import org.scalatest.{FunSuite, Matchers}
+import utils.SparkMLUtils
+
+
+class SparkBaggingSuite extends FunSuite with Matchers with SparkSessionProvider{
+
+
+  import utils.SparkMLUtils._
+
+  val airlineDF = SparkMLUtils.loadResourceDF("/airline2008-2.csv")
+    .select("DayOfWeek", "Distance", "DepTime", "CRSDepTime", "DepDelay")
+  //TODO FlightNum+year_date_day for unique identifier of test examples
+
+  val features = Array("Distance", "DayOfWeek")
+  val oheFeatures = Array.empty
+
+  val combinedFeatures = features
+
+  val featuresColName: String = "features"
+
+  def featuresAssembler = {
+    new VectorAssembler()
+      .setInputCols(combinedFeatures)
+      .setOutputCol(featuresColName)
+  }
+  import org.apache.spark.sql.functions.monotonically_increasing_id
+
+  val prepairedAirlineDF = airlineDF
+    .limit(3000)
+    .applyTransformation(featuresAssembler)
+    .withColumnRenamed("DepDelay", "label")
+    .toDouble("label")
+    .filterOutNull("label")
+    .withColumn("uniqueIdColumn", monotonically_increasing_id)
+    .showN_AndContinue(100)
+    .cache()
+
+
+  test("Spark Bagging should calculate over two base models") {
+
+    val models = Seq(
+      LeafTemplate(new LinearRegressionModel()),
+      LeafTemplate(DecisionTree()),
+      LeafTemplate(RandomForest()),
+      LeafTemplate(ExtreamGradientBoosting()),
+      LeafTemplate(Bayesian()),
+      LeafTemplate(ExtreamGradientBoosting()),
+      NodeTemplate(Bagging(), Seq(
+        LeafTemplate(new LinearRegressionModel()),
+        LeafTemplate(ExtreamGradientBoosting()),
+        LeafTemplate(DecisionTree())
+      )),
+      LeafTemplate(RandomForest())
+    )
+
+    val ensemb = NodeTemplate(Bagging(), models)
+
+    val sb = new SparkBagging(models)
+
+    val Array(trainingSplit, testSplit) = prepairedAirlineDF.randomSplit(Array(0.8, 0.2))
+
+    ensemb.evaluateFitness(trainingSplit, testSplit)
+  }
+
+
+}
+
