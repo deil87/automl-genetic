@@ -3,4 +3,6 @@ scala:
   - 2.11.7
 before_install:
   - git clone --recursive https://github.com/dmlc/xgboost
-  - cd xgboost; make -j4
+  - cd xgboost/jvm-packages; mvn clean install
+install:
+  - sbt ++2.11.7 test
