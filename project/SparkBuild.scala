@@ -10,6 +10,10 @@ object SparkBuild extends Build {
   )
   lazy val loggingLibDependencies = List()
 
+  object Version {
+    val deeplearning4jVersion = "0.9.1"
+  }
+
   lazy val sparkDependencies = List(
     "org.apache.spark" %% "spark-core" % "2.1.0",
     "org.apache.spark" %% "spark-sql" % "2.1.0",
@@ -23,10 +27,13 @@ object SparkBuild extends Build {
     "org.scalafx" %% "scalafx" % "2.2.76-R11",
     "com.teamdev.jxbrowser" % "jxbrowser-mac" % "6.0",
 
-    "org.nd4j"% "nd4j-native-platform" % "0.8.1-SNAPSHOT",
-    "org.deeplearning4j" % "deeplearning4j-core" % "0.8.1-SNAPSHOT",
-    "org.deeplearning4j" % "deeplearning4j-nn" % "0.8.1-SNAPSHOT",
-    "org.deeplearning4j" %  "deeplearning4j-ui_2.11" % "0.8.1-SNAPSHOT" ,
+
+    "org.bytedeco" % "javacpp" % "1.3.3",
+    "org.nd4j"% "nd4j-native" % Version.deeplearning4jVersion,
+    "org.nd4j"% "nd4j-native-platform" % Version.deeplearning4jVersion,
+    "org.deeplearning4j" % "deeplearning4j-core" % Version.deeplearning4jVersion,
+    "org.deeplearning4j" % "deeplearning4j-nn" % Version.deeplearning4jVersion,
+    "org.deeplearning4j" % "deeplearning4j-ui-components" % Version.deeplearning4jVersion ,
 
     //h2o
     "ai.h2o" % "sparkling-water-core_2.11" % "2.2.0",
