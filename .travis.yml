@@ -1,3 +1,6 @@
 language: scala
 scala:
   - 2.11.7
+before_install:
+  - git clone --recursive https://github.com/dmlc/xgboost
+  - cd xgboost; make -j4
