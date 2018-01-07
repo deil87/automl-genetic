@@ -70,7 +70,7 @@ class AutoML(data: DataFrame,
     individuals.sortWith(_._3.fitnessError > _._3.fitnessError).take(numberOfWinners)
   }
 
-  def applyMutation(individuals: Seq[TemplateTree[TemplateMember]]): Seq[TemplateTree[TemplateMember]] = {
+  def applyMutation(population: Population): Population = {
     print(s"\n\nStarting new mutation phase...")
 
     def mutate(individual: TemplateTree[TemplateMember]) = {
@@ -117,7 +117,7 @@ class AutoML(data: DataFrame,
       traverseAndMutate(individual)
     }
 
-    individuals map mutate
+    new Population(population.individuals map mutate)
 
   }
 
@@ -215,7 +215,7 @@ class AutoML(data: DataFrame,
         // First phase: recombination or mutation. Ensure that diversity is ok .
         // Maybe check child/mutant on ability to survive by itself. Then ensure that the size of population is ok
         // What kind of parameters we mutate
-        val mutated = applyMutation(survivals)
+        val mutated = applyMutation(new Population(survivals))
 
         // What we do to prepare new generation?
         val newIndividualsOriginatedFromSurvivors = prepareNewGeneration(???)  // d) construction of initial population

@@ -1,5 +1,7 @@
 package com.automl
 
+import com.automl.helper.{PopulationHelper, TemplateTreeHelper}
+import com.automl.spark.SparkSessionProvider
 import com.automl.template._
 import com.automl.template.simple.{Bayesian, DecisionTree, SimpleModelMember}
 import ml.dmlc.xgboost4j.scala.spark.XGBoostEstimator
@@ -13,15 +15,7 @@ import org.scalatest.{FunSuite, Matchers}
 import utils.SparkMLUtils
 
 
-class AutoMLSuite extends FunSuite with Matchers {
-
-  implicit val ss: SparkSession = SparkSession.builder()
-    .master("local[*]")
-    .appName("AutoML")
-    .config("spark.driver.memory", "6g")
-    .config("spark.executor.memory", "6g")
-    .getOrCreate()
-
+class AutoMLSuite extends FunSuite with Matchers with SparkSessionProvider{
 
   ss.sparkContext.setLogLevel("INFO")
 
@@ -30,15 +24,23 @@ class AutoMLSuite extends FunSuite with Matchers {
 
   test("AutoML should mutate templateTree from base model to complex algorithm") {
 
-    val population: Seq[LeafTemplate[SimpleModelMember]] = Seq(LeafTemplate(Bayesian()), LeafTemplate(DecisionTree()))
+    val seed: Seq[LeafTemplate[SimpleModelMember]] = Seq(LeafTemplate(Bayesian()), LeafTemplate(DecisionTree()))
+
+    val population = Population.fromSeed(seed).withSize(10).build
 
     val autoMl = new AutoML(null, 500000, useMetaDB = false)
 
-    val mutated = autoMl.applyMutation(population)
-    val mutated2 = autoMl.applyMutation(mutated)
-    val mutated3 = autoMl.applyMutation(mutated2)
+    PopulationHelper.print(population)
 
-    val heightsOfIndividuals = mutated.map(_.height)
+    val mutated = autoMl.applyMutation(population)
+
+    PopulationHelper.print(mutated)
+
+    val mutated2 = autoMl.applyMutation(mutated)
+    PopulationHelper.print(mutated2)
+
+    val mutated3 = autoMl.applyMutation(mutated2)
+    PopulationHelper.print(mutated3)
 
     //TODO make mutation happens every time
     mutated shouldNot be(population)
@@ -48,7 +50,7 @@ class AutoMLSuite extends FunSuite with Matchers {
 
 
 
-  test("AutoML should run UCI airline dataset and compute performance metrics for base models") {
+  ignore("AutoML should run UCI airline dataset and compute performance metrics for base models") {
 
 
     val airlineDF = SparkMLUtils.loadResourceDF("/airline2008.csv")

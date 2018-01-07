@@ -14,7 +14,6 @@ object SparkSessionProvider {
     .master("local[*]")
 
     .appName("AutoML application:")
-    .config("spark.cassandra.connection.host", "127.0.0.1")
     .config("spark.driver.memory", "6g")
     .config("spark.executor.memory", "6g")
     .getOrCreate()
