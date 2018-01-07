@@ -17,8 +17,7 @@ class AutoMLSuite extends FunSuite with Matchers {
 
   implicit val ss: SparkSession = SparkSession.builder()
     .master("local[*]")
-    .appName("Kaggle")
-    .config("spark.cassandra.connection.host", "127.0.0.1")
+    .appName("AutoML")
     .config("spark.driver.memory", "6g")
     .config("spark.executor.memory", "6g")
     .getOrCreate()

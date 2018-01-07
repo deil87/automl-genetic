@@ -25,27 +25,26 @@ object TemplateTreeHelper {
   }
 
   def traverse2(template: TemplateTree[TemplateMember]): Queue[String] = {
-    def recursive(template: TemplateTree[TemplateMember], acc: Queue[String]): Queue[String] = template match {
+    def recursive(prefix: String = "", childrenPrefix: String = "", template: TemplateTree[TemplateMember], acc: Queue[String]): Queue[String] = template match {
       case LeafTemplate(x) =>
-        acc.enqueue(x.name)
+        acc.enqueue(/*"L" + */prefix + x.name)
         acc
       case NodeTemplate(x, subMembers) =>
-        acc.enqueue(x.name)
-        acc.enqueue("{")
-        subMembers.zipWithIndex.foldLeft(acc){case (ac, (subMember, i)) =>
-          recursive(subMember, ac)
-            if(subMembers.size - 1 != i)
-              ac.enqueue(",")
-            ac
-        }
+        acc.enqueue(/*"N" + */prefix + x.name)
 
-        acc.enqueue("}")
+        subMembers.zipWithIndex.foldLeft(acc){case (ac, (subMember, i)) =>
+          if (subMembers.size - 1 != i) {
+            recursive(childrenPrefix + "├── ", childrenPrefix + "|   ", subMember, ac)
+          } else {
+            recursive(childrenPrefix + "└── ", childrenPrefix + "    ", subMember, ac)
+          }
+        }
         acc
     }
 
 
-    val stack = new scala.collection.mutable.Queue[String]()
-    recursive(template, stack)
+    val queue = new scala.collection.mutable.Queue[String]()
+    recursive("", "", template, queue)
   }
 
   def materialize(template: TemplateTree[TemplateMember]): AlgorithmTree[AlgorithmMember] = {
@@ -69,6 +68,7 @@ object TemplateTreeHelper {
   }
 
   def print2(template: TemplateTree[TemplateMember]): String = {
-    traverse2(template).mkString("")
+    traverse2(template).mkString("\n")
   }
+
 }
