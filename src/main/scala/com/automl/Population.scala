@@ -6,12 +6,10 @@ import scala.util.Random
 
 class Population(val individuals: Seq[ TemplateTree[TemplateMember]]) {
 
-
-
 }
 
 object Population {
-  lazy val firstEverPopulation = TemplateTree.firstPopulation
+  lazy val firstEverPopulation = new Population(TemplateTree.firstPopulation)
 
   case class PopulationBuilder(individuals: Seq[ TemplateTree[TemplateMember]]) {
     def withSize(populationSize: Int): PopulationBuilder = {
@@ -23,7 +21,7 @@ object Population {
     def build: Population = new Population(individuals)
   }
 
-  def fromSeed(classifiers: Seq[ TemplateTree[TemplateMember]]): PopulationBuilder = {
-    PopulationBuilder(classifiers)
+  def fromSeedPopulation(classifiersPopulation: Population): PopulationBuilder = {
+    PopulationBuilder(classifiersPopulation.individuals)
   }
 }

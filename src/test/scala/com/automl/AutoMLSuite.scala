@@ -3,7 +3,7 @@ package com.automl
 import com.automl.helper.{PopulationHelper, TemplateTreeHelper}
 import com.automl.spark.SparkSessionProvider
 import com.automl.template._
-import com.automl.template.simple.{Bayesian, DecisionTree, SimpleModelMember}
+import com.automl.template.simple.{Bayesian, DecisionTree, LinearRegressionModel, SimpleModelMember}
 import ml.dmlc.xgboost4j.scala.spark.XGBoostEstimator
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.evaluation.RegressionEvaluator
@@ -17,7 +17,7 @@ import utils.SparkMLUtils
 
 class AutoMLSuite extends FunSuite with Matchers with SparkSessionProvider{
 
-  ss.sparkContext.setLogLevel("INFO")
+//  ss.sparkContext.setLogLevel("INFO")
 
   import utils.SparkMLUtils._
 
@@ -26,9 +26,11 @@ class AutoMLSuite extends FunSuite with Matchers with SparkSessionProvider{
 
     val seed: Seq[LeafTemplate[SimpleModelMember]] = Seq(LeafTemplate(Bayesian()), LeafTemplate(DecisionTree()))
 
-    val population = Population.fromSeed(seed).withSize(10).build
+    val seedPopulation = new Population(seed)
 
-    val autoMl = new AutoML(null, 500000, useMetaDB = false)
+    val population = Population.fromSeedPopulation(seedPopulation).withSize(10).build
+
+    val autoMl = new AutoML(null, 50000, useMetaDB = false, initialPopulationSize = Some(10))
 
     PopulationHelper.print(population)
 
@@ -46,6 +48,51 @@ class AutoMLSuite extends FunSuite with Matchers with SparkSessionProvider{
     mutated shouldNot be(population)
     mutated2 shouldNot be(mutated)
     mutated3 shouldNot be(mutated2)
+  }
+
+  test("AutoML should find best template with most optimal fitness value") {
+
+    val seed: Seq[LeafTemplate[SimpleModelMember]] = Seq(LeafTemplate(LinearRegressionModel()), LeafTemplate(DecisionTree()))
+
+    val seedPopulation = new Population(seed)
+
+    val population = Population.fromSeedPopulation(seedPopulation).withSize(10).build
+
+    val airlineDF = SparkMLUtils.loadResourceDF("/airline2008-2.csv")
+      .select("DayOfWeek", "Distance", "DepTime", "CRSDepTime", "DepDelay")
+    //TODO FlightNum+year_date_day for unique identifier of test examples
+
+    val features = Array("Distance", "DayOfWeek")
+    val oheFeatures = Array.empty
+
+    val combinedFeatures = features
+
+    val featuresColName: String = "features"
+
+    def featuresAssembler = {
+      new VectorAssembler()
+        .setInputCols(combinedFeatures)
+        .setOutputCol(featuresColName)
+    }
+    import org.apache.spark.sql.functions.monotonically_increasing_id
+
+    val prepairedAirlineDF = airlineDF
+      .limit(3000)
+      .applyTransformation(featuresAssembler)
+      .withColumnRenamed("DepDelay", "label")
+      .toDouble("label")
+      .filterOutNull("label")
+      .withColumn("uniqueIdColumn", monotonically_increasing_id)
+      .showN_AndContinue(100)
+      .cache()
+
+    val Array(trainingSplit, testSplit) = prepairedAirlineDF.randomSplit(Array(0.8, 0.2))
+
+    trainingSplit.cache()
+
+    val autoMl = new AutoML(trainingSplit, 50000, useMetaDB = false, initialPopulationSize = Some(10), seedPopulation = seedPopulation)
+
+    autoMl.run()
   }
 
 

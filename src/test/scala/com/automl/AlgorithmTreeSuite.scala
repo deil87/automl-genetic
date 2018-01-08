@@ -4,6 +4,7 @@ import com.automl.algorithm.{AlgorithmMemberFrom, LeafAlgorithm, NodeAlgorithm}
 import com.automl.helper.TemplateTreeHelper
 import com.automl.template._
 import com.automl.template.ensemble.bagging.Bagging
+import com.automl.template.ensemble.stacking.MyStackingImpl
 import com.automl.template.simple._
 import org.apache.spark.sql.DataFrame
 import org.scalatest.{FunSuite, Matchers}
@@ -13,10 +14,10 @@ class AlgorithmTreeSuite extends FunSuite with Matchers{
 
 
   val template =
-    NodeTemplate(Bayesian(),
+    NodeTemplate(Bagging(),
       Seq(
         LeafTemplate(LinearRegressionModel()),
-        NodeTemplate(RandomForest(),
+        NodeTemplate(Bagging(),
           Seq(
             LeafTemplate(Wildcard(List(Bayesian())))
           )
@@ -30,10 +31,10 @@ class AlgorithmTreeSuite extends FunSuite with Matchers{
     val materializedAlgorithm = TemplateTreeHelper.materialize(template)
 
     val expectedAlgorithm =
-      NodeAlgorithm(AlgorithmMemberFrom(Bayesian()),
+      NodeAlgorithm(AlgorithmMemberFrom(Bagging()),
         Seq(
           LeafAlgorithm(AlgorithmMemberFrom(LinearRegressionModel())),
-          NodeAlgorithm(AlgorithmMemberFrom(RandomForest()),
+          NodeAlgorithm(AlgorithmMemberFrom(Bagging()),
             Seq(
               LeafAlgorithm(AlgorithmMemberFrom(Bayesian()))
             )
@@ -50,7 +51,7 @@ class AlgorithmTreeSuite extends FunSuite with Matchers{
       NodeAlgorithm(AlgorithmMemberFrom(Bagging()),
         Seq(
           LeafAlgorithm(AlgorithmMemberFrom(LinearRegressionModel())),
-          NodeAlgorithm(AlgorithmMemberFrom(Bagging()),
+          NodeAlgorithm(AlgorithmMemberFrom(MyStackingImpl()),
             Seq(
               LeafAlgorithm(AlgorithmMemberFrom(DecisionTree())),
               LeafAlgorithm(AlgorithmMemberFrom(DeepNeuralNetwork()))

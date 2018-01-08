@@ -1,5 +1,6 @@
 package com.automl.spark.bagging
 
+import com.automl.helper.TemplateTreeHelper
 import com.automl.spark.SparkSessionProvider
 import com.automl.template._
 import com.automl.template.ensemble.bagging.Bagging
@@ -50,24 +51,23 @@ class SparkBaggingSuite extends FunSuite with Matchers with SparkSessionProvider
     .cache()
 
 
-  test("Spark Bagging should calculate over two base models") {
+  test("Spark Bagging should calculate over complex tree algorithm") {
 
     val models = Seq(
       LeafTemplate(new LinearRegressionModel()),
       LeafTemplate(DecisionTree()),
       LeafTemplate(RandomForest()),
-      LeafTemplate(ExtreamGradientBoosting()),
       LeafTemplate(Bayesian()),
-      LeafTemplate(ExtreamGradientBoosting()),
       NodeTemplate(Bagging(), Seq(
         LeafTemplate(new LinearRegressionModel()),
         LeafTemplate(ExtreamGradientBoosting()),
         LeafTemplate(DecisionTree())
-      )),
-      LeafTemplate(RandomForest())
+      ))
     )
 
     val ensemb = NodeTemplate(Bagging(), models)
+
+    println(TemplateTreeHelper.print2(ensemb))
 
     val sb = new SparkBagging(models)
 

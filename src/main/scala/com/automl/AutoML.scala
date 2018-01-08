@@ -1,7 +1,7 @@
 package com.automl
 
 import com.automl.algorithm._
-import com.automl.helper.{FitnessResult, Probability, TemplateTreeHelper}
+import com.automl.helper.{FitnessResult, PopulationHelper, Probability, TemplateTreeHelper}
 import com.automl.template._
 import com.automl.template.ensemble.EnsemblingMember
 import com.automl.template.simple.SimpleModelMember
@@ -22,22 +22,29 @@ class AutoML(data: DataFrame,
              maxTime: Long,
              maxGenerations: Int = 100,
              useMetaDB: Boolean,
+             seedPopulation: Population = Population.firstEverPopulation, // TODO make it optional because of useMetaDB
+             initialPopulationSize: Option[Int] = None,
              isBigSizeThreshold: Long = 500,
              isBigDimensionsThreshold: Long = 200,
              initialSampleSize: Long = 500) {
 
+  require(!useMetaDB && initialPopulationSize.isDefined, "If there is no metaDB information then we should start from scratch with population of defined size")
 
-  def isDataIsBig(df: DataFrame): Boolean = {
-    def numberOfDimensions: Int = ???
+
+  def isDataBig(df: DataFrame): Boolean = {
+    def numberOfDimensions: Int = df.columns.length
     numberOfDimensions >= 200 || getDataSize(data) >= isBigSizeThreshold
 
+    //import org.apache.spark.util.SizeEstimator
+    //println(SizeEstimator.estimate(distFile))
+
   }
-  def isDataIsBig(size: Long): Boolean = size >= isBigSizeThreshold
+  def isDataBig(size: Long): Boolean = size >= isBigSizeThreshold
 
   def getDataSize(df: DataFrame): Long = df.count()
 
   def sample(df: DataFrame, size: Long): DataFrame = {
-    val isBalanced: Boolean = ???
+    val isBalanced: Boolean = true // TODO add here concreate estimation of balancing
     // TODO We sample both instances and attributes when constrains are violated to get a representative data subset.
     if(isBalanced) {
       //random subsampling
@@ -57,17 +64,17 @@ class AutoML(data: DataFrame,
   // Except from statistical metrics we can use base model's performance metrics as a metrics to choose similar datasets.
   // SHould find Euclidian or Manhattan distance between vectors of of this metrics.
 
-  def generateBasePopulation: Seq[TemplateTree[TemplateMember]] = Population.firstEverPopulation
+  def generateInitialPopulation(size: Int): Population = Population.fromSeedPopulation(seedPopulation).withSize(size).build
 
   def evaluateFitnessOfIndividualsOnDataSample(individuals: Set[AlgorithmTree[AlgorithmMember]], sample: DataFrame) = ???
 
-  def stagnationDetected(evaluationResult: Any): Boolean = ???
+  def stagnationDetected(evaluationResult: Any): Boolean = false // TODO No stagnation detected for now
 
-  def selectIndividualsInTournament(selectionShare: Double, individuals: Seq[(TemplateTree[TemplateMember], AlgorithmTree[AlgorithmMember], FitnessResult)]): Seq[(TemplateTree[TemplateMember], AlgorithmTree[AlgorithmMember], FitnessResult)] = {
+  def parentSelectionByFitnessRank(selectionShare: Double, individuals: Seq[(TemplateTree[TemplateMember], AlgorithmTree[AlgorithmMember], FitnessResult)]): Seq[(TemplateTree[TemplateMember], AlgorithmTree[AlgorithmMember], FitnessResult)] = {
     require(selectionShare < 1 && selectionShare > 0, "Selection share parameter shoud be in range (0, 1)" )
     val numberOfCompetitors = individuals.length
     val numberOfWinners = (numberOfCompetitors * selectionShare).toInt
-    individuals.sortWith(_._3.fitnessError > _._3.fitnessError).take(numberOfWinners)
+    individuals.sortWith(_._3.fitnessError < _._3.fitnessError).take(numberOfWinners)
   }
 
   def applyMutation(population: Population): Population = {
@@ -123,18 +130,26 @@ class AutoML(data: DataFrame,
 
   def prepareNewGeneration(individuals: Set[Any]): Set[Any] = ???
 
-  def chooseBestTemplate = ???
+  def calculateFitnessResults(individuals: Seq[(TemplateTree[TemplateMember])], workingDataSet: DataFrame): Seq[(TemplateTree[TemplateMember], AlgorithmTree[AlgorithmMember], FitnessResult)] = {
+    individuals.map(individualTemplate => (individualTemplate, TemplateTreeHelper.materialize(individualTemplate)))
+      .map{ case (template, algorithm) => (template, algorithm, algorithm.evaluate(workingDataSet))}
+  }
+
+  def chooseBestTemplate(individuals: Seq[(TemplateTree[TemplateMember])], workingDataSet: DataFrame): (TemplateTree[TemplateMember], AlgorithmTree[AlgorithmMember], FitnessResult) = {
+    val individualsWithEvaluationResults = calculateFitnessResults(individuals, workingDataSet)
+    individualsWithEvaluationResults.sortWith(_._3.fitnessError < _._3.fitnessError).head
+  }
 
   def run(): Unit = {
     val startTime = System.currentTimeMillis()
 
     val dataSize = getDataSize(data)
 
-    var workingDataSet: DataFrame = if(isDataIsBig(data)) {
+    var workingDataSet: DataFrame = if(isDataBig(data)) {
       sample(data, initialSampleSize)
     } else data
 
-    val initialPopulation = if(useMetaDB) {
+    var individuals = if(useMetaDB) {
       //With the metadatabase, the initial population is filled by best individuals from most similar meta data
       // (pair- wise similarities of attributes statistics)
 
@@ -149,14 +164,15 @@ class AutoML(data: DataFrame,
     } else {
       //In case that the metadatabase is not used, base models form the population.
       //The advantage is that each type of base model is considered before ensembles are taken into account
-      generateBasePopulation
+      generateInitialPopulation(initialPopulationSize.get).individuals
     }
 
     var currentDataSize = initialSampleSize
 
     //While time is available, we run a sequence of evolutions that are gradually
     //exploring the state space of possible templates.
-    while (System.currentTimeMillis() - startTime > maxTime) {
+    def condition = System.currentTimeMillis() - startTime < maxTime
+    while (condition) {
 
       //In each subsequent evolution, templates are more specific and the percentage of wildcards decrease.
       //For subsequent evolutions, we use population from the last epoch of the previous evolution
@@ -166,14 +182,18 @@ class AutoML(data: DataFrame,
       // winning templates are saved as a new record into the metadatabase or corresponding records are
       // updated with the new templates.
       var evolutionNumber = 0
+      println(s"LAUNCHING evolutionNumber=${evolutionNumber}...")
 
       var generationNumber = 0
 
-      //a) representation of individual
-      var individuals: Seq[TemplateTree[TemplateMember]] = initialPopulation
+      var doEscapeFlag = false
 
-      while (generationNumber < maxGenerations) {
-        //it is a good idea to cache results for similar templates/models
+      while (condition && generationNumber < maxGenerations && !doEscapeFlag) {
+        //TODO it is a good idea to cache results for similar templates/models
+
+        println(s"Time left: ${(System.currentTimeMillis() - startTime) / 1000}")
+        println(s"LAUNCHING generationNumber=${generationNumber}...")
+        PopulationHelper.print(new Population(individuals))
 
 
         // c) fitness function formulation
@@ -181,9 +201,8 @@ class AutoML(data: DataFrame,
         //The fitness of a template is proportional to the average performance of models generated on training folds
         // and evaluated on testing folds, while the data is divided into folds multiple times.
 
-        val evaluationResults: Seq[(TemplateTree[TemplateMember], AlgorithmTree[AlgorithmMember], FitnessResult)] = individuals
-          .map(individualTemplate => (individualTemplate, TemplateTreeHelper.materialize(individualTemplate)))
-          .map{ case (template, algorithm) => (template, algorithm, algorithm.evaluate(workingDataSet))}
+        val evaluationResults: Seq[(TemplateTree[TemplateMember], AlgorithmTree[AlgorithmMember], FitnessResult)] = calculateFitnessResults(individuals, workingDataSet)
+
 
         // GL(t) = 100 * (  Eva(t)/ Eopt(t) - 1 )
 //        High generalization loss is one obvious candidate reason to stop training, because
@@ -204,9 +223,9 @@ class AutoML(data: DataFrame,
         if( stagnationDetected(evaluationResults)) // we are breaking our while loop - early stopping?
           generationNumber = maxGenerations
 
-        // Second phase: selection. Survival of the fittest ( in terms of evaluated values by fitness function)
-        // How can we do this? Just get rid of individuals with maximum validation error? What percent of total will survive?
-        val survivals = selectIndividualsInTournament(0.5, evaluationResults).map(_._1)
+        //Second phase: We are going to compute fitness functions and rank all the individuals.
+        // Draw from these population with the probability distribution proportional to rank values.
+        val individualsForMutation = parentSelectionByFitnessRank(0.5, evaluationResults).map(_._1) // TODO add drawing with distribution
 
         //b) design of genetic operators and evolution
         //Parameters of a node are mutated by applying Gaussian noise to the current value
@@ -215,11 +234,14 @@ class AutoML(data: DataFrame,
         // First phase: recombination or mutation. Ensure that diversity is ok .
         // Maybe check child/mutant on ability to survive by itself. Then ensure that the size of population is ok
         // What kind of parameters we mutate
-        val mutated = applyMutation(new Population(survivals))
+        val offspring = individualsForMutation // TODO applyMutation(new Population(individualsForMutation))
 
-        // What we do to prepare new generation?
-        val newIndividualsOriginatedFromSurvivors = prepareNewGeneration(???)  // d) construction of initial population
-        individuals = ??? // newIndividualsOriginatedFromSurvivors
+        val subjectsToSurvival = individuals ++ offspring
+        val evaluationResultsForAll = calculateFitnessResults(subjectsToSurvival, workingDataSet)
+
+        //Select 50% best of all the (individuals + offspring)
+        val survivedForNextGenerationSeed: Seq[TemplateTree[TemplateMember]] = parentSelectionByFitnessRank(0.5, evaluationResultsForAll).map(_._1)
+        individuals = Population.fromSeedPopulation(new Population(survivedForNextGenerationSeed)).withSize(initialPopulationSize.get).build.individuals
         generationNumber += 1
       }
 
@@ -231,17 +253,24 @@ class AutoML(data: DataFrame,
         currentDataSize *=2
         workingDataSet = sample(data, currentDataSize)
         evolutionNumber += 1
+        generationNumber = 0
       } else {
+        // We've got individuals survived after being traind on whole datasets.
+        // Next step is to refine results and choose the best argorithm that we run into on our way here.
+        // We should skip 'datasize loop' and 'time loop' and call chooseBestTemplate
+        doEscapeFlag = true
         //increase validation part of data. Start using k-folds CV. Of-by-one validation. then multiple round of CV.
         // in general we start using as much data as possible to prevent overfitting and decrease generalization error.
       }
 
-
-
     }
 
-    // Final evaluation on different test data. Consider winners from all evolutions but put more faith into last ones because they have been chosen based on results oo bigger  validation sets(more representative of a population).
-    chooseBestTemplate
+    // Final evaluation on different test data. Consider winners from all evolutions(evolutionNumbers) but put more faith into last ones because they have been chosen based on results on bigger  validation sets(better representative of a population).
+    val winner = chooseBestTemplate(individuals, workingDataSet)
+    val winnerTemplate = winner._1
+
+    println("Fitness value of the BEST template: " +  winner._3.fitnessError)
+    println(TemplateTreeHelper.print2(winnerTemplate)) // TODO make print2 actually a printing method
 
   }
 
