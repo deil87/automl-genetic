@@ -1,9 +1,9 @@
 package com.automl
 
-import com.automl.helper.{PopulationHelper, TemplateTreeHelper}
+import com.automl.helper.{FitnessResult, PopulationHelper, TemplateTreeHelper}
 import com.automl.spark.SparkSessionProvider
 import com.automl.template._
-import com.automl.template.simple.{Bayesian, DecisionTree, LinearRegressionModel, SimpleModelMember}
+import com.automl.template.simple._
 import ml.dmlc.xgboost4j.scala.spark.XGBoostEstimator
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.evaluation.RegressionEvaluator
@@ -13,6 +13,8 @@ import org.apache.spark.ml.tuning.ParamGridBuilder
 import org.apache.spark.sql.SparkSession
 import org.scalatest.{FunSuite, Matchers}
 import utils.SparkMLUtils
+
+import scala.util.Random
 
 
 class AutoMLSuite extends FunSuite with Matchers with SparkSessionProvider{
@@ -24,7 +26,11 @@ class AutoMLSuite extends FunSuite with Matchers with SparkSessionProvider{
 
   test("AutoML should mutate templateTree from base model to complex algorithm") {
 
-    val seed: Seq[LeafTemplate[SimpleModelMember]] = Seq(LeafTemplate(Bayesian()), LeafTemplate(DecisionTree()))
+    val seed: Seq[LeafTemplate[SimpleModelMember]] = Seq(
+      LeafTemplate(Bayesian()),
+      LeafTemplate(LinearRegressionModel()),
+      LeafTemplate(DecisionTree())
+    )
 
     val seedPopulation = new Population(seed)
 
@@ -52,7 +58,11 @@ class AutoMLSuite extends FunSuite with Matchers with SparkSessionProvider{
 
   test("AutoML should find best template with most optimal fitness value") {
 
-    val seed: Seq[LeafTemplate[SimpleModelMember]] = Seq(LeafTemplate(LinearRegressionModel()), LeafTemplate(DecisionTree()))
+    val seed: Seq[LeafTemplate[SimpleModelMember]] = Seq(
+      LeafTemplate(LinearRegressionModel()),
+      LeafTemplate(Bayesian()),
+      LeafTemplate(DecisionTree())
+    )
 
     val seedPopulation = new Population(seed)
 
@@ -77,7 +87,7 @@ class AutoMLSuite extends FunSuite with Matchers with SparkSessionProvider{
     import org.apache.spark.sql.functions.monotonically_increasing_id
 
     val prepairedAirlineDF = airlineDF
-      .limit(3000)
+      .limit(5000)
       .applyTransformation(featuresAssembler)
       .withColumnRenamed("DepDelay", "label")
       .toDouble("label")
@@ -90,12 +100,38 @@ class AutoMLSuite extends FunSuite with Matchers with SparkSessionProvider{
 
     trainingSplit.cache()
 
-    val autoMl = new AutoML(trainingSplit, 50000, useMetaDB = false, initialPopulationSize = Some(10), seedPopulation = seedPopulation)
+    val autoMl = new AutoML(trainingSplit, 50000, useMetaDB = false, initialPopulationSize = Some(10), seedPopulation = seedPopulation , maxGenerations = 5)
 
     autoMl.run()
   }
 
 
+  test("parentSelectionByFitnessRank") {
+    val autoMl = new AutoML(null, 50000, useMetaDB = false, initialPopulationSize = Some(10))
+    val individuals: Seq[LeafTemplate[SimpleModelMember]] = Seq(
+      LeafTemplate(LinearRegressionModel()),
+      LeafTemplate(DecisionTree())
+    )
+
+    val individualsSpanned = Population.fromSeedPopulation(new Population(individuals)).withSize(1000).build.individuals
+
+    val selectedParents = autoMl.parentSelectionByFitnessRank(0.5, individualsSpanned.map(inds => (inds, null, FitnessResult(Random.nextDouble(), null))) )
+
+    import breeze.linalg._
+    import breeze.plot._
+
+    val f = Figure()
+    val p2 = f.subplot(0)
+    p2 += hist(selectedParents.map(_.rank),100)
+    p2.title = "A normal distribution"
+    f.saveas("subplots.png")
+    Thread.sleep(50000)
+
+    PopulationHelper.print(new Population(selectedParents.map(_.template)))
+
+    selectedParents.length shouldBe 50
+
+  }
 
   ignore("AutoML should run UCI airline dataset and compute performance metrics for base models") {
 

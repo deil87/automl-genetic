@@ -29,7 +29,7 @@ case class LinearRegressionModel() extends SimpleModelMember {
     predictions.cache()
 
     import SparkMLUtils._
-    predictions.showN_AndContinue(10)
+//    predictions.showN_AndContinue(10)
 
     val evaluator = new RegressionEvaluator()
 

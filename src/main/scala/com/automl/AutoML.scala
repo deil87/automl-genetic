@@ -1,7 +1,7 @@
 package com.automl
 
 import com.automl.algorithm._
-import com.automl.helper.{FitnessResult, PopulationHelper, Probability, TemplateTreeHelper}
+import com.automl.helper._
 import com.automl.template._
 import com.automl.template.ensemble.EnsemblingMember
 import com.automl.template.simple.SimpleModelMember
@@ -10,6 +10,7 @@ import org.apache.spark.ml.{PipelineStage, Predictor}
 import org.apache.spark.mllib.util.MLUtils
 import org.apache.spark.sql.DataFrame
 
+import scala.collection.mutable
 import scala.util.Random
 
 class MetaDB() {
@@ -20,7 +21,7 @@ class MetaDB() {
 
 class AutoML(data: DataFrame,
              maxTime: Long,
-             maxGenerations: Int = 100,
+             maxGenerations: Int = 10,
              useMetaDB: Boolean,
              seedPopulation: Population = Population.firstEverPopulation, // TODO make it optional because of useMetaDB
              initialPopulationSize: Option[Int] = None,
@@ -70,12 +71,32 @@ class AutoML(data: DataFrame,
 
   def stagnationDetected(evaluationResult: Any): Boolean = false // TODO No stagnation detected for now
 
-  def parentSelectionByFitnessRank(selectionShare: Double, individuals: Seq[(TemplateTree[TemplateMember], AlgorithmTree[AlgorithmMember], FitnessResult)]): Seq[(TemplateTree[TemplateMember], AlgorithmTree[AlgorithmMember], FitnessResult)] = {
+  def parentSelectionByFitnessRank(selectionShare: Double, individuals: Seq[(TemplateTree[TemplateMember], AlgorithmTree[AlgorithmMember], FitnessResult)]): Seq[IndividualData] = {
     require(selectionShare < 1 && selectionShare > 0, "Selection share parameter shoud be in range (0, 1)" )
     val numberOfCompetitors = individuals.length
-    val numberOfWinners = (numberOfCompetitors * selectionShare).toInt
-    individuals.sortWith(_._3.fitnessError < _._3.fitnessError).take(numberOfWinners)
+    val numberOfParents = (numberOfCompetitors * selectionShare).toInt
+    val orderedByFitness = individuals.sortWith(_._3.fitnessError > _._3.fitnessError)
+
+    val probabilityStrategy = new LinearRankingProbabilityStrategy(numberOfCompetitors, parameter_S = 1.5)
+
+    val ranked = orderedByFitness.zipWithIndex
+      .map{ case ((ind, alg, fr), rank) => IndividualData(ind, alg, fr, rank, probabilityStrategy.computeProbabilityFor(rank))}
+    val rankedWithCumulativeProbs = ranked.drop(1).scanLeft(ranked.head){ case (acc, indd2) => indd2.copy(probability = indd2.probability + acc.probability)}
+    println(rankedWithCumulativeProbs.map(r => (r.rank, r.probability)).mkString("\n"))
+
+    var currentParentIndex = 0
+    val selectedParents = new Array[IndividualData](numberOfParents)
+    while (currentParentIndex < numberOfParents) {
+      val r = Random.nextDouble()
+      val rouletteWheel = rankedWithCumulativeProbs.dropWhile(individualData => individualData.probability < r)
+      val selected = rouletteWheel.headOption.getOrElse(rankedWithCumulativeProbs.last)
+      println(s"Selected for r = $r : ${selected}")
+      selectedParents(currentParentIndex) = selected
+      currentParentIndex += 1
+    }
+    selectedParents // TODO choose optimal data structure. Implicit conversion here.
   }
+
 
   def applyMutation(population: Population): Population = {
     print(s"\n\nStarting new mutation phase...")
@@ -128,11 +149,14 @@ class AutoML(data: DataFrame,
 
   }
 
-  def prepareNewGeneration(individuals: Set[Any]): Set[Any] = ???
+  val individualsCache = mutable.Map[AlgorithmTree[AlgorithmMember], FitnessResult]()
 
   def calculateFitnessResults(individuals: Seq[(TemplateTree[TemplateMember])], workingDataSet: DataFrame): Seq[(TemplateTree[TemplateMember], AlgorithmTree[AlgorithmMember], FitnessResult)] = {
     individuals.map(individualTemplate => (individualTemplate, TemplateTreeHelper.materialize(individualTemplate)))
-      .map{ case (template, algorithm) => (template, algorithm, algorithm.evaluate(workingDataSet))}
+      .map{ case (template, algorithm) =>
+        val fitness = individualsCache.getOrElseUpdate(algorithm, algorithm.evaluate(workingDataSet)) // TODO unbounded addition. Memory leak
+        (template, algorithm, fitness)
+      }
   }
 
   def chooseBestTemplate(individuals: Seq[(TemplateTree[TemplateMember])], workingDataSet: DataFrame): (TemplateTree[TemplateMember], AlgorithmTree[AlgorithmMember], FitnessResult) = {
@@ -169,6 +193,22 @@ class AutoML(data: DataFrame,
 
     var currentDataSize = initialSampleSize
 
+    //The fitness of each template is updated during evolutions and when the optimization terminates,
+    // winning templates are saved as a new record into the metadatabase or corresponding records are
+    // updated with the new templates.
+    var evolutionNumber = 0
+
+    implicit val individualsOrdering = new Ordering[(TemplateTree[TemplateMember], AlgorithmTree[AlgorithmMember], FitnessResult)] {
+      override def compare(x: (TemplateTree[TemplateMember], AlgorithmTree[AlgorithmMember], FitnessResult), y: (TemplateTree[TemplateMember], AlgorithmTree[AlgorithmMember], FitnessResult)) = {
+        if(x._3.fitnessError < y._3.fitnessError) 1
+        else if(x._3.fitnessError > y._3.fitnessError) -1
+        else 0
+      }
+    }
+
+    val bestIndividualsFromAllEvolutions = collection.mutable.PriorityQueue[(TemplateTree[TemplateMember], AlgorithmTree[AlgorithmMember], FitnessResult)]()
+
+
     //While time is available, we run a sequence of evolutions that are gradually
     //exploring the state space of possible templates.
     def condition = System.currentTimeMillis() - startTime < maxTime
@@ -178,11 +218,7 @@ class AutoML(data: DataFrame,
       //For subsequent evolutions, we use population from the last epoch of the previous evolution
       // TODO Also, ranges of explored parameters increase as templates get more precise and specific. ???
 
-      //The fitness of each template is updated during evolutions and when the optimization terminates,
-      // winning templates are saved as a new record into the metadatabase or corresponding records are
-      // updated with the new templates.
-      var evolutionNumber = 0
-      println(s"LAUNCHING evolutionNumber=${evolutionNumber}...")
+      println(s"LAUNCHING evolutionNumber=${evolutionNumber} with datasize= ${currentDataSize} out of ${dataSize} ...")
 
       var generationNumber = 0
 
@@ -191,7 +227,7 @@ class AutoML(data: DataFrame,
       while (condition && generationNumber < maxGenerations && !doEscapeFlag) {
         //TODO it is a good idea to cache results for similar templates/models
 
-        println(s"Time left: ${(System.currentTimeMillis() - startTime) / 1000}")
+        println(s"Time left: ${(maxTime - System.currentTimeMillis() + startTime) / 1000}")
         println(s"LAUNCHING generationNumber=${generationNumber}...")
         PopulationHelper.print(new Population(individuals))
 
@@ -201,7 +237,8 @@ class AutoML(data: DataFrame,
         //The fitness of a template is proportional to the average performance of models generated on training folds
         // and evaluated on testing folds, while the data is divided into folds multiple times.
 
-        val evaluationResults: Seq[(TemplateTree[TemplateMember], AlgorithmTree[AlgorithmMember], FitnessResult)] = calculateFitnessResults(individuals, workingDataSet)
+        val evaluationResults: Seq[(TemplateTree[TemplateMember], AlgorithmTree[AlgorithmMember], FitnessResult)] =
+          calculateFitnessResults(individuals, workingDataSet)
 
 
         // GL(t) = 100 * (  Eva(t)/ Eopt(t) - 1 )
@@ -225,7 +262,7 @@ class AutoML(data: DataFrame,
 
         //Second phase: We are going to compute fitness functions and rank all the individuals.
         // Draw from these population with the probability distribution proportional to rank values.
-        val individualsForMutation = parentSelectionByFitnessRank(0.5, evaluationResults).map(_._1) // TODO add drawing with distribution
+        val individualsForMutation = parentSelectionByFitnessRank(0.5, evaluationResults).map(_.template)
 
         //b) design of genetic operators and evolution
         //Parameters of a node are mutated by applying Gaussian noise to the current value
@@ -240,7 +277,7 @@ class AutoML(data: DataFrame,
         val evaluationResultsForAll = calculateFitnessResults(subjectsToSurvival, workingDataSet)
 
         //Select 50% best of all the (individuals + offspring)
-        val survivedForNextGenerationSeed: Seq[TemplateTree[TemplateMember]] = parentSelectionByFitnessRank(0.5, evaluationResultsForAll).map(_._1)
+        val survivedForNextGenerationSeed: Seq[TemplateTree[TemplateMember]] = parentSelectionByFitnessRank(0.5, evaluationResultsForAll).map(_.template)
         individuals = Population.fromSeedPopulation(new Population(survivedForNextGenerationSeed)).withSize(initialPopulationSize.get).build.individuals
         generationNumber += 1
       }
@@ -251,7 +288,7 @@ class AutoML(data: DataFrame,
         // data is doubled (both dimensionality and numerosity if possible).
         // we can increase range of hyperparameters to choose from.
         currentDataSize *=2
-        workingDataSet = sample(data, currentDataSize)
+        workingDataSet = sample(data, currentDataSize) // TODO should we sample new or append to previous data some new sample?
         evolutionNumber += 1
         generationNumber = 0
       } else {
@@ -263,14 +300,18 @@ class AutoML(data: DataFrame,
         // in general we start using as much data as possible to prevent overfitting and decrease generalization error.
       }
 
+      val bestFromCurrentEvolution = chooseBestTemplate(individuals, workingDataSet)
+      println(s"Best candidate from  evolution #${evolutionNumber - 1} added to priority queue: $bestFromCurrentEvolution")
+      bestIndividualsFromAllEvolutions.enqueue(bestFromCurrentEvolution)
     }
 
     // Final evaluation on different test data. Consider winners from all evolutions(evolutionNumbers) but put more faith into last ones because they have been chosen based on results on bigger  validation sets(better representative of a population).
-    val winner = chooseBestTemplate(individuals, workingDataSet)
-    val winnerTemplate = winner._1
+    val winner = bestIndividualsFromAllEvolutions.dequeue()
 
+    println("\n##############################################################")
     println("Fitness value of the BEST template: " +  winner._3.fitnessError)
-    println(TemplateTreeHelper.print2(winnerTemplate)) // TODO make print2 actually a printing method
+    println("Best template: " + TemplateTreeHelper.print2(winner._1)) // TODO make print2 actually a printing method
+    println("Other best individuals results:\n" + bestIndividualsFromAllEvolutions.dequeueAll.map(_._3.fitnessError).mkString(",\n"))
 
   }
 

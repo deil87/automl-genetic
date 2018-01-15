@@ -13,6 +13,7 @@ trait SimpleModelMember extends TemplateMember {
 
 object SimpleModelMember {
   val DeepNeuralNetwork: SimpleModelMember = new DeepNeuralNetwork()
+  val NeuralNetwork: SimpleModelMember = new NeuralNetwork(???)
   val Bayesian: SimpleModelMember = new Bayesian()
   val GLM: SimpleModelMember = new LinearRegressionModel()
   val DT: SimpleModelMember = new DecisionTree()
