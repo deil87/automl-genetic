@@ -100,7 +100,7 @@ class AutoMLSuite extends FunSuite with Matchers with SparkSessionProvider{
 
     trainingSplit.cache()
 
-    val autoMl = new AutoML(trainingSplit, 50000, useMetaDB = false, initialPopulationSize = Some(10), seedPopulation = seedPopulation , maxGenerations = 5)
+    val autoMl = new AutoML(trainingSplit, 150000, useMetaDB = false, initialPopulationSize = Some(10), seedPopulation = seedPopulation , maxGenerations = 5)
 
     autoMl.run()
   }

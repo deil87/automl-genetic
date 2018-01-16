@@ -23,5 +23,5 @@ trait EnsemblingMember extends TemplateMember {
 
 object EnsemblingMember {
   val poolOfEnsemblingModels =
-    BaggingMember.poolOfBaggingModels ++ BoostingMember.poolOfBoostingModels + StackingMember.MyStackingImpl + CascadingMember.MyCascadingImpl
+    BaggingMember.poolOfBaggingModels /*++ BoostingMember.poolOfBoostingModels + StackingMember.MyStackingImpl + CascadingMember.MyCascadingImpl*/
 }

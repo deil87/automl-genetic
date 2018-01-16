@@ -13,11 +13,11 @@ trait SimpleModelMember extends TemplateMember {
 
 object SimpleModelMember {
   val DeepNeuralNetwork: SimpleModelMember = new DeepNeuralNetwork()
-  val NeuralNetwork: SimpleModelMember = new NeuralNetwork(???)
+  val NeuralNetwork: SimpleModelMember = new NeuralNetwork(Array(4,3,2,1))
   val Bayesian: SimpleModelMember = new Bayesian()
   val GLM: SimpleModelMember = new LinearRegressionModel()
   val DT: SimpleModelMember = new DecisionTree()
   val KNN: SimpleModelMember = new KNearestNeighbours()
 
-  val poolOfSimpleModels: Seq[SimpleModelMember] = Seq(DeepNeuralNetwork, Bayesian, GLM, DT, KNN)
+  val poolOfSimpleModels: Seq[SimpleModelMember] = Seq(/*DeepNeuralNetwork,*/ Bayesian, GLM, DT/*, KNN*/)
 }

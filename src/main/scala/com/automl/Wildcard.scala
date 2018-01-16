@@ -1,6 +1,5 @@
 package com.automl
 
-import com.automl.algorithm.{AlgorithmMember, AlgorithmMemberFrom}
 import com.automl.helper.FitnessResult
 import com.automl.template.{EvaluationMagnet, TemplateMember}
 import com.automl.template.simple.SimpleModelMember
@@ -21,9 +20,9 @@ case class Wildcard(members: Seq[TemplateMember] = SimpleModelMember.poolOfSimpl
 
   override def name: String = "Wildcard" + members.map(_.name).mkString("[", ",", "]")
 
-  def materialize: AlgorithmMember = {
+  def materialize: TemplateMember = {
     val chosenMember: TemplateMember = members(Random.nextInt(size))
-    AlgorithmMemberFrom(chosenMember)
+    chosenMember
   }
   // TODO when to call this method? on new evolution or generation?
   def shrinkDegreeOfFreedom: Wildcard = this.copy(members = members.tail)

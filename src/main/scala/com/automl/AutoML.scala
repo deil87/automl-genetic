@@ -1,13 +1,9 @@
 package com.automl
 
-import com.automl.algorithm._
 import com.automl.helper._
 import com.automl.template._
 import com.automl.template.ensemble.EnsemblingMember
 import com.automl.template.simple.SimpleModelMember
-import org.apache.spark.ml.feature.VectorAssembler
-import org.apache.spark.ml.{PipelineStage, Predictor}
-import org.apache.spark.mllib.util.MLUtils
 import org.apache.spark.sql.DataFrame
 
 import scala.collection.mutable
@@ -67,11 +63,9 @@ class AutoML(data: DataFrame,
 
   def generateInitialPopulation(size: Int): Population = Population.fromSeedPopulation(seedPopulation).withSize(size).build
 
-  def evaluateFitnessOfIndividualsOnDataSample(individuals: Set[AlgorithmTree[AlgorithmMember]], sample: DataFrame) = ???
-
   def stagnationDetected(evaluationResult: Any): Boolean = false // TODO No stagnation detected for now
 
-  def parentSelectionByFitnessRank(selectionShare: Double, individuals: Seq[(TemplateTree[TemplateMember], AlgorithmTree[AlgorithmMember], FitnessResult)]): Seq[IndividualData] = {
+  def parentSelectionByFitnessRank(selectionShare: Double, individuals: Seq[(TemplateTree[TemplateMember], TemplateTree[TemplateMember], FitnessResult)]): Seq[IndividualData] = {
     require(selectionShare < 1 && selectionShare > 0, "Selection share parameter shoud be in range (0, 1)" )
     val numberOfCompetitors = individuals.length
     val numberOfParents = (numberOfCompetitors * selectionShare).toInt
@@ -110,7 +104,9 @@ class AutoML(data: DataFrame,
       var probabilityOfStructMutation, probabilityOfMemberMutation = Probability(initialProbability)
 
       def getRandomEnsemblingMember = EnsemblingMember.poolOfEnsemblingModels.toSeq.randElement
-      def getRandomBaseMember: TemplateMember = (EnsemblingMember.poolOfEnsemblingModels.toSeq ++ SimpleModelMember.poolOfSimpleModels).randElement
+      def getRandomBaseMember: TemplateMember = (SimpleModelMember.poolOfSimpleModels).randElement
+      //TODO do we need this?
+      def getRandomAnyMember: TemplateMember = (EnsemblingMember.poolOfEnsemblingModels.toSeq ++ SimpleModelMember.poolOfSimpleModels).randElement
 
       val structOrMemberThreshold = 0.5
 
@@ -124,7 +120,7 @@ class AutoML(data: DataFrame,
           else if (memberMutationUnits > 0 && probabilityOfMemberMutation >= Random.nextDouble()) {
             memberMutationUnits -= 1
             val newMember: TemplateMember = getRandomBaseMember
-            println(s"\nMember mutation hapened for $lt --> $newMember")
+            println(s"\nMember mutation happened for $lt --> $newMember")
             LeafTemplate(newMember)
           }
           else {
@@ -149,17 +145,18 @@ class AutoML(data: DataFrame,
 
   }
 
-  val individualsCache = mutable.Map[AlgorithmTree[AlgorithmMember], FitnessResult]()
+  val individualsCache = mutable.Map[TemplateTree[TemplateMember], FitnessResult]()
 
-  def calculateFitnessResults(individuals: Seq[(TemplateTree[TemplateMember])], workingDataSet: DataFrame): Seq[(TemplateTree[TemplateMember], AlgorithmTree[AlgorithmMember], FitnessResult)] = {
+  def calculateFitnessResults(individuals: Seq[(TemplateTree[TemplateMember])], workingDataSet: DataFrame): Seq[(TemplateTree[TemplateMember], TemplateTree[TemplateMember], FitnessResult)] = {
     individuals.map(individualTemplate => (individualTemplate, TemplateTreeHelper.materialize(individualTemplate)))
-      .map{ case (template, algorithm) =>
-        val fitness = individualsCache.getOrElseUpdate(algorithm, algorithm.evaluate(workingDataSet)) // TODO unbounded addition. Memory leak
-        (template, algorithm, fitness)
+      .map{ case (template, materializedTemplate) =>
+        val Array(trainingSplit,testSplit)  = data.randomSplit(Array(0.67, 0.33),11L)
+        val fitness = individualsCache.getOrElseUpdate(materializedTemplate, materializedTemplate.evaluateFitness(trainingSplit, testSplit)) // TODO unbounded addition. Memory leak
+        (template, materializedTemplate, fitness)
       }
   }
 
-  def chooseBestTemplate(individuals: Seq[(TemplateTree[TemplateMember])], workingDataSet: DataFrame): (TemplateTree[TemplateMember], AlgorithmTree[AlgorithmMember], FitnessResult) = {
+  def chooseBestTemplate(individuals: Seq[(TemplateTree[TemplateMember])], workingDataSet: DataFrame): (TemplateTree[TemplateMember], TemplateTree[TemplateMember], FitnessResult) = {
     val individualsWithEvaluationResults = calculateFitnessResults(individuals, workingDataSet)
     individualsWithEvaluationResults.sortWith(_._3.fitnessError < _._3.fitnessError).head
   }
@@ -198,15 +195,15 @@ class AutoML(data: DataFrame,
     // updated with the new templates.
     var evolutionNumber = 0
 
-    implicit val individualsOrdering = new Ordering[(TemplateTree[TemplateMember], AlgorithmTree[AlgorithmMember], FitnessResult)] {
-      override def compare(x: (TemplateTree[TemplateMember], AlgorithmTree[AlgorithmMember], FitnessResult), y: (TemplateTree[TemplateMember], AlgorithmTree[AlgorithmMember], FitnessResult)) = {
+    implicit val individualsOrdering = new Ordering[(TemplateTree[TemplateMember], TemplateTree[TemplateMember], FitnessResult)] {
+      override def compare(x: (TemplateTree[TemplateMember], TemplateTree[TemplateMember], FitnessResult), y: (TemplateTree[TemplateMember], TemplateTree[TemplateMember], FitnessResult)) = {
         if(x._3.fitnessError < y._3.fitnessError) 1
         else if(x._3.fitnessError > y._3.fitnessError) -1
         else 0
       }
     }
 
-    val bestIndividualsFromAllEvolutions = collection.mutable.PriorityQueue[(TemplateTree[TemplateMember], AlgorithmTree[AlgorithmMember], FitnessResult)]()
+    val bestIndividualsFromAllEvolutions = collection.mutable.PriorityQueue[(TemplateTree[TemplateMember], TemplateTree[TemplateMember], FitnessResult)]()
 
 
     //While time is available, we run a sequence of evolutions that are gradually
@@ -237,8 +234,12 @@ class AutoML(data: DataFrame,
         //The fitness of a template is proportional to the average performance of models generated on training folds
         // and evaluated on testing folds, while the data is divided into folds multiple times.
 
-        val evaluationResults: Seq[(TemplateTree[TemplateMember], AlgorithmTree[AlgorithmMember], FitnessResult)] =
+        val evaluatedIndividuals: Seq[(TemplateTree[TemplateMember], TemplateTree[TemplateMember], FitnessResult)] =
           calculateFitnessResults(individuals, workingDataSet)
+
+        evaluatedIndividuals.zipWithIndex.sortBy(_._1._3.fitnessError).map{ case ((inds, materialised, fitness), idx) =>
+          (idx, s"${idx}) ${fitness.fitnessError} \n")
+        }.sortBy(_._1).foreach{ case (_, str) => println(str)}
 
 
         // GL(t) = 100 * (  Eva(t)/ Eopt(t) - 1 )
@@ -257,12 +258,12 @@ class AutoML(data: DataFrame,
         // Is stagnation a convergence?
         // Stagnation for which individual? For all in population?
         // We might never reach this state
-        if( stagnationDetected(evaluationResults)) // we are breaking our while loop - early stopping?
+        if( stagnationDetected(evaluatedIndividuals)) // we are breaking our while loop - early stopping?
           generationNumber = maxGenerations
 
         //Second phase: We are going to compute fitness functions and rank all the individuals.
         // Draw from these population with the probability distribution proportional to rank values.
-        val individualsForMutation = parentSelectionByFitnessRank(0.5, evaluationResults).map(_.template)
+        val individualsForMutation = parentSelectionByFitnessRank(0.5, evaluatedIndividuals).map(_.template)
 
         //b) design of genetic operators and evolution
         //Parameters of a node are mutated by applying Gaussian noise to the current value
@@ -271,9 +272,9 @@ class AutoML(data: DataFrame,
         // First phase: recombination or mutation. Ensure that diversity is ok .
         // Maybe check child/mutant on ability to survive by itself. Then ensure that the size of population is ok
         // What kind of parameters we mutate
-        val offspring = individualsForMutation // TODO applyMutation(new Population(individualsForMutation))
+        val offspring = applyMutation(new Population(individualsForMutation)) // individualsForMutation
 
-        val subjectsToSurvival = individuals ++ offspring
+        val subjectsToSurvival = individuals ++ offspring.individuals
         val evaluationResultsForAll = calculateFitnessResults(subjectsToSurvival, workingDataSet)
 
         //Select 50% best of all the (individuals + offspring)
@@ -291,6 +292,8 @@ class AutoML(data: DataFrame,
         workingDataSet = sample(data, currentDataSize) // TODO should we sample new or append to previous data some new sample?
         evolutionNumber += 1
         generationNumber = 0
+      } else if(currentDataSize > dataSize) {
+        currentDataSize = dataSize
       } else {
         // We've got individuals survived after being traind on whole datasets.
         // Next step is to refine results and choose the best argorithm that we run into on our way here.

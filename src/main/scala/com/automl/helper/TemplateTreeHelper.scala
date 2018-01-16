@@ -1,7 +1,6 @@
 package com.automl.helper
 
 import com.automl.Wildcard
-import com.automl.algorithm._
 import com.automl.template.{LeafTemplate, NodeTemplate, TemplateMember, TemplateTree}
 
 import scala.collection.mutable.Queue
@@ -47,18 +46,18 @@ object TemplateTreeHelper {
     recursive("", "", template, queue)
   }
 
-  def materialize(template: TemplateTree[TemplateMember]): AlgorithmTree[AlgorithmMember] = {
+  def materialize(template: TemplateTree[TemplateMember]): TemplateTree[TemplateMember] = {
 
-    def materializeTemplateMember(tm: TemplateMember): AlgorithmMember = tm match {
+    def materializeTemplateMember(tm: TemplateMember): TemplateMember = tm match {
       case wc@Wildcard(set) => wc.materialize
-      case m => AlgorithmMemberFrom(m)
+      case m => m
     }
     template match {
       case LeafTemplate(x) =>
-        LeafAlgorithm(materializeTemplateMember(x))
+        LeafTemplate(materializeTemplateMember(x))
 
       case NodeTemplate(x, subMembers) =>
-        NodeAlgorithm(materializeTemplateMember(x), subMembers.map(sm => materialize(sm)))
+        NodeTemplate(materializeTemplateMember(x), subMembers.map(sm => materialize(sm)))
     }
 
   }
