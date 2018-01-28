@@ -12,63 +12,19 @@ import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.tuning.ParamGridBuilder
 import org.apache.spark.sql.SparkSession
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.{FlatSpec, FunSuite, Matchers, WordSpec}
 import utils.SparkMLUtils
 
 import scala.util.Random
 
 
-class AutoMLSuite extends FunSuite with Matchers with SparkSessionProvider{
+class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
 
-//  ss.sparkContext.setLogLevel("INFO")
+  //  ss.sparkContext.setLogLevel("INFO")
 
   import utils.SparkMLUtils._
 
-
-  test("AutoML should mutate templateTree from base model to complex algorithm") {
-
-    val seed: Seq[LeafTemplate[SimpleModelMember]] = Seq(
-      LeafTemplate(Bayesian()),
-      LeafTemplate(LinearRegressionModel()),
-      LeafTemplate(DecisionTree())
-    )
-
-    val seedPopulation = new Population(seed)
-
-    val population = Population.fromSeedPopulation(seedPopulation).withSize(10).build
-
-    val autoMl = new AutoML(null, 50000, useMetaDB = false, initialPopulationSize = Some(10))
-
-    PopulationHelper.print(population)
-
-    val mutated = autoMl.applyMutation(population)
-
-    PopulationHelper.print(mutated)
-
-    val mutated2 = autoMl.applyMutation(mutated)
-    PopulationHelper.print(mutated2)
-
-    val mutated3 = autoMl.applyMutation(mutated2)
-    PopulationHelper.print(mutated3)
-
-    //TODO make mutation happens every time
-    mutated shouldNot be(population)
-    mutated2 shouldNot be(mutated)
-    mutated3 shouldNot be(mutated2)
-  }
-
-  test("AutoML should find best template with most optimal fitness value") {
-
-    val seed: Seq[LeafTemplate[SimpleModelMember]] = Seq(
-      LeafTemplate(LinearRegressionModel()),
-      LeafTemplate(Bayesian()),
-      LeafTemplate(DecisionTree())
-    )
-
-    val seedPopulation = new Population(seed)
-
-    val population = Population.fromSeedPopulation(seedPopulation).withSize(10).build
-
+  trait Fixture {
     val airlineDF = SparkMLUtils.loadResourceDF("/airline2008-2.csv")
       .select("DayOfWeek", "Distance", "DepTime", "CRSDepTime", "DepDelay")
     //TODO FlightNum+year_date_day for unique identifier of test examples
@@ -101,91 +57,195 @@ class AutoMLSuite extends FunSuite with Matchers with SparkSessionProvider{
 
     trainingSplit.cache()
 
-    val autoMl = new AutoML(trainingSplit, 300000, useMetaDB = false, initialPopulationSize = Some(10), seedPopulation = seedPopulation , maxGenerations = 5)
-
-    autoMl.run()
-
   }
 
+  "AutoML" should {
 
-  test("parentSelectionByFitnessRank") {
-    val autoMl = new AutoML(null, 50000, useMetaDB = false, initialPopulationSize = Some(10))
-    val individuals: Seq[LeafTemplate[SimpleModelMember]] = Seq(
-      LeafTemplate(LinearRegressionModel()),
-      LeafTemplate(DecisionTree())
-    )
+    "mutate templateTree from base model to complex algorithm" in {
 
-    val individualsSpanned = Population.fromSeedPopulation(new Population(individuals)).withSize(1000).build.individuals
+      val seed: Seq[LeafTemplate[SimpleModelMember]] = Seq(
+        LeafTemplate(Bayesian()),
+        LeafTemplate(LinearRegressionModel()),
+        LeafTemplate(DecisionTree())
+      )
 
-    val selectedParents = autoMl.parentSelectionByFitnessRank(0.5, individualsSpanned.zipWithIndex.map{ case (inds,idx) => IndividualAlgorithmData(idx.toString, inds, null, FitnessResult(Random.nextDouble(), null))})
+      val seedPopulation = new Population(seed)
 
-    import breeze.linalg._
-    import breeze.plot._
+      val population = Population.fromSeedPopulation(seedPopulation).withSize(10).build
 
-    val f = Figure()
-    val p2 = f.subplot(0)
-    p2 += hist(selectedParents.map(_.rank),100)
-    p2.title = "A normal distribution"
-    f.saveas("subplots.png")
-    Thread.sleep(50000)
+      val autoMl = new AutoML(null, 50000, useMetaDB = false, initialPopulationSize = Some(10))
 
-    PopulationHelper.print(new Population(selectedParents.map(_.template)))
+      PopulationHelper.print(population)
 
-    selectedParents.length shouldBe 50
+      val mutated = autoMl.applyMutation(population)
 
-  }
+      PopulationHelper.print(mutated)
 
-  ignore("AutoML should run UCI airline dataset and compute performance metrics for base models") {
+      val mutated2 = autoMl.applyMutation(mutated)
+      PopulationHelper.print(mutated2)
 
+      val mutated3 = autoMl.applyMutation(mutated2)
+      PopulationHelper.print(mutated3)
 
-    val airlineDF = SparkMLUtils.loadResourceDF("/airline2008.csv")
-      .select("DayOfWeek", "Distance", "DepTime", "CRSDepTime", "DepDelay")
-
-    val res = airlineDF.show(50)
-
-    val features = Array("Distance", "DayOfWeek")
-    val oheFeatures = Array.empty
-
-    val combinedFeatures = features /*++ oheFeatures*/
-
-    val featuresColName: String = "features"
-
-    def featuresAssembler = {
-      new VectorAssembler()
-        .setInputCols(combinedFeatures)
-        .setOutputCol(featuresColName)
+      //TODO make mutation happens every time
+      mutated shouldNot be(population)
+      mutated2 shouldNot be(mutated)
+      mutated3 shouldNot be(mutated2)
     }
 
-    val prepairedAirlineDF = airlineDF
-      .applyTransformation(featuresAssembler)
-      .withColumnRenamed("DepDelay", "label")
-      .toDouble("label")
-      .filterOutNull("label")
-      .showN_AndContinue(100)
-      .cache()
+    "find best template with most optimal fitness value" in {
 
-    lazy val Array(trainingSplit, testSplit) = prepairedAirlineDF.randomSplit(Array(0.80, 0.20), 11L)
+      val seed: Seq[LeafTemplate[SimpleModelMember]] = Seq(
+        LeafTemplate(LinearRegressionModel()),
+        LeafTemplate(Bayesian()),
+        LeafTemplate(DecisionTree())
+      )
 
-    val xGBoostEstimator = new XGBoostEstimator("DepDelayPredictor")
-    val pipeline = new Pipeline().setStages(Array(xGBoostEstimator))
+      val seedPopulation = new Population(seed)
+
+      val population = Population.fromSeedPopulation(seedPopulation).withSize(10).build
+
+      val airlineDF = SparkMLUtils.loadResourceDF("/airline2008-2.csv")
+        .select("DayOfWeek", "Distance", "DepTime", "CRSDepTime", "DepDelay")
+      //TODO FlightNum+year_date_day for unique identifier of test examples
+
+      val features = Array("Distance", "DayOfWeek")
+      val oheFeatures = Array.empty
+
+      val combinedFeatures = features
+
+      val featuresColName: String = "features"
+
+      def featuresAssembler = {
+        new VectorAssembler()
+          .setInputCols(combinedFeatures)
+          .setOutputCol(featuresColName)
+      }
+      import org.apache.spark.sql.functions.monotonically_increasing_id
+
+      val prepairedAirlineDF = airlineDF
+        .limit(5000)
+        .applyTransformation(featuresAssembler)
+        .withColumnRenamed("DepDelay", "label")
+        .toDouble("label")
+        .filterOutNull("label")
+        .withColumn("uniqueIdColumn", monotonically_increasing_id)
+        .showN_AndContinue(100)
+        .cache()
+
+      val Array(trainingSplit, testSplit) = prepairedAirlineDF.randomSplit(Array(0.8, 0.2))
+
+      trainingSplit.cache()
+
+      val autoMl = new AutoML(trainingSplit, 300000, useMetaDB = false, initialPopulationSize = Some(10), seedPopulation = seedPopulation, maxGenerations = 5)
+
+      autoMl.run()
+
+    }
+
+    /* test("we take values from cache correctly even for complex templates") {
+
+     }
+   */
+    "use different cache values for same template but different dataframe" in new Fixture {
+      val seed: Seq[LeafTemplate[SimpleModelMember]] = Seq(
+        LeafTemplate(Bayesian()),
+        LeafTemplate(LinearRegressionModel()),
+        LeafTemplate(DecisionTree())
+      )
+
+      val population = new Population(seed)
+
+      val autoMl = new AutoML(trainingSplit, 300000, useMetaDB = false, initialPopulationSize = Some(10), seedPopulation = population, maxGenerations = 5)
+
+      val ds2 = trainingSplit.limit(20)
+      val ds3 = trainingSplit.limit(300)
+      autoMl.calculateFitnessResults(population, ds2)
+      autoMl.calculateFitnessResults(population, ds3)
+
+      autoMl.individualsCache.size should be (6)  // (numbers of templates in population) * (# of different sizes of training datasets)
+    }
 
 
-    val paramsMap: Array[ParamMap] = new ParamGridBuilder()
-      .addGrid(xGBoostEstimator.objective, Array("reg:linear"))
-      .addGrid(xGBoostEstimator.evalMetric, Array("rmse"))
-      .build()
+    "parentSelectionByFitnessRank" in {
+      val autoMl = new AutoML(null, 50000, useMetaDB = false, initialPopulationSize = Some(10))
+      val individuals: Seq[LeafTemplate[SimpleModelMember]] = Seq(
+        LeafTemplate(LinearRegressionModel()),
+        LeafTemplate(DecisionTree())
+      )
 
-    val model = xGBoostEstimator.fit(trainingSplit)
-    val predictionsForTraining = model.transform(trainingSplit).cache()
+      val individualsSpanned = Population.fromSeedPopulation(new Population(individuals)).withSize(1000).build.individuals
 
-    val evaluator = new RegressionEvaluator()
+      val selectedParents = autoMl.parentSelectionByFitnessRank(0.5, individualsSpanned.zipWithIndex.map { case (inds, idx) => IndividualAlgorithmData(idx.toString, inds, null, FitnessResult(Random.nextDouble(), null)) })
 
-    val rmse = evaluator.evaluate(predictionsForTraining)
+      import breeze.linalg._
+      import breeze.plot._
 
-    println("Training error (RMSE) =" + rmse)
-    assert(rmse > 0)
+      val f = Figure()
+      val p2 = f.subplot(0)
+      p2 += hist(selectedParents.map(_.rank), 100)
+      p2.title = "A normal distribution"
+      f.saveas("subplots.png")
+      Thread.sleep(50000)
+
+      PopulationHelper.print(new Population(selectedParents.map(_.template)))
+
+      selectedParents.length shouldBe 50
+
+    }
+
+    //  ignore("AutoML should run UCI airline dataset and compute performance metrics for base models") {
+    //
+    //
+    //    val airlineDF = SparkMLUtils.loadResourceDF("/airline2008.csv")
+    //      .select("DayOfWeek", "Distance", "DepTime", "CRSDepTime", "DepDelay")
+    //
+    //    val res = airlineDF.show(50)
+    //
+    //    val features = Array("Distance", "DayOfWeek")
+    //    val oheFeatures = Array.empty
+    //
+    //    val combinedFeatures = features /*++ oheFeatures*/
+    //
+    //    val featuresColName: String = "features"
+    //
+    //    def featuresAssembler = {
+    //      new VectorAssembler()
+    //        .setInputCols(combinedFeatures)
+    //        .setOutputCol(featuresColName)
+    //    }
+    //
+    //    val prepairedAirlineDF = airlineDF
+    //      .applyTransformation(featuresAssembler)
+    //      .withColumnRenamed("DepDelay", "label")
+    //      .toDouble("label")
+    //      .filterOutNull("label")
+    //      .showN_AndContinue(100)
+    //      .cache()
+    //
+    //    lazy val Array(trainingSplit, testSplit) = prepairedAirlineDF.randomSplit(Array(0.80, 0.20), 11L)
+    //
+    //    val xGBoostEstimator = new XGBoostEstimator("DepDelayPredictor")
+    //    val pipeline = new Pipeline().setStages(Array(xGBoostEstimator))
+    //
+    //
+    //    val paramsMap: Array[ParamMap] = new ParamGridBuilder()
+    //      .addGrid(xGBoostEstimator.objective, Array("reg:linear"))
+    //      .addGrid(xGBoostEstimator.evalMetric, Array("rmse"))
+    //      .build()
+    //
+    //    val model = xGBoostEstimator.fit(trainingSplit)
+    //    val predictionsForTraining = model.transform(trainingSplit).cache()
+    //
+    //    val evaluator = new RegressionEvaluator()
+    //
+    //    val rmse = evaluator.evaluate(predictionsForTraining)
+    //
+    //    println("Training error (RMSE) =" + rmse)
+    //    assert(rmse > 0)
+    //
+    //  }
 
   }
-
 }
 

@@ -32,12 +32,12 @@ class SparkBagging[A <: TemplateMember](models: Seq[TemplateTree[A]]) {
     val mergedAndRegressedDF = unionedPredictions
       .groupBy("uniqueIdColumn") // Or we should join aggregation results with other missing columns
       .avg("prediction")
-      .showN_AndContinue(10)
-      .showCount_AndContinue()
+//      .showN_AndContinue(10)
+//      .showCount_AndContinue()
       .withColumnRenamed("avg(prediction)", "prediction") // TODO using avg regressor for now
       .join(dfWithPredictionsFromBaseModels.head.drop("prediction"), Seq("uniqueIdColumn"), joinType="left_outer" )
-      .showN_AndContinue(10)
-      .showCount_AndContinue()
+//      .showN_AndContinue(10)
+//      .showCount_AndContinue()
       .cache()
 
     results.foreach(_._2.dfWithPredictions.unpersist())

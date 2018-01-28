@@ -16,3 +16,19 @@ case class Probability(value: Double) {
   def <(other: Double): Boolean = this.value < other
 
 }
+
+case class MutationProbabilities(structureProb: Probability, memberProb: Probability) {
+  def increaseAllBy(delta: Double): MutationProbabilities = {
+    val updated = copy(
+      structureProb = structureProb.increaseBy(delta),
+      memberProb = memberProb.increaseBy(delta)
+    )
+    println(s"ProbabilityOfStructMutation increased to: ${updated.structureProb}, ProbabilityOfMemberMutation increased to: ${updated.memberProb}")
+    updated
+  }
+}
+
+object MutationProbabilities {
+  def apply(initialProbability: Double): MutationProbabilities = new MutationProbabilities(Probability(initialProbability), Probability(initialProbability))
+
+}

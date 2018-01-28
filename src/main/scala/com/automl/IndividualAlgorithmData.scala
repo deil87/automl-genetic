@@ -22,3 +22,14 @@ case class IndividualAlgorithmData(id: String,
     kamonMetric.set(newValue)
   }
 }
+
+object IndividualAlgorithmData {
+
+  implicit val individualsOrdering = new Ordering[IndividualAlgorithmData] {
+    override def compare(x: IndividualAlgorithmData, y: IndividualAlgorithmData) = {
+      if(x.fitness.fitnessError < y.fitness.fitnessError) 1
+      else if(x.fitness.fitnessError > y.fitness.fitnessError) -1
+      else 0
+    }
+  }
+}
