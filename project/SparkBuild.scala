@@ -43,6 +43,14 @@ object SparkBuild extends Build {
 
     "org.jzy3d" % "jzy3d-api" % "1.0.0",
 
+    "io.kamon" %% "kamon-core" % "1.0.0",
+    "io.kamon" %% "kamon-prometheus" % "1.0.0",
+    "io.kamon" %% "kamon-datadog" % "1.0.0-RC1-2dcf4510efe9df12e640504bfa30ecabb3422638",
+//    "io.kamon" %% "kamino-reporter" % "1.0.0",
+//    "io.kamon" %% "kamon-datadog" % "0.6.8",
+//      "io.kamon" %% "kamon-core" % "0.6.7",
+//      "io.kamon" %% "kamon-datadog" % "0.6.7",
+
     "io.spray" %% "spray-can" % "1.3.4",
     "io.spray" %% "spray-client" % "1.3.4",
     "io.spray" %%  "spray-json" % "1.3.3",
@@ -61,7 +69,7 @@ object SparkBuild extends Build {
     organization := "com.example",
     scalaVersion in ThisBuild := "2.11.7",
     resolvers ++= Nil,
-    javaOptions += "-XX:MaxPermSize=1000m -Xmx3000m"
+    javaOptions += "-Xmx3000m"
   )
 
   lazy val root: Project = Project(
@@ -72,6 +80,7 @@ object SparkBuild extends Build {
       resolvers += "com.teamdev" at "http://maven.teamdev.com/repository/products",
       resolvers += "jzy3d-snapshots" at "http://maven.jzy3d.org/releases",
       resolvers += "Local Maven Repository" at "file://"+ Path.userHome+"/.m2/repository",
+      resolvers += Resolver.bintrayRepo("kamon-io", "snapshots"),
       ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) }
       )
 

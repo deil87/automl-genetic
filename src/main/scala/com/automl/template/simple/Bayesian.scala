@@ -37,6 +37,6 @@ case class Bayesian() extends SimpleModelMember with SparkSessionProvider{
     val rmse: Double = evaluator.evaluate(predictions.withColumnReplace("prediction", $"prediction".cast(DoubleType)))
 
     println(s"$name : RMSE = " + rmse)
-    FitnessResult(rmse, predictions)
+    FitnessResult(rmse, predictions.drop("rawPrediction").drop("probability"))
   }
 }

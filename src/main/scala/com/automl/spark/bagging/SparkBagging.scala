@@ -19,9 +19,11 @@ class SparkBagging[A <: TemplateMember](models: Seq[TemplateTree[A]]) {
     val dfWithPredictionsFromBaseModels: Seq[DataFrame] = results
       .map(_._2.dfWithPredictions)
 
+    import SparkMLUtils._
     val unionedPredictions: Dataset[Row] =
       dfWithPredictionsFromBaseModels
       .reduce((a, b) => {
+        val tmp = results
         val ordered: Dataset[Row] = b.select(a.columns.head, a.columns.tail: _*)
         val res = a.union(ordered)
         res

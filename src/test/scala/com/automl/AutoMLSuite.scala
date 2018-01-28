@@ -4,6 +4,7 @@ import com.automl.helper.{FitnessResult, PopulationHelper, TemplateTreeHelper}
 import com.automl.spark.SparkSessionProvider
 import com.automl.template._
 import com.automl.template.simple._
+import kamon.Kamon
 import ml.dmlc.xgboost4j.scala.spark.XGBoostEstimator
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.evaluation.RegressionEvaluator
@@ -100,9 +101,10 @@ class AutoMLSuite extends FunSuite with Matchers with SparkSessionProvider{
 
     trainingSplit.cache()
 
-    val autoMl = new AutoML(trainingSplit, 150000, useMetaDB = false, initialPopulationSize = Some(10), seedPopulation = seedPopulation , maxGenerations = 5)
+    val autoMl = new AutoML(trainingSplit, 300000, useMetaDB = false, initialPopulationSize = Some(10), seedPopulation = seedPopulation , maxGenerations = 5)
 
     autoMl.run()
+
   }
 
 
@@ -115,7 +117,7 @@ class AutoMLSuite extends FunSuite with Matchers with SparkSessionProvider{
 
     val individualsSpanned = Population.fromSeedPopulation(new Population(individuals)).withSize(1000).build.individuals
 
-    val selectedParents = autoMl.parentSelectionByFitnessRank(0.5, individualsSpanned.map(inds => (inds, null, FitnessResult(Random.nextDouble(), null))) )
+    val selectedParents = autoMl.parentSelectionByFitnessRank(0.5, individualsSpanned.zipWithIndex.map{ case (inds,idx) => IndividualAlgorithmData(idx.toString, inds, null, FitnessResult(Random.nextDouble(), null))})
 
     import breeze.linalg._
     import breeze.plot._

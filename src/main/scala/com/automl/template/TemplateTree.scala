@@ -1,18 +1,21 @@
 package com.automl.template
 
+import java.util.UUID
+
 import com.automl.template.ensemble.EnsemblingMember
 import com.automl.template.simple.SimpleModelMember
 import org.apache.spark.sql.DataFrame
 import com.automl.helper.FitnessResult
+import kamon.Kamon
+import kamon.metric.MeasurementUnit
 
 
 sealed trait TemplateTree[+A <: TemplateMember]{
+
   def member: A
   def subMembers: Seq[TemplateTree[A]]
 
   def evaluateFitness(trainingDF: DataFrame, testDF: DataFrame)(implicit tc: TreeContext = TreeContext()): FitnessResult
-
-//  def ensembleVisible(implicit evid: A <:< EnsemblingMember) = println("Only for ensembles")
 
   def height: Int = 1 + subMembers.foldLeft(1){ case (h, subMember) => Math.max(h, subMember.height)}
 }

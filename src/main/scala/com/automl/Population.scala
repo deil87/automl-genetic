@@ -14,7 +14,7 @@ object Population {
   case class PopulationBuilder(individuals: Seq[ TemplateTree[TemplateMember]]) {
     def withSize(populationSize: Int): PopulationBuilder = {
       val rnd = new Random()
-      val spanned = Seq.fill(populationSize)(individuals(rnd.nextInt(individuals.size))).toSeq
+      val spanned = Seq.fill(populationSize)(individuals(rnd.nextInt(individuals.size)))
       this.copy(individuals = spanned)
     }
 

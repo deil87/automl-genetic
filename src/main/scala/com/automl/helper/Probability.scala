@@ -2,9 +2,9 @@ package com.automl.helper
 
 case class Probability(value: Double) {
 
-  require(value <= 1 && value >= 0, "Probability only make sense within [0,1]")
+  require(value <= 1 && value >= 0, s"Probability only make sense within [0,1]. Attempt to set it to $value")
 
-  def increaseBy(delta: Double) = {
+  def increaseBy(delta: Double): Probability = {
     if(value + delta > 1) copy(value = 1)
     if(value + delta < 0) copy(value = 0)
     else copy(value = value + delta)
