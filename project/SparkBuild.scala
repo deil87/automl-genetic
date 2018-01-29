@@ -65,7 +65,9 @@ object SparkBuild extends Build {
     organization := "com.example",
     scalaVersion in ThisBuild := "2.11.7",
     resolvers ++= Nil,
-    javaOptions += "-Xmx3000m"
+    javaOptions += "-Xmx3000m",
+    unmanagedBase in Compile := baseDirectory.value / "lib",
+    unmanagedBase in Test := baseDirectory.value / "lib"
   )
 
   lazy val root: Project = Project(
