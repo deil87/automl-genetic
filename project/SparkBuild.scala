@@ -8,7 +8,10 @@ object SparkBuild extends Build {
     "org.scalatest" %% "scalatest" % "3.0.1" % "test",
     "com.storm-enroute" %% "scalameter" % "0.7"
   )
-  lazy val loggingLibDependencies = List()
+  lazy val loggingLibDependencies = List(
+    "ch.qos.logback" % "logback-classic" % "1.2.3",
+    "com.typesafe.scala-logging" %% "scala-logging" % "3.7.2"
+  )
 
   object Version {
     val deeplearning4jVersion = "0.9.1"
@@ -46,19 +49,12 @@ object SparkBuild extends Build {
     "io.kamon" %% "kamon-core" % "1.0.0",
     "io.kamon" %% "kamon-prometheus" % "1.0.0",
     "io.kamon" %% "kamon-datadog" % "1.0.0-RC1-2dcf4510efe9df12e640504bfa30ecabb3422638",
-//    "io.kamon" %% "kamino-reporter" % "1.0.0",
-//    "io.kamon" %% "kamon-datadog" % "0.6.8",
-//      "io.kamon" %% "kamon-core" % "0.6.7",
-//      "io.kamon" %% "kamon-datadog" % "0.6.7",
 
     "io.spray" %% "spray-can" % "1.3.4",
     "io.spray" %% "spray-client" % "1.3.4",
     "io.spray" %%  "spray-json" % "1.3.3",
     "net.ruippeixotog" %% "scala-scraper" % "2.0.0-RC2",
-    "com.typesafe.slick" %% "slick" % "3.2.0",
-
-    "ml.dmlc" % "xgboost4j" % "0.7",
-    "ml.dmlc" % "xgboost4j-spark" % "0.7"
+    "com.typesafe.slick" %% "slick" % "3.2.0"
   )
 
 

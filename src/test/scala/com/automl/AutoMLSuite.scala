@@ -3,6 +3,7 @@ package com.automl
 import com.automl.helper.{FitnessResult, PopulationHelper, TemplateTreeHelper}
 import com.automl.spark.SparkSessionProvider
 import com.automl.template._
+import com.automl.template.ensemble.bagging.Bagging
 import com.automl.template.simple._
 import kamon.Kamon
 import ml.dmlc.xgboost4j.scala.spark.XGBoostEstimator
@@ -20,9 +21,12 @@ import scala.util.Random
 
 class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
 
-  //  ss.sparkContext.setLogLevel("INFO")
+  ss.sparkContext.setLogLevel("INFO")
 
   import utils.SparkMLUtils._
+
+  import kamon.prometheus.PrometheusReporter
+  Kamon.addReporter(new PrometheusReporter())
 
   trait Fixture {
     val airlineDF = SparkMLUtils.loadResourceDF("/airline2008-2.csv")
@@ -124,7 +128,7 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
       import org.apache.spark.sql.functions.monotonically_increasing_id
 
       val prepairedAirlineDF = airlineDF
-        .limit(5000)
+//        .limit(5000)
         .applyTransformation(featuresAssembler)
         .withColumnRenamed("DepDelay", "label")
         .toDouble("label")
@@ -137,7 +141,7 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
 
       trainingSplit.cache()
 
-      val autoMl = new AutoML(trainingSplit, 300000, useMetaDB = false, initialPopulationSize = Some(10), seedPopulation = seedPopulation, maxGenerations = 5)
+      val autoMl = new AutoML(trainingSplit, 30000, useMetaDB = false, initialPopulationSize = Some(7), seedPopulation = seedPopulation, maxGenerations = 5)
 
       autoMl.run()
 
@@ -166,8 +170,30 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
       autoMl.individualsCache.size should be (6)  // (numbers of templates in population) * (# of different sizes of training datasets)
     }
 
+    "caching is working within ensemble nodes" in new Fixture{
 
-    "parentSelectionByFitnessRank" in {
+      val autoMl = new AutoML(null, 300000, useMetaDB = false, initialPopulationSize = Some(10), seedPopulation = null, maxGenerations = 5)
+
+      val template = Seq(
+        NodeTemplate(Bagging(), Seq(
+          LeafTemplate(LinearRegressionModel()),
+          NodeTemplate(Bagging(), Seq(
+            LeafTemplate(LinearRegressionModel()),
+            LeafTemplate(LinearRegressionModel())
+          ))
+        )
+        )
+      )
+
+      val testPopulation = new Population(template)
+
+      val ds2 = trainingSplit.limit(20)
+      autoMl.calculateFitnessResults(testPopulation, ds2)
+      true shouldBe true
+    }
+
+
+    "parentSelectionByFitnessRank" ignore {
       val autoMl = new AutoML(null, 50000, useMetaDB = false, initialPopulationSize = Some(10))
       val individuals: Seq[LeafTemplate[SimpleModelMember]] = Seq(
         LeafTemplate(LinearRegressionModel()),

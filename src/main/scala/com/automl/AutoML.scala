@@ -4,6 +4,7 @@ import com.automl.helper._
 import com.automl.template._
 import com.automl.template.ensemble.EnsemblingMember
 import com.automl.template.simple.SimpleModelMember
+import com.typesafe.scalalogging.{LazyLogging, Logger}
 import kamon.Kamon
 import org.apache.spark.sql.DataFrame
 
@@ -25,13 +26,13 @@ class AutoML(data: DataFrame,
              initialPopulationSize: Option[Int] = None,
              isBigSizeThreshold: Long = 500,
              isBigDimensionsThreshold: Long = 200,
-             initialSampleSize: Long = 500) {
+             initialSampleSize: Long = 500) extends LazyLogging {
 
   require(!useMetaDB && initialPopulationSize.isDefined, "If there is no metaDB information then we should start from scratch with population of defined size")
 
   lazy val totalDataSize: Long = getDataSize(data)
 
-  val evolutionDataSizeFactor: Long = Math.max(totalDataSize / maxEvolutions, 500)
+  lazy val evolutionDataSizeFactor: Long = Math.max(totalDataSize / maxEvolutions, 500)
 
   val timeBoxes: EvolutionTimeBoxes = {
     val strategy: EqualEvolutionsStrategy = EqualEvolutionsStrategy(maxTime, maxEvolutions)
@@ -42,8 +43,6 @@ class AutoML(data: DataFrame,
   /**
     * Kamon metrics
     */
-  import kamon.prometheus.PrometheusReporter
-  Kamon.addReporter(new PrometheusReporter())
 
   val evolutionNumberKamon = Kamon.gauge("kamon.automl.evolution_number")
   val generationNumberKamon = Kamon.gauge("kamon.automl.generation_number")
@@ -118,20 +117,19 @@ class AutoML(data: DataFrame,
 
 
   def applyMutation(population: Population): Population = {
-    print(s"\n\nStarting new mutation phase...")
+    logger.info(s"\n\nStarting new mutation phase...")
 
     def mutate(individual: TemplateTree[TemplateMember]) = {
 
       val individualsTreeHeight = individual.height
       val initialProbability, probStep: Double = 1.0 / individualsTreeHeight
-      println(s"Initial probability: $initialProbability, probStep: $probStep")
+      logger.info(s"Initial probability: $initialProbability, probStep: $probStep")
       val mutationProbabilities = MutationProbabilities(initialProbability)
 
       def getRandomEnsemblingMember = EnsemblingMember.poolOfEnsemblingModels.toSeq.randElement
       def getRandomBaseMember: TemplateMember = SimpleModelMember.poolOfSimpleModels.randElement
 
       val structOrMemberThreshold = 0.5
-      //val structThreshold = 0.5
 
       def traverseAndMutate(individual: TemplateTree[TemplateMember], mutProbs: MutationProbabilities): TemplateTree[TemplateMember] = individual match {
         case lt@LeafTemplate(_) =>
@@ -141,12 +139,12 @@ class AutoML(data: DataFrame,
               val numberOfNewBaseModels = Random.nextInt(4) + 1 // TODO parameter?
 
               val newMember = NodeTemplate(getRandomEnsemblingMember, Seq(lt) ++ (0 to numberOfNewBaseModels).map(_ => LeafTemplate(getRandomBaseMember)))
-              println(s"\nStructural mutation happened for $lt --> $newMember")
+              logger.info(s"\nStructural mutation happened for $lt --> $newMember")
               newMember
             }
             else if (mutProbs.memberProb >= Random.nextDouble()) {
               val newMember: TemplateMember = getRandomBaseMember
-              println(s"\nMember mutation happened for $lt --> $newMember")
+              logger.info(s"\nMember mutation happened for $lt --> $newMember")
               LeafTemplate(newMember)
             }
             else lt
@@ -175,13 +173,12 @@ class AutoML(data: DataFrame,
 
         val cacheKey = (materializedTemplate, workingDataSet.count())
         if (individualsCache.isDefinedAt(cacheKey)) {
-          println(s"Cache hit happened for $idx individual based on: \n template: $template \n algorithm: $materializedTemplate \n")
+          logger.info(s"Cache hit happened for $idx individual based on: \n template: $template \n algorithm: $materializedTemplate \n")
           cacheHitsCounterKamon.increment(1)
         }
 
-
         val fitness = individualsCache.getOrElseUpdate(cacheKey, {
-          println(s"Calculated new value for $idx individual based on: \n template: $template \n algorithm: $materializedTemplate \n")
+          logger.info(s"Calculated new value for $idx individual based on: \n template: $template \n algorithm: $materializedTemplate \n")
           // TODO can we split it randomly here???
           val Array(trainingSplit, testSplit) = workingDataSet.randomSplit(Array(0.67, 0.33), 11L)
           materializedTemplate.evaluateFitness(trainingSplit, testSplit)
@@ -234,7 +231,7 @@ class AutoML(data: DataFrame,
     evolutionNumberKamon.set(0)
 
     timeBoxes.timeBoxes foreach { timeBox =>
-      println(s"TimeBox # ${timeBox.index} launched:")
+      logger.info(s"TimeBox # ${timeBox.index} launched:")
 
       val startTime = System.currentTimeMillis()
 
@@ -248,7 +245,7 @@ class AutoML(data: DataFrame,
         //For subsequent evolutions, we use population from the last epoch of the previous evolution
         // TODO Also, ranges of explored parameters increase as templates get more precise and specific. ???
 
-        println(s"LAUNCHING evolutionNumber=$evolutionNumber with datasize= $currentDataSize out of $totalDataSize ...")
+        logger.info(s"LAUNCHING evolutionNumber=$evolutionNumber with datasize= $currentDataSize out of $totalDataSize ...")
 
         var generationNumber = 0
         generationNumberKamon.set(0)
@@ -258,10 +255,10 @@ class AutoML(data: DataFrame,
         while (condition && generationNumber < maxGenerations && !doEscapeFlag) {
           //TODO it is a good idea to cache results for similar templates/models
 
-          println(s"Time left: ${(maxTime - System.currentTimeMillis() + startTime) / 1000}")
-          println(s"LAUNCHING evolutionNumber=$evolutionNumber generationNumber=$generationNumber...")
-          PopulationHelper.print(individualsTemplates)
+          logger.info(s"Time left: ${(maxTime - System.currentTimeMillis() + startTime) / 1000}")
+          logger.info(s"LAUNCHING evolutionNumber=$evolutionNumber generationNumber=$generationNumber...")
 
+          PopulationHelper.print(individualsTemplates)
 
           // c) fitness function formulation
           //It is estimated by a multiple crossvalidation (CV) [83,81]
@@ -334,14 +331,14 @@ class AutoML(data: DataFrame,
           // We've got individuals survived after being traind on whole datasets.
           // Next step is to refine results and choose the best argorithm that we run into on our way here.
           // We should skip 'datasize loop' and 'time loop' and call chooseBestTemplate
-          println("We reached maxDataSize and maxNumberOfGenerations")
+          logger.info("We reached maxDataSize and maxNumberOfGenerations")
           doEscapeFlag = true
           //increase validation part of data. Start using k-folds CV. Of-by-one validation. then multiple round of CV.
           // in general we start using as much data as possible to prevent overfitting and decrease generalization error.
         }
 
         val bestFromCurrentEvolution = chooseBestTemplate(individualsTemplates, workingDataSet)
-        println(s"Best candidate from  evolution #${evolutionNumber - 1} added to priority queue: $bestFromCurrentEvolution")
+        logger.info(s"Best candidate from  evolution #${evolutionNumber - 1} added to priority queue: $bestFromCurrentEvolution")
         bestIndividualsFromAllEvolutions.enqueue(bestFromCurrentEvolution)
       }
 
