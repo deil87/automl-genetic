@@ -2,11 +2,9 @@ package com.automl.template.simple
 
 import com.automl.helper.FitnessResult
 import com.automl.template.EvaluationMagnet
-import ml.dmlc.xgboost4j.scala.spark.{XGBoostEstimator, XGBoostModel}
+import ml.dmlc.xgboost4j.scala.spark.XGBoostEstimator
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.evaluation.RegressionEvaluator
-import org.apache.spark.ml.param.ParamMap
-import org.apache.spark.ml.tuning.ParamGridBuilder
 import org.apache.spark.sql._
 
 case class ExtreamGradientBoosting() extends SimpleModelMember {

@@ -3,10 +3,6 @@ scala:
   - 2.11.7
 before_install:
   - git clone --recursive https://github.com/dmlc/xgboost
-  - pwd
-  - ls /home/travis/
-  - ls /home/travis/build/
-  - ls /home/travis/build/deil87/
-  - cd xgboost/jvm-packages; mvn clean install -DskipTests; cd ../
+  - cd xgboost/jvm-packages; mvn -q clean install -DskipTests; cd ../
 install:
   - sbt ++2.11.7 test

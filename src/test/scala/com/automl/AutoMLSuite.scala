@@ -1,19 +1,13 @@
 package com.automl
 
-import com.automl.helper.{FitnessResult, PopulationHelper, TemplateTreeHelper}
+import com.automl.helper.{FitnessResult, PopulationHelper}
 import com.automl.spark.SparkSessionProvider
 import com.automl.template._
 import com.automl.template.ensemble.bagging.Bagging
 import com.automl.template.simple._
 import kamon.Kamon
-import ml.dmlc.xgboost4j.scala.spark.XGBoostEstimator
-import org.apache.spark.ml.Pipeline
-import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.ml.feature.VectorAssembler
-import org.apache.spark.ml.param.ParamMap
-import org.apache.spark.ml.tuning.ParamGridBuilder
-import org.apache.spark.sql.SparkSession
-import org.scalatest.{FlatSpec, FunSuite, Matchers, WordSpec}
+import org.scalatest.{Matchers, WordSpec}
 import utils.SparkMLUtils
 
 import scala.util.Random
@@ -23,9 +17,8 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
 
   ss.sparkContext.setLogLevel("INFO")
 
-  import utils.SparkMLUtils._
-
   import kamon.prometheus.PrometheusReporter
+  import utils.SparkMLUtils._
   Kamon.addReporter(new PrometheusReporter())
 
   trait Fixture {
@@ -204,7 +197,6 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
 
       val selectedParents = autoMl.parentSelectionByFitnessRank(0.5, individualsSpanned.zipWithIndex.map { case (inds, idx) => IndividualAlgorithmData(idx.toString, inds, null, FitnessResult(Random.nextDouble(), null)) })
 
-      import breeze.linalg._
       import breeze.plot._
 
       val f = Figure()
