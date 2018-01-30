@@ -8,6 +8,7 @@ import com.automl.template.simple._
 import kamon.Kamon
 import org.apache.spark.ml.feature.VectorAssembler
 import org.scalatest.{Matchers, WordSpec}
+import org.slf4j.LoggerFactory
 import utils.SparkMLUtils
 
 import scala.util.Random
@@ -15,7 +16,8 @@ import scala.util.Random
 
 class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
 
-  ss.sparkContext.setLogLevel("INFO")
+  ss.sparkContext.setLogLevel("ERROR")
+
 
   import kamon.prometheus.PrometheusReporter
   import utils.SparkMLUtils._
@@ -47,7 +49,7 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
       .toDouble("label")
       .filterOutNull("label")
       .withColumn("uniqueIdColumn", monotonically_increasing_id)
-      .showN_AndContinue(100)
+      .showN_AndContinue(10)
       .cache()
 
     val Array(trainingSplit, testSplit) = prepairedAirlineDF.randomSplit(Array(0.8, 0.2))
@@ -58,7 +60,7 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
 
   "AutoML" should {
 
-    "mutate templateTree from base model to complex algorithm" in {
+    "mutate templateTree from base model to complex algorithm" ignore {
 
       val seed: Seq[LeafTemplate[SimpleModelMember]] = Seq(
         LeafTemplate(Bayesian()),
@@ -127,7 +129,7 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
         .toDouble("label")
         .filterOutNull("label")
         .withColumn("uniqueIdColumn", monotonically_increasing_id)
-        .showN_AndContinue(100)
+        .showN_AndContinue(10)
         .cache()
 
       val Array(trainingSplit, testSplit) = prepairedAirlineDF.randomSplit(Array(0.8, 0.2))

@@ -100,7 +100,7 @@ class AutoML(data: DataFrame,
       }
 
     val rankedWithCumulativeProbs = ranked.drop(1).scanLeft(ranked.head){ case (acc, indd2) => indd2.copy(probability = indd2.probability + acc.probability)}
-    println(rankedWithCumulativeProbs.map(r => (r.rank, r.probability)).mkString("\n"))
+    logger.debug(rankedWithCumulativeProbs.map(r => (r.rank, r.probability)).mkString("\n"))
 
     var currentParentIndex = 0
     val selectedParents = new Array[IndividualAlgorithmData](numberOfParents)
@@ -108,7 +108,7 @@ class AutoML(data: DataFrame,
       val r = Random.nextDouble()
       val rouletteWheel = rankedWithCumulativeProbs.dropWhile(individualData => individualData.probability < r)
       val selected = rouletteWheel.headOption.getOrElse(rankedWithCumulativeProbs.last)
-      println(s"Selected for r = $r : $selected")
+      logger.debug(s"Selected for r = $r : $selected")
       selectedParents(currentParentIndex) = selected
       currentParentIndex += 1
     }
@@ -192,7 +192,7 @@ class AutoML(data: DataFrame,
   def chooseBestTemplate(population: Population, workingDataSet: DataFrame): IndividualAlgorithmData = {
     val individualsWithEvaluationResults = calculateFitnessResults(population, workingDataSet)
 
-    individualsWithEvaluationResults.sortWith(_.fitness.fitnessError < _.fitness.fitnessError).head
+    individualsWithEvaluationResults.sortWith(_.fitness.fitnessError < _.fitness.fitnessError).head // TODO maybe keep them in sorted heap?
   }
 
   def run(): Unit = {
@@ -230,10 +230,12 @@ class AutoML(data: DataFrame,
     var evolutionNumber = 0
     evolutionNumberKamon.set(0)
 
-    timeBoxes.timeBoxes foreach { timeBox =>
-      logger.info(s"TimeBox # ${timeBox.index} launched:")
+    val startTime = System.currentTimeMillis()
 
-      val startTime = System.currentTimeMillis()
+    println("TimeBoxes" + timeBoxes.timeBoxes.map(_.duration).mkString(","))
+    logger.info("timeboxing", "TimeBoxes schedule" + timeBoxes.timeBoxes.map(_.duration).mkString(","))
+    timeBoxes.timeBoxes foreach { timeBox =>
+      logger.info("timeboxing", s"TimeBox # ${timeBox.index} launched:")
 
       //While time is available, we run a sequence of evolutions that are gradually
       //exploring the state space of possible templates.
@@ -253,7 +255,6 @@ class AutoML(data: DataFrame,
         var doEscapeFlag = false
 
         while (condition && generationNumber < maxGenerations && !doEscapeFlag) {
-          //TODO it is a good idea to cache results for similar templates/models
 
           logger.info(s"Time left: ${(maxTime - System.currentTimeMillis() + startTime) / 1000}")
           logger.info(s"LAUNCHING evolutionNumber=$evolutionNumber generationNumber=$generationNumber...")
@@ -265,12 +266,11 @@ class AutoML(data: DataFrame,
           //The fitness of a template is proportional to the average performance of models generated on training folds
           // and evaluated on testing folds, while the data is divided into folds multiple times.
 
-          val evaluatedIndividuals: Seq[IndividualAlgorithmData] =
-            calculateFitnessResults(individualsTemplates, workingDataSet)
+          val evaluatedIndividuals: Seq[IndividualAlgorithmData] = calculateFitnessResults(individualsTemplates, workingDataSet)
 
           evaluatedIndividuals.zipWithIndex.sortBy(_._1.fitness.fitnessError).map { case (indivData, idx) =>
             (idx, s"$idx) ${indivData.fitness.fitnessError} \n")
-          }.sortBy(_._1).foreach { case (_, str) => println(str) }
+          }.sortBy(_._1).foreach { case (_, str) => logger.info(str) }
 
 
           // GL(t) = 100 * (  Eva(t)/ Eopt(t) - 1 )

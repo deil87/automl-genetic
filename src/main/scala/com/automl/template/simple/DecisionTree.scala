@@ -4,6 +4,7 @@ import com.automl.helper.FitnessResult
 import com.automl.spark.SparkSessionProvider
 import com.automl.template.EvaluationMagnet
 import com.automl.teststrategy.{TestStrategy, TrainingTestSplitStrategy}
+import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.ml.classification.NaiveBayes
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.ml.regression.DecisionTreeRegressor
@@ -11,7 +12,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.types.DoubleType
 import utils.SparkMLUtils
 
-case class DecisionTree() extends SimpleModelMember with SparkSessionProvider{
+case class DecisionTree() extends SimpleModelMember with SparkSessionProvider with LazyLogging{
   override def name: String = "DecisionTree " + super.name
 
 
@@ -21,7 +22,7 @@ case class DecisionTree() extends SimpleModelMember with SparkSessionProvider{
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
   override def fitnessError(trainDF: DataFrame, testDF: DataFrame): FitnessResult = {
-
+    logger.info(s"\nEvaluating $name ...")
     import  SparkMLUtils._
 
     import ss.implicits._
@@ -36,7 +37,7 @@ case class DecisionTree() extends SimpleModelMember with SparkSessionProvider{
 
     val rmse: Double = evaluator.evaluate(predictions)
 
-    println(s"$name : RMSE = " + rmse)
+    logger.info(s"$name : RMSE = " + rmse)
     FitnessResult(rmse, predictions)
   }
 }

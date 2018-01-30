@@ -6,6 +6,7 @@ import com.automl.template.ensemble.EnsemblingMember
 import com.automl.template.simple.SimpleModelMember
 import org.apache.spark.sql.DataFrame
 import com.automl.helper.FitnessResult
+import com.typesafe.scalalogging.LazyLogging
 import kamon.Kamon
 import kamon.metric.MeasurementUnit
 
@@ -47,12 +48,11 @@ case class NodeTemplate[+A <: TemplateMember](member: A, subMembers: Seq[Templat
   }
 }
 
-object TemplateTree {
+object TemplateTree extends LazyLogging{
 
   def updateLeafTC(memberName: String, currentHeight: Int, tc: TreeContext):Unit = {
     val updatedTC = if(tc.level.isDefined) {
-//      println(s"${List.fill(tc.level.get)("\t").mkString} Evaluating LeafTemplate $memberName on the ${tc.level.get} level")
-      println(s"Evaluating LeafTemplate $memberName on the ${tc.level.get} level")
+      logger.info(s"Evaluating LeafTemplate $memberName on the ${tc.level.get} level")
     }
     else
       tc.copy(level = Some(currentHeight))
@@ -60,7 +60,7 @@ object TemplateTree {
 
   def updateNodeTC(memberName: String, currentHeight: Int, tc: TreeContext):TreeContext = {
     if(tc.level.isDefined) {
-      println(s"Evaluating $memberName on the ${tc.level.get} level")
+      logger.info(s"Evaluating $memberName on the ${tc.level.get} level")
       tc.copy(level = Some(tc.level.get - 1))
     }
     else
