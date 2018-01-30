@@ -232,7 +232,7 @@ class AutoML(data: DataFrame,
 
     val startTime = System.currentTimeMillis()
 
-    println("TimeBoxes" + timeBoxes.timeBoxes.map(_.duration).mkString(","))
+    println("TimeBoxes " + timeBoxes.timeBoxes.map(_.duration).mkString(","))
     logger.info("timeboxing", "TimeBoxes schedule" + timeBoxes.timeBoxes.map(_.duration).mkString(","))
     timeBoxes.timeBoxes foreach { timeBox =>
       logger.info("timeboxing", s"TimeBox # ${timeBox.index} launched:")
