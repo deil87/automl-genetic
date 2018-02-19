@@ -1,16 +1,14 @@
 package com.stacking
 
-import java.util.{Collections, Random}
+import java.util.Random
 import java.util.concurrent.TimeUnit
 
-import ml.dmlc.xgboost4j.scala.spark.XGBoostEstimator
 import org.apache.spark.ml.feature.VectorAssembler
+import org.apache.spark.ml.linalg.{Vector => MLVector}
 import org.apache.spark.ml.{PipelineStage, Predictor}
-import org.apache.spark.ml.linalg.{DenseMatrix, Vector}
 import org.apache.spark.mllib.util.MLUtils
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, Row, SparkSession}
-import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator
+import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration
 import org.deeplearning4j.earlystopping.saver.LocalFileModelSaver
 import org.deeplearning4j.earlystopping.scorecalc.DataSetLossCalculator
@@ -18,11 +16,7 @@ import org.deeplearning4j.earlystopping.termination.{MaxEpochsTerminationConditi
 import org.deeplearning4j.earlystopping.trainer.EarlyStoppingTrainer
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
-import org.nd4j.linalg.dataset.DataSet
-import org.nd4j.linalg.factory.Nd4j
 import utils.DeepLearningHelper
-import org.apache.spark.ml.linalg.{DenseMatrix, Vector => MLVector}
-import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import utils.DeepLearningHelper._
 
 import scala.collection.JavaConverters._
@@ -69,7 +63,6 @@ class GenericStacking(numFold: Int) {
 
     import DeepLearningHelper._
     val ss = trainDataSet.sparkSession
-    import ss.implicits._
 
     net.init()
     net.setListeners(new ScoreIterationListener(1))

@@ -1,12 +1,9 @@
 package com.stacking
 
-import ml.dmlc.xgboost4j.scala.spark.{XGBoostEstimator, XGBoostModel}
-import org.apache.spark.ml.classification.GBTClassifier
 import org.apache.spark.ml.feature.VectorAssembler
-import org.apache.spark.ml.{Estimator, PipelineStage, PredictionModel, Predictor}
+import org.apache.spark.ml.{PipelineStage, Predictor}
 import org.apache.spark.mllib.util.MLUtils
-import org.apache.spark.sql.{DataFrame, Dataset, Row}
-import org.apache.spark.ml.linalg.Vector
+import org.apache.spark.sql.DataFrame
 
 
 class Stacking(numFold: Int, withFeatures: Boolean = false) {

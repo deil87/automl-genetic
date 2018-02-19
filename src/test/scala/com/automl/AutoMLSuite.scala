@@ -97,6 +97,7 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
       val seed: Seq[LeafTemplate[SimpleModelMember]] = Seq(
         LeafTemplate(LinearRegressionModel()),
         LeafTemplate(Bayesian()),
+        LeafTemplate(GradientBoosting()),
         LeafTemplate(DecisionTree())
       )
 

@@ -1,9 +1,6 @@
 package com.stacking
 
-import java.util.Random
-
 import com.automl.spark.SparkSessionProvider
-import ml.dmlc.xgboost4j.scala.spark.XGBoostEstimator
 import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.ml.regression.{GBTRegressor, LinearRegression}
 import org.deeplearning4j.nn.api.OptimizationAlgorithm
@@ -74,8 +71,6 @@ class GenericStackingSuite extends FunSuite with Matchers with SparkSessionProvi
     //Network learning rate
     val learningRate = 0.0001
 
-    val rnd = new Random(seed)
-
     /*
     * Can't initialize before XGBoost execution
     * */
@@ -132,8 +127,6 @@ class GenericStackingSuite extends FunSuite with Matchers with SparkSessionProvi
     )
 
     stacking.addModel(net, trainingSplit, testSplit, withEarlyStoppingByScore = true)
-    val xGBoostEstimator = new XGBoostEstimator(parametersMap)
-    stacking.addModel(xGBoostEstimator, trainingSplit, testSplit)
 
     stacking.trainModelsPredictionsDF.showAll()
     stacking.testModelsPredictionsDF.showAll()
@@ -142,7 +135,6 @@ class GenericStackingSuite extends FunSuite with Matchers with SparkSessionProvi
     finalPredictions.showAll()
 
   }
-
 
 }
 

@@ -5,20 +5,12 @@ import com.automl.spark.SparkSessionProvider
 import com.automl.template._
 import com.automl.template.ensemble.bagging.Bagging
 import com.automl.template.simple._
-import ml.dmlc.xgboost4j.scala.spark.XGBoostEstimator
-import org.apache.spark.ml.Pipeline
-import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.ml.feature.VectorAssembler
-import org.apache.spark.ml.param.ParamMap
-import org.apache.spark.ml.tuning.ParamGridBuilder
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.catalyst.expressions.MonotonicallyIncreasingID
 import org.scalatest.{FunSuite, Matchers}
 import utils.SparkMLUtils
 
 
 class SparkBaggingSuite extends FunSuite with Matchers with SparkSessionProvider{
-
 
   import utils.SparkMLUtils._
 
@@ -60,7 +52,7 @@ class SparkBaggingSuite extends FunSuite with Matchers with SparkSessionProvider
       LeafTemplate(Bayesian()),
       NodeTemplate(Bagging(), Seq(
         LeafTemplate(new LinearRegressionModel()),
-        LeafTemplate(ExtreamGradientBoosting()),
+        LeafTemplate(GradientBoosting()),
         LeafTemplate(DecisionTree())
       ))
     )
