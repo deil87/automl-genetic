@@ -56,6 +56,12 @@ class AutoML(data: DataFrame,
     //println(SizeEstimator.estimate(distFile))
 
   }
+
+  def categoricalOrContinuous(df: DataFrame): String = {
+    // TODO
+    ???
+  }
+
   def isDataBig(size: Long): Boolean = size >= isBigSizeThreshold
 
   def getDataSize(df: DataFrame): Long = df.count()

@@ -29,7 +29,6 @@ case class DecisionTree() extends SimpleModelMember with SparkSessionProvider wi
 
 
     val dtr = new DecisionTreeRegressor()
-
     val model = dtr.fit(trainDF)
     val predictions = model.transform(testDF)
 

@@ -18,7 +18,7 @@ object SparkBuild extends Build {
   }
 
   lazy val sparkDependencies = List(
-    "org.apache.spark" %% "spark-core" % "2.1.0",
+    "org.apache.spark" %% "spark-core" % "2.1.0" exclude("org.slf4j", "slf4j-log4j12"),
     "org.apache.spark" %% "spark-sql" % "2.1.0",
     "org.apache.spark" %% "spark-streaming" % "2.1.0",
     "org.apache.spark" %% "spark-mllib" % "2.1.0",
@@ -67,7 +67,8 @@ object SparkBuild extends Build {
     resolvers ++= Nil,
     javaOptions += "-Xmx3000m",
     unmanagedBase in Compile := baseDirectory.value / "lib",
-    unmanagedBase in Test := baseDirectory.value / "lib"
+    unmanagedBase in Test := baseDirectory.value / "lib",
+    parallelExecution in Test := false
   )
 
   lazy val root: Project = Project(

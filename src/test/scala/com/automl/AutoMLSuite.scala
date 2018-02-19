@@ -123,7 +123,7 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
       import org.apache.spark.sql.functions.monotonically_increasing_id
 
       val prepairedAirlineDF = airlineDF
-//        .limit(5000)
+        .limit(15000)
         .applyTransformation(featuresAssembler)
         .withColumnRenamed("DepDelay", "label")
         .toDouble("label")

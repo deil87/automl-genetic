@@ -16,8 +16,8 @@
             <onMismatch>DENY</onMismatch>
     </filter>-->
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} %-5level %msg%n</pattern>
-            <!--<pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} \n %msg%n</pattern>-->
+            <!--<pattern>%d{HH:mm:ss.SSS} %-5level %msg%n</pattern>-->
+            <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} %msg%n</pattern>
         </encoder>
     </appender>
 
@@ -35,13 +35,14 @@
         <OnMismatch>DENY</OnMismatch>
     </turboFilter>-->
 
-    <logger name="com.automl.AutoML" level="INFO" additivity="false">
+    <logger name="com.automl.AutoML" level="INFO">
         <appender-ref ref="STDOUT" />
     </logger>
     <logger name="com.automl.template" level="INFO" />
+    <logger name="com.automl.template.simple" level="INFO" />
     <logger name="org.apache.spark" level="ERROR"/>
 
-    <root level="ERROR">
+    <root level="INFO">
         <appender-ref ref="STDOUT" />
     </root>
 </configuration>
