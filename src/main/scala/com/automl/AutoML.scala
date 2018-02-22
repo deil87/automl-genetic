@@ -9,7 +9,12 @@ import kamon.Kamon
 import org.apache.spark.sql.DataFrame
 
 import scala.collection.mutable
+import scala.concurrent.{Await, Future}
 import scala.util.Random
+import scala.concurrent._
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.control.Breaks._
 
 class MetaDB() {
   def getPopulationOfTemplates = ???  // Population of base models?
@@ -171,34 +176,36 @@ class AutoML(data: DataFrame,
 
   }
 
-  val individualsCache = mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]()
+  val individualsCache = mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]()  // TODO make it faster with reference to value
 
   def calculateFitnessResults(population: Population, workingDataSet: DataFrame): Seq[IndividualAlgorithmData] = {
-    population.individuals.zipWithIndex.map{ case (individualTemplate, idx) => (idx, individualTemplate, TemplateTreeHelper.materialize(individualTemplate))}
-      .map{ case (idx, template, materializedTemplate) =>
+
+    population.individuals.zipWithIndex
+      .map { case (individualTemplate, idx) => (idx, individualTemplate, TemplateTreeHelper.materialize(individualTemplate)) }
+      .map { case (idx, template, materializedTemplate) =>
 
         val cacheKey = (materializedTemplate, workingDataSet.count())
         if (individualsCache.isDefinedAt(cacheKey)) {
           logger.info(s"Cache hit happened for $idx individual based on: \n template: $template \n algorithm: $materializedTemplate \n")
           cacheHitsCounterKamon.increment(1)
         }
-
-        val fitness = individualsCache.getOrElseUpdate(cacheKey, {
+        val fr = individualsCache.getOrElseUpdate(cacheKey, {
           logger.info(s"Calculated new value for $idx individual based on: \n template: $template \n algorithm: $materializedTemplate \n")
           // TODO can we split it randomly here???
+
           val Array(trainingSplit, testSplit) = workingDataSet.randomSplit(Array(0.67, 0.33), 11L)
           materializedTemplate.evaluateFitness(trainingSplit, testSplit)
-        }) // TODO unbounded addition. Memory leak
-        val iad = IndividualAlgorithmData(idx.toString, template, materializedTemplate, fitness)
+        })
+        val iad = IndividualAlgorithmData(idx.toString, template, materializedTemplate, fr)
         iad.sendMetric()
         iad
       }
   }
 
-  def chooseBestTemplate(population: Population, workingDataSet: DataFrame): IndividualAlgorithmData = {
+  def chooseBestIndividual(population: Population, workingDataSet: DataFrame, availableTime: Double): Option[IndividualAlgorithmData] = {
     val individualsWithEvaluationResults = calculateFitnessResults(population, workingDataSet)
 
-    individualsWithEvaluationResults.sortWith(_.fitness.fitnessError < _.fitness.fitnessError).head // TODO maybe keep them in sorted heap?
+    individualsWithEvaluationResults.sortWith(_.fitness.fitnessError < _.fitness.fitnessError).headOption // TODO maybe keep them in sorted heap?
   }
 
   def run(): Unit = {
@@ -240,132 +247,137 @@ class AutoML(data: DataFrame,
 
     println("TimeBoxes " + timeBoxes.timeBoxes.map(_.duration).mkString(","))
     logger.info("timeboxing", "TimeBoxes schedule" + timeBoxes.timeBoxes.map(_.duration).mkString(","))
+
     timeBoxes.timeBoxes foreach { timeBox =>
-      logger.info("timeboxing", s"TimeBox # ${timeBox.index} launched:")
+      def restOfTheTimeBox = Math.max(timeBox.duration - (System.currentTimeMillis() - startTime), 1000)
 
-      //While time is available, we run a sequence of evolutions that are gradually
-      //exploring the state space of possible templates.
-      def condition = System.currentTimeMillis() - startTime < timeBox.duration
+      val timeBoxCalculations = Future {
+        logger.info("timeboxing", s"TimeBox # ${timeBox.index} launched:")
 
-      while (condition) {
+        //While time is available, we run a sequence of evolutions that are gradually
+        //exploring the state space of possible templates.
+        def condition = System.currentTimeMillis() - startTime < timeBox.duration
 
-        //In each subsequent evolution, templates are more specific and the percentage of wildcards decrease.
-        //For subsequent evolutions, we use population from the last epoch of the previous evolution
-        // TODO Also, ranges of explored parameters increase as templates get more precise and specific. ???
+        while (condition) {
 
-        logger.info(s"LAUNCHING evolutionNumber=$evolutionNumber with datasize= $currentDataSize out of $totalDataSize ...")
+          //In each subsequent evolution, templates are more specific and the percentage of wildcards decrease.
+          //For subsequent evolutions, we use population from the last epoch of the previous evolution
+          // TODO Also, ranges of explored parameters increase as templates get more precise and specific. ???
 
-        var generationNumber = 0
-        generationNumberKamon.set(0)
+          logger.info(s"LAUNCHING evolutionNumber=$evolutionNumber with datasize= $currentDataSize out of $totalDataSize ...")
 
-        var doEscapeFlag = false
+          var generationNumber = 0
+          generationNumberKamon.set(0)
 
-        while (condition && generationNumber < maxGenerations && !doEscapeFlag) {
+          var doEscapeFlag = false
 
-          logger.info(s"Time left: ${(maxTime - System.currentTimeMillis() + startTime) / 1000}")
-          logger.info(s"LAUNCHING evolutionNumber=$evolutionNumber generationNumber=$generationNumber...")
+          while (condition && generationNumber < maxGenerations && !doEscapeFlag) {
 
-          PopulationHelper.print(individualsTemplates)
+            logger.info(s"Time left: ${(maxTime - System.currentTimeMillis() + startTime) / 1000}")
+            logger.info(s"LAUNCHING evolutionNumber=$evolutionNumber generationNumber=$generationNumber...")
 
-          // c) fitness function formulation
-          //It is estimated by a multiple crossvalidation (CV) [83,81]
-          //The fitness of a template is proportional to the average performance of models generated on training folds
-          // and evaluated on testing folds, while the data is divided into folds multiple times.
+            PopulationHelper.print(individualsTemplates)
 
-          val evaluatedIndividuals: Seq[IndividualAlgorithmData] = calculateFitnessResults(individualsTemplates, workingDataSet)
+            // c) fitness function formulation
+            //It is estimated by a multiple crossvalidation (CV) [83,81]
+            //The fitness of a template is proportional to the average performance of models generated on training folds
+            // and evaluated on testing folds, while the data is divided into folds multiple times.
 
-          evaluatedIndividuals.zipWithIndex.sortBy(_._1.fitness.fitnessError).map { case (indivData, idx) =>
-            (idx, s"$idx) ${indivData.fitness.fitnessError} \n")
-          }.sortBy(_._1).foreach { case (_, str) => logger.info(str) }
+            val evaluatedIndividuals: Seq[IndividualAlgorithmData] = calculateFitnessResults(individualsTemplates, workingDataSet)
+
+            //Sorted individuals bases on fitnessError
+            evaluatedIndividuals.zipWithIndex.sortBy(_._1.fitness.fitnessError).map { case (indivData, idx) =>
+              (idx, s"$idx) ${indivData.fitness.fitnessError} \n")
+            }.sortBy(_._1).foreach { case (_, str) => logger.info(str) }
 
 
-          // GL(t) = 100 * (  Eva(t)/ Eopt(t) - 1 )
-          //        High generalization loss is one obvious candidate reason to stop training, because
-          //        it directly indicates overfitting. This leads us to the 1rst class of stopping
-          //        criteria: stop as soon as the generalization loss exceeds a certain
-          //          threshold. We define the class GL as
-          //        GL : stop after first epoch t with GL(t) > alpha
-          //How can we do this multiple time? In parallel?
+            // GL(t) = 100 * (  Eva(t)/ Eopt(t) - 1 )
+            //        High generalization loss is one obvious candidate reason to stop training, because
+            //        it directly indicates overfitting. This leads us to the 1rst class of stopping
+            //        criteria: stop as soon as the generalization loss exceeds a certain
+            //          threshold. We define the class GL as
+            //        GL : stop after first epoch t with GL(t) > alpha
+            //How can we do this multiple time? In parallel?
 
-          if (evolutionNumber == 0 && !useMetaDB) {
-            //putInfoInto MetaDB
+            if (evolutionNumber == 0 && !useMetaDB) {
+              //putInfoInto MetaDB
+            }
+
+
+            // If we run into stagnation?
+            // We could check wheter our structures are not changing any more( bad mutation algorithm) or
+            // fitness values of our individuals do not improve(or within threshold) when datasize is maximum.
+            // We might never reach this state
+            if (stagnationDetected(evaluatedIndividuals)) // we are breaking our while loop - early stopping?
+              generationNumber = maxGenerations
+
+            //Second phase: We are going to compute fitness functions and rank all the individuals.
+            // Draw from these population with the probability distribution proportional to rank values.
+            val individualsForMutation = parentSelectionByFitnessRank(0.5, evaluatedIndividuals).map(_.template)
+
+            //b) design of genetic operators and evolution
+            //Parameters of a node are mutated by applying Gaussian noise to the current value
+            //We do not use crossover, just mutations similar to the approach used in a standard GP
+
+            // First phase: recombination or mutation. Ensure that diversity is ok .
+            // Maybe check child/mutant on ability to survive by itself. Then ensure that the size of population is ok
+            // What kind of parameters we mutate
+            val offspring = applyMutation(new Population(individualsForMutation)) // individualsForMutation
+
+            val subjectsToSurvival = new Population(individualsTemplates.individuals ++ offspring.individuals)
+            val evaluationResultsForAll = calculateFitnessResults(subjectsToSurvival, workingDataSet)
+
+            //Select 50% best of all the (individuals + offspring)
+            val survivedForNextGenerationSeed: Seq[TemplateTree[TemplateMember]] = parentSelectionByFitnessRank(0.5, evaluationResultsForAll).map(_.template)
+            individualsTemplates = Population.fromSeedPopulation(new Population(survivedForNextGenerationSeed)).withSize(initialPopulationSize.get).build
+            generationNumber += 1
+            generationNumberKamon.increment(1)
           }
 
+          //How can we call next size level - evolution?
+          if (currentDataSize < totalDataSize) {
+            // data is doubled (both dimensionality and numerosity if possible).
+            // we can increase range of hyperparameters to choose from.
+            currentDataSize += evolutionDataSizeFactor
+            workingDataSet = sample(data, if (currentDataSize >= totalDataSize) totalDataSize else currentDataSize) // TODO should we sample new or append to previous data some new sample?
+            evolutionNumber += 1
+            evolutionNumberKamon.increment(1)
+            generationNumber = 0
+            generationNumberKamon.set(0)
+          } else {
+            // We've got individuals survived after being traind on whole datasets.
+            // Next step is to refine results and choose the best argorithm that we run into on our way here.
+            // We should skip 'datasize loop' and 'time loop' and call chooseBestTemplate
+            logger.info("We reached maxDataSize and maxNumberOfGenerations")
+            doEscapeFlag = true // TODO ?? do we need this
+            //increase validation part of data. Start using k-folds CV. Of-by-one validation. then multiple round of CV.
+            // in general we start using as much data as possible to prevent overfitting and decrease generalization error.
+          }
 
-          // If we run into stagnation?
-          // We could check wheter our structures are not changing any more( bad mutation algorithm) or
-          // fitness values of our individuals do not improve(or within threshold) when datasize is maximum.
-          // We might never reach this state
-          if (stagnationDetected(evaluatedIndividuals)) // we are breaking our while loop - early stopping?
-            generationNumber = maxGenerations
-
-          //Second phase: We are going to compute fitness functions and rank all the individuals.
-          // Draw from these population with the probability distribution proportional to rank values.
-          val individualsForMutation = parentSelectionByFitnessRank(0.5, evaluatedIndividuals).map(_.template)
-
-          //b) design of genetic operators and evolution
-          //Parameters of a node are mutated by applying Gaussian noise to the current value
-          //We do not use crossover, just mutations similar to the approach used in a standard GP
-
-          // First phase: recombination or mutation. Ensure that diversity is ok .
-          // Maybe check child/mutant on ability to survive by itself. Then ensure that the size of population is ok
-          // What kind of parameters we mutate
-          val offspring = applyMutation(new Population(individualsForMutation)) // individualsForMutation
-
-          val subjectsToSurvival = new Population(individualsTemplates.individuals ++ offspring.individuals)
-          val evaluationResultsForAll = calculateFitnessResults(subjectsToSurvival, workingDataSet)
-
-          //Select 50% best of all the (individuals + offspring)
-          val survivedForNextGenerationSeed: Seq[TemplateTree[TemplateMember]] = parentSelectionByFitnessRank(0.5, evaluationResultsForAll).map(_.template)
-          individualsTemplates = Population.fromSeedPopulation(new Population(survivedForNextGenerationSeed)).withSize(initialPopulationSize.get).build
-          generationNumber += 1
-          generationNumberKamon.increment(1)
+          chooseBestIndividual(individualsTemplates, workingDataSet, restOfTheTimeBox).foreach { template =>
+            logger.info(s"Best candidate from  evolution #${evolutionNumber - 1} added to priority queue: $template")
+            bestIndividualsFromAllEvolutions.enqueue(template)
+          }
         }
 
-
-        //How can we call next size level - evolution?
-        if (currentDataSize < totalDataSize) {
-          // data is doubled (both dimensionality and numerosity if possible).
-          // we can increase range of hyperparameters to choose from.
-          currentDataSize += evolutionDataSizeFactor
-          workingDataSet = sample(data, if (currentDataSize >= totalDataSize) totalDataSize else currentDataSize) // TODO should we sample new or append to previous data some new sample?
-          evolutionNumber += 1
-          evolutionNumberKamon.increment(1)
-          generationNumber = 0
-          generationNumberKamon.set(0)
-        } else {
-          // We've got individuals survived after being traind on whole datasets.
-          // Next step is to refine results and choose the best argorithm that we run into on our way here.
-          // We should skip 'datasize loop' and 'time loop' and call chooseBestTemplate
-          logger.info("We reached maxDataSize and maxNumberOfGenerations")
-          doEscapeFlag = true
-          //increase validation part of data. Start using k-folds CV. Of-by-one validation. then multiple round of CV.
-          // in general we start using as much data as possible to prevent overfitting and decrease generalization error.
-        }
-
-        val bestFromCurrentEvolution = chooseBestTemplate(individualsTemplates, workingDataSet)
-        logger.info(s"Best candidate from  evolution #${evolutionNumber - 1} added to priority queue: $bestFromCurrentEvolution")
-        bestIndividualsFromAllEvolutions.enqueue(bestFromCurrentEvolution)
       }
 
+      try {
+        Await.result(timeBoxCalculations, restOfTheTimeBox.milliseconds)
+      } catch {
+        case e: TimeoutException => logger.debug(e.getMessage)
+      }
     }
     // Final evaluation on different test data. Consider winners from all evolutions(evolutionNumbers) but put more faith into last ones because they have been chosen based on results on bigger  validation sets(better representative of a population).
-    val winner = bestIndividualsFromAllEvolutions.dequeue()
+    val winner = bestIndividualsFromAllEvolutions.dequeue() // TODO warning - could be empty
 
     println("\n##############################################################")
     println("Fitness value of the BEST template: " +  winner.fitness.fitnessError)
     println("Best template: " + TemplateTreeHelper.print2(winner.template)) // TODO make print2 actually a printing method
     println("Other best individuals results:\n" + bestIndividualsFromAllEvolutions.dequeueAll.map(_.fitness.fitnessError).mkString(",\n"))
 
+
   }
-
-
-  // TODO Testing with UCI datasets?
-
-  // How should look our metaDB store? is it mapping of multiple criteria to a template?
-  // How should look initial form?
-
-
 
 }
 

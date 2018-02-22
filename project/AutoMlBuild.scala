@@ -1,7 +1,7 @@
 import sbt.Keys._
 import sbt._
 
-object SparkBuild extends Build {
+object AutoMlBuild extends Build {
   lazy val testLibDependencies = List(
     "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
     "org.scalactic" %% "scalactic" % "3.0.1",
