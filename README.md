@@ -13,4 +13,41 @@ Contributions of any kind are very welcome! Please contact me deil_87@mail.ru fo
 <img src="https://www.fit.cvut.cz/sites/default/images/favicon.png" width="60" height="60" "></p>
                                                                                             
  Supported by https://www.fit.cvut.cz/ university in Prague. 
+ 
+ Getting started.
+ 
+ In order to run your own evolution process you can start with taking a look at example test com.automl.AutoMLSuite.
+ 
+ In a nutshell you need to load and prepare you data with Spark and then pass it as a dataframe into core class com.automl.AutoML.
+ 
+ 
+ Let's take a look at an example:
+ ```
+ val seed: Seq[LeafTemplate[SimpleModelMember]] = Seq(
+         LeafTemplate(LinearRegressionModel()),
+         LeafTemplate(Bayesian()),
+         LeafTemplate(GradientBoosting()),
+         LeafTemplate(DecisionTree())
+       )
 
+ val seedPopulation = new Population(seed)
+
+ val autoMl = new AutoML(
+        data = trainingSplit,
+        maxTime = 200000,
+        useMetaDB = false,
+        initialPopulationSize = Some(7),
+        seedPopulation = seedPopulation,
+        maxGenerations = 5)
+```
+
+Here we are passing trainingSplit into AutoML, not using metaDB, set maximum search time to 200 seconds. Each evolution will perform 5 generations. Seed consist of 4 classifiers but initial size is 7. It means that there will be duplicated in our ini
+
+| Parameter | Description |
+| --- | --- |
+| data | DataFrame with `features` and `label` colums. |
+| maxTime | Time in milliseconds during which algorithm will be performing search of optimal ensemble. |
+| useMetaDB | Whether or not to use metaDB of previously found templates based on similarity of datasets. |
+| maxGenerations | Maximum number of generations (cycles of selection and mutation) within one evolution. After this number of generations algoritm will increase portion of `data` and essentially run new evolution.|
+| seedPopulation | If we don't use metaDB ( `useMetaDB` is set to false) then we need to solve problem of cold start. Seed population is a set of classifiers that will be used to construct initial population. |
+| initialPopulationSize | Size of initial population. Based on this value we will be drawing from the `seedPopulation` in order to get needed size. |
