@@ -8,7 +8,7 @@ import weka.filters.supervised.instance.SMOTE
 
 class WEKASuite extends FunSuite with Matchers {
 
-  test("Apply filter and fix imbalance in dataset") {
+  ignore("Apply filter and fix imbalance in dataset") {
 
     val resource = System.getProperty("user.dir")+"/src/main/resources/material_training_weka.csv.arff"
     val observations = new DataSource(resource).getDataSet
