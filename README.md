@@ -14,7 +14,7 @@ Contributions of any kind are very welcome! Please contact me deil_87@mail.ru fo
                                                                                             
  Supported by https://www.fit.cvut.cz/ university in Prague. 
  
- Getting started.
+ ## Getting started
  
  In order to run your own evolution process you can start with taking a look at example test com.automl.AutoMLSuite.
  
@@ -41,7 +41,9 @@ Contributions of any kind are very welcome! Please contact me deil_87@mail.ru fo
         maxGenerations = 5)
 ```
 
-Here we are passing trainingSplit into AutoML, not using metaDB, set maximum search time to 200 seconds. Each evolution will perform 5 generations. Seed consist of 4 classifiers but initial size is 7. It means that there will be duplicated in our ini
+Here we are passing trainingSplit into AutoML, not using metaDB, set maximum search time to 200 seconds. Each evolution will perform 5 generations. Seed consist of 4 classifiers but initial size is 7. It means that there will be duplicates in our initial population.
+
+Description of AutoML class input parameters:
 
 | Parameter | Description |
 | --- | --- |
