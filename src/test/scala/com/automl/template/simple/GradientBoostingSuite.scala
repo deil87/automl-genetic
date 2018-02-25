@@ -5,7 +5,7 @@ import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.sql.DataFrame
 import org.scalatest.{Matchers, WordSpec}
 
-class GradientBoodtingSuite extends WordSpec with Matchers with SparkSessionProvider {
+class GradientBoostingSuite extends WordSpec with Matchers with SparkSessionProvider {
   import ss.implicits._
 
   "GradientBoodtingSuite" should {

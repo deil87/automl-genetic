@@ -25,6 +25,7 @@ class AutoMLMainSuite extends WordSpec with Matchers with BeforeAndAfterAll with
         LeafTemplate(LinearRegressionModel()),
         LeafTemplate(Bayesian()),
         LeafTemplate(GradientBoosting()),
+//        LeafTemplate(NeuralNetwork(Array(5,10,5))), // TODO need to implement detection of features number and number of classes
         LeafTemplate(DecisionTree())
       )
 

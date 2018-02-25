@@ -4,8 +4,9 @@ import com.automl.helper.FitnessResult
 import com.automl.template.EvaluationMagnet
 import org.apache.spark.ml.classification.MultilayerPerceptronClassifier
 import org.apache.spark.ml.evaluation.RegressionEvaluator
+import org.apache.spark.ml.linalg.Vector
 import org.apache.spark.sql._
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
+import org.apache.spark.sql.functions.col
 
 case class NeuralNetwork(layers: Array[Int]) extends SimpleModelMember {
   override def name: String = "NeuralNetwork " + super.name
@@ -19,6 +20,10 @@ case class NeuralNetwork(layers: Array[Int]) extends SimpleModelMember {
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
   override def fitnessError(trainDF: DataFrame, testDF: DataFrame): FitnessResult = {
+
+    val numFeatures = trainDF.select(col("features")).first().getAs[Vector](0).size
+
+    require(layers.head == numFeatures, "Size of first layer of NN should be equal to number of features")
 
     val model = predictor.fit(trainDF)
 
