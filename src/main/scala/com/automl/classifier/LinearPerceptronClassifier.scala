@@ -63,31 +63,35 @@ class LinearPerceptronClassifier {
       * @ classOfExample 1 - for positive real label, 0 - for negative label
       * @return
       */
-    val transferFunction: (Double, Int) => ((VectorMLLib, VectorMLLib) => VectorMLLib, Boolean) = { (activation: Double, classOfExample: Int) =>
-      def add: (VectorMLLib, VectorMLLib) => VectorMLLib = (x: VectorMLLib, y: VectorMLLib) => {
-        val res = Vectors.dense(elementwiseAddition(x.toArray,y.toArray))
-        res
-      }
-      def subtr: (VectorMLLib, VectorMLLib) => VectorMLLib = (x: VectorMLLib, y: VectorMLLib) => Vectors.dense(elementwiseSubtraction(x.toArray,y.toArray))
-      def nothing: (VectorMLLib, VectorMLLib) => VectorMLLib = (x: VectorMLLib, y: VectorMLLib) => x
+    val transferFunction: (Double, Int) => (Int, Boolean) = { (activation: Double, classOfExample: Int) =>
+//      def add: (VectorMLLib, VectorMLLib) => Int = (x: VectorMLLib, y: VectorMLLib) => {
+//        val res = Vectors.dense(elementwiseAddition(x.toArray,y.toArray))
+//        res
+//        1
+//      }
+//      def subtr: (VectorMLLib, VectorMLLib) => Int = (x: VectorMLLib, y: VectorMLLib) => {
+//        Vectors.dense(elementwiseSubtraction(x.toArray, y.toArray))
+//        -1
+//      }
+//      def nothing: (VectorMLLib, VectorMLLib) => Int = (x: VectorMLLib, y: VectorMLLib) => 0
 
       var misclassified = false
       val action =
         if (classOfExample == 1)
           if (activation <= 0.0) {
             misclassified = true
-            add
+            1
           }
-          else nothing // add features vector to parameters
+          else 0 // add features vector to parameters
         else if (activation >= 0.0) {
           misclassified = true
-          subtr
+          -1
         }
-        else nothing // subtract features vector to parameters
+        else 0 // subtract features vector to parameters
       (action, misclassified)
     }
 
-    val calculateAction: LabeledVector => ((VectorMLLib, VectorMLLib) => VectorMLLib, Boolean) = { row: LabeledVector =>
+    val calculateAction: LabeledVector => (Int, Boolean) = { row: LabeledVector =>
 
       // val activation = featuresAsBreeze.dot(vectorOfParametersAsBreeze) //TODO breeze version of .dot is not serializable and can't be used with Spark
       // Uses netlib-native_system-osx-x86_64.jnilib
@@ -108,7 +112,7 @@ class LinearPerceptronClassifier {
 
 
     while(terminationCriteria) {
-      input.foreach { row => // TODO in original algorithm rows are taken randomly
+      val res = input.map { row => // TODO in original algorithm rows are taken randomly
 
         val featuresWithBias: Array[Double] = Array(1.0, row.features.toArray:_*) //??? cast
         val vectorOfFeaturesWithBias: VectorMLLib = Vectors.dense(featuresWithBias)
@@ -118,8 +122,15 @@ class LinearPerceptronClassifier {
         //TODO vectorOfParameters is not updated because it is on agents
         // 1) use map and then apply all updates at once after map is finished
         // 2) use spark streaming
-        vectorOfParameters = learningAction(vectorOfParameters, vectorOfFeaturesWithBias)
-        println(vectorOfParameters.toArray.mkString(","))
+        (learningAction, vectorOfFeaturesWithBias)
+//        vectorOfParameters = learningAction(vectorOfParameters, vectorOfFeaturesWithBias)
+//        println(vectorOfParameters.toArray.mkString(","))
+      }
+      res.collect().foreach { case (action, vectorOfFeaturesWithBias) =>
+        if(action == 1)
+          vectorOfParameters = Vectors.dense(elementwiseAddition(vectorOfParameters.toArray, vectorOfFeaturesWithBias.toArray))
+        if(action == -1)
+          vectorOfParameters = Vectors.dense(elementwiseSubtraction(vectorOfParameters.toArray, vectorOfFeaturesWithBias.toArray))
       }
     }
     vectorOfParameters

@@ -81,7 +81,10 @@ class LinearPerceptronSuite extends WordSpec with Matchers with SparkSessionProv
       val f = fixture
       val classifier = new LinearPerceptronClassifier()
       val activation = classifier.trainIteratively(f.preparedTrainDS)
-      activation.toArray shouldBe Array.fill(5)(3.0)
+      val result = activation.toArray
+      result(0) shouldBe 0.19033638814298248 +- 1.0
+      result(1) shouldBe 3.8921764447475473  +- 0.8
+      result(2) shouldBe -3.3293630571824764 +- 0.8
 
     }
 
