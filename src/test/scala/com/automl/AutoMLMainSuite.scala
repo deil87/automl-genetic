@@ -50,7 +50,7 @@ class AutoMLMainSuite extends WordSpec with Matchers with BeforeAndAfterAll with
       import org.apache.spark.sql.functions.monotonically_increasing_id
 
       val prepairedAirlineDF = airlineDF
-        .limit(15000)
+        .limit(30000)
         .applyTransformation(featuresAssembler)
         .withColumnRenamed("DepDelay", "label")
         .toDouble("label")
@@ -65,7 +65,7 @@ class AutoMLMainSuite extends WordSpec with Matchers with BeforeAndAfterAll with
 
       val autoMl = new AutoML(
         data = trainingSplit,
-        maxTime = 200000,
+        maxTime = 400000,
         useMetaDB = false,
         initialPopulationSize = Some(7),
         seedPopulation = seedPopulation,
