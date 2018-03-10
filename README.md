@@ -14,6 +14,12 @@ Contributions of any kind are very welcome! Please contact me deil_87@mail.ru fo
                                                                                             
  Supported by https://www.fit.cvut.cz/ university in Prague. 
  
+ ## Demo
+ 
+ <p align="center">
+  <img src="https://github.com/deil87/automl-genetic/raw/master/doc/images/AutoMLMainTest_showcase.gif" width="100%"/>
+</p>
+ 
  ## Getting started
  
  In order to run your own evolution process you can start with taking a look at example test com.automl.AutoMLSuite.
