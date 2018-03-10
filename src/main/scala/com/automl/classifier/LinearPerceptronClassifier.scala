@@ -3,9 +3,9 @@ package com.automl.classifier
 import org.apache.spark.ml.linalg.{DenseVector, Vector}
 import org.apache.spark.mllib.linalg.{Matrices, Vectors}
 import org.apache.spark.mllib.linalg.distributed.{IndexedRow, IndexedRowMatrix}
-import org.apache.spark.sql.functions.col
+import org.apache.spark.sql.functions.{col, monotonically_increasing_id}
 import org.apache.spark.sql.{DataFrame, Dataset, Row}
-import utils.LabeledVector
+import utils.{LabeledVector, UnlabeledVector}
 import breeze.linalg.{DenseVector => BDV}
 import org.apache.spark.mllib.linalg.{Vector => VectorMLLib}
 
@@ -64,16 +64,6 @@ class LinearPerceptronClassifier {
       * @return
       */
     val transferFunction: (Double, Int) => (Int, Boolean) = { (activation: Double, classOfExample: Int) =>
-//      def add: (VectorMLLib, VectorMLLib) => Int = (x: VectorMLLib, y: VectorMLLib) => {
-//        val res = Vectors.dense(elementwiseAddition(x.toArray,y.toArray))
-//        res
-//        1
-//      }
-//      def subtr: (VectorMLLib, VectorMLLib) => Int = (x: VectorMLLib, y: VectorMLLib) => {
-//        Vectors.dense(elementwiseSubtraction(x.toArray, y.toArray))
-//        -1
-//      }
-//      def nothing: (VectorMLLib, VectorMLLib) => Int = (x: VectorMLLib, y: VectorMLLib) => 0
 
       var misclassified = false
       val action =
@@ -98,7 +88,7 @@ class LinearPerceptronClassifier {
       val activation = Matrices.dense(numFeatures, 1, Array(1, row.features.toArray:_* )).transpose.multiply(vectorOfParameters) // or we can reshape?
 
       val activationValue = activation.values(0)
-      println("AV:" + activationValue)
+      println("Activation value:" + activationValue)
       transferFunction(activationValue, row.label.toInt)
     }
 
@@ -106,25 +96,24 @@ class LinearPerceptronClassifier {
       val res = input.map { row =>
         calculateAction(row)._2 // true when misclassified.
       }
-      val ret = !res.collect().forall(_ == false)
-      ret
+      val currentStateOfClassfication = res.collect()
+      println("Number of misclassifications: " + currentStateOfClassfication.count(_ == true))
+      !currentStateOfClassfication.forall(_ == false)
     }
 
 
     while(terminationCriteria) {
-      val res = input.map { row => // TODO in original algorithm rows are taken randomly
+      val res = input.sample(withReplacement = false, 1).map { row =>
 
-        val featuresWithBias: Array[Double] = Array(1.0, row.features.toArray:_*) //??? cast
-        val vectorOfFeaturesWithBias: VectorMLLib = Vectors.dense(featuresWithBias)
+        val featuresWithBias: Array[Double] = Array(1.0, row.features.toArray:_*)
+        val vectorOfFeaturesWithBias: VectorMLLib = Vectors.dense(featuresWithBias) // TODO we can't learn based on same vectorOfFeatures for whole batch of samples
 
         val (learningAction, _) =  calculateAction(row)
 
         //TODO vectorOfParameters is not updated because it is on agents
         // 1) use map and then apply all updates at once after map is finished
-        // 2) use spark streaming
+        // 2) use spark streaming with state ??
         (learningAction, vectorOfFeaturesWithBias)
-//        vectorOfParameters = learningAction(vectorOfParameters, vectorOfFeaturesWithBias)
-//        println(vectorOfParameters.toArray.mkString(","))
       }
       res.collect().foreach { case (action, vectorOfFeaturesWithBias) =>
         if(action == 1)
@@ -136,6 +125,43 @@ class LinearPerceptronClassifier {
     vectorOfParameters
   }
 
+  /**
+    *
+    * @param unlabeledDF
+    * @return df with one extra column `prediction`
+    */
+  def predict(unlabeledDF: DataFrame, vectorOfParameters: VectorMLLib): DataFrame = {
 
+    import unlabeledDF.sparkSession.implicits._
+
+    val unlabeledDfWithId = unlabeledDF
+      .withColumn("id", monotonically_increasing_id)
+
+    val unlabeledInput = unlabeledDfWithId.as[UnlabeledVector]
+    unlabeledInput.cache()
+
+    val numFeatures = unlabeledInput.head().features.size + 1
+
+    val calculateAction: UnlabeledVector => Double = { row: UnlabeledVector =>
+
+      // val activation = featuresAsBreeze.dot(vectorOfParametersAsBreeze) //TODO breeze version of .dot is not serializable and can't be used with Spark
+      val activation = Matrices.dense(numFeatures, 1, Array(1, row.features.toArray:_* )).transpose.multiply(vectorOfParameters)
+
+      val activationValue = activation.values(0)
+      println("Activation value for test example:" + activationValue)
+      if(activationValue > 0)
+        1.0
+      else
+        0.0
+    }
+
+    val featuresWithPredictions: Dataset[FeaturesVectorWithPredictions] = unlabeledInput.map { row =>
+      val prediction: Double = calculateAction(row)
+      FeaturesVectorWithPredictions(row.id, row.features, prediction)
+    }
+    featuresWithPredictions.toDF().join( unlabeledDfWithId.drop("features"), Seq("id"), joinType="left_outer" )
+  }
 
 }
+
+final case class FeaturesVectorWithPredictions(id: Double, features: org.apache.spark.ml.linalg.Vector, prediction: Double)

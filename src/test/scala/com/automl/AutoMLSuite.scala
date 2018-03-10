@@ -42,7 +42,7 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
     }
     import org.apache.spark.sql.functions.monotonically_increasing_id
 
-    val prepairedAirlineDF = airlineDF
+    val preparedAirlineDF = airlineDF
       .limit(5000)
       .applyTransformation(featuresAssembler)
       .withColumnRenamed("DepDelay", "label")
@@ -52,7 +52,7 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
       .showN_AndContinue(10)
       .cache()
 
-    val Array(trainingSplit, testSplit) = prepairedAirlineDF.randomSplit(Array(0.8, 0.2))
+    val Array(trainingSplit, testSplit) = preparedAirlineDF.randomSplit(Array(0.8, 0.2))
 
     trainingSplit.cache()
 

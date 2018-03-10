@@ -334,4 +334,5 @@ final case class LabeledVector(label: Double, features: org.apache.spark.ml.lina
   def toLibLabeledPoints =  LabeledPoint(label, Vectors.dense(features.toArray))
 }
 
+final case class UnlabeledVector(id: Double, features: org.apache.spark.ml.linalg.Vector)
 
