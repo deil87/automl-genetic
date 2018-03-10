@@ -8,6 +8,7 @@ import org.apache.spark.sql.{DataFrame, Dataset, Row}
 import utils.{LabeledVector, UnlabeledVector}
 import breeze.linalg.{DenseVector => BDV}
 import org.apache.spark.mllib.linalg.{Vector => VectorMLLib}
+import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 
 import scala.util.control.Breaks._
 import scala.util.Random
@@ -45,7 +46,10 @@ class LinearPerceptronClassifier {
 
     val numFeatures = input.head().features.size + 1 // one for bias
 
-    var vectorOfParameters = Vectors.dense(Array.fill(numFeatures)(Random.nextDouble()))
+    val asBreeze: org.apache.spark.ml.linalg.Vector => BDV[Double] = vector => new BDV[Double](vector.toArray)
+    val asBreezeFromArray: Array[Double] => BDV[Double] = vector => new BDV[Double](vector)
+
+    val vectorOfParameters = new breeze.linalg.DenseVector[Double](Array.fill(numFeatures)(Random.nextDouble()))
 
 
     val elementwiseAddition: (Array[Double], Array[Double]) => Array[Double] = { (x:Array[Double], y: Array[Double]) =>
@@ -63,33 +67,36 @@ class LinearPerceptronClassifier {
       * @ classOfExample 1 - for positive real label, 0 - for negative label
       * @return
       */
-    val transferFunction: (Double, Int) => (Int, Boolean) = { (activation: Double, classOfExample: Int) =>
+    val transferFunction: (Double, Int) => ((BDV[Double], BDV[Double]) => BDV[Double], Boolean) = { (activation: Double, classOfExample: Int) =>
+      def add: (BDV[Double], BDV[Double]) => BDV[Double] = (x, y) => {
+        x += y
+      }
+      def subtr: (BDV[Double], BDV[Double]) => BDV[Double] = (x, y) => x -= y
+      def nothing: (BDV[Double], BDV[Double]) => BDV[Double] = (x, y) => x
 
       var misclassified = false
       val action =
         if (classOfExample == 1)
           if (activation <= 0.0) {
             misclassified = true
-            1
+            add
           }
-          else 0 // add features vector to parameters
+          else nothing // add features vector to parameters
         else if (activation >= 0.0) {
           misclassified = true
-          -1
+          subtr
         }
-        else 0 // subtract features vector to parameters
+        else nothing // subtract features vector to parameters
       (action, misclassified)
     }
 
-    val calculateAction: LabeledVector => (Int, Boolean) = { row: LabeledVector =>
+    val calculateAction: LabeledVector => ((BDV[Double], BDV[Double]) => BDV[Double], Boolean)  = { row: LabeledVector =>
 
-      // val activation = featuresAsBreeze.dot(vectorOfParametersAsBreeze) //TODO breeze version of .dot is not serializable and can't be used with Spark
-      // Uses netlib-native_system-osx-x86_64.jnilib
-      val activation = Matrices.dense(numFeatures, 1, Array(1, row.features.toArray:_* )).transpose.multiply(vectorOfParameters) // or we can reshape?
+      val featuresAsBreeze = asBreezeFromArray(Array(1, row.features.toArray:_* ))
+      val activation = featuresAsBreeze.dot(vectorOfParameters)
 
-      val activationValue = activation.values(0)
-      println("Activation value:" + activationValue)
-      transferFunction(activationValue, row.label.toInt)
+      println("Activation value:" + activation)
+      transferFunction(activation, row.label.toInt)
     }
 
     def terminationCriteria: Boolean = {
@@ -101,28 +108,28 @@ class LinearPerceptronClassifier {
       !currentStateOfClassfication.forall(_ == false)
     }
 
+//    implicit val myBDVEncoder = org.apache.spark.sql.Encoders.kryo[((BDV[Double], BDV[Double]) => BDV[Double], Boolean)]
+    implicit val myBDVEncoder = ExpressionEncoder()
+
 
     while(terminationCriteria) { // TODO checking termination criteria once per dataset size is not efficient approach
       val learningActions = input.sample(withReplacement = false, 1).map { row =>
 
         val featuresWithBias: Array[Double] = Array(1.0, row.features.toArray:_*)
-        val vectorOfFeaturesWithBias: VectorMLLib = Vectors.dense(featuresWithBias)
+        val trainingVectorOfFeaturesWithBias = asBreezeFromArray(featuresWithBias)
 
         val (learningAction, _) =  calculateAction(row)
 
         //TODO vectorOfParameters is not updated because it is on agents
         // 1) use map and then apply all updates at once after map is finished
         // 2) use spark streaming with state ??
-        (learningAction, vectorOfFeaturesWithBias)
+        (learningAction, trainingVectorOfFeaturesWithBias)
       }
-      learningActions.collect().foreach { case (action, vectorOfFeaturesWithBias) =>
-        if(action == 1)
-          vectorOfParameters = Vectors.dense(elementwiseAddition(vectorOfParameters.toArray, vectorOfFeaturesWithBias.toArray))
-        if(action == -1)
-          vectorOfParameters = Vectors.dense(elementwiseSubtraction(vectorOfParameters.toArray, vectorOfFeaturesWithBias.toArray))
-      }
+      learningActions.collect().foreach { case (action, trainingVectorOfFeaturesWithBias) =>
+        action(vectorOfParameters, trainingVectorOfFeaturesWithBias)}
     }
-    vectorOfParameters
+    //Converting back to MLLib vector
+    Vectors.dense(vectorOfParameters.data)
   }
 
   /**
@@ -137,6 +144,8 @@ class LinearPerceptronClassifier {
     val unlabeledDfWithId = unlabeledDF
       .withColumn("id", monotonically_increasing_id)
 
+    val asBreeze: org.apache.spark.ml.linalg.Vector => BDV[Double] = vector => new breeze.linalg.DenseVector[Double](vector.toArray)
+
     val unlabeledInput = unlabeledDfWithId.as[UnlabeledVector]
     unlabeledInput.cache()
 
@@ -144,7 +153,8 @@ class LinearPerceptronClassifier {
 
     val calculateAction: UnlabeledVector => Double = { row: UnlabeledVector =>
 
-      // val activation = featuresAsBreeze.dot(vectorOfParametersAsBreeze) //TODO breeze version of .dot is not serializable and can't be used with Spark
+      val featuresAsBreeze = asBreeze(row.features)
+      val activationBreeze = featuresAsBreeze.dot(featuresAsBreeze)
       val activation = Matrices.dense(numFeatures, 1, Array(1, row.features.toArray:_* )).transpose.multiply(vectorOfParameters)
 
       val activationValue = activation.values(0)
