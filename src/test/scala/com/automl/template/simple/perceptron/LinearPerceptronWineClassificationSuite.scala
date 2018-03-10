@@ -2,6 +2,7 @@ package com.automl.template.simple.perceptron
 
 import com.automl.classifier.LinearPerceptronClassifier
 import com.automl.spark.SparkSessionProvider
+import org.apache.spark.ml.evaluation.BinaryClassificationEvaluator
 import org.apache.spark.ml.feature.{StandardScaler, VectorAssembler}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 import utils.SparkMLUtils
@@ -12,6 +13,7 @@ class LinearPerceptronWineClassificationSuite extends WordSpec with Matchers wit
   ss.sparkContext.setLogLevel("ERROR")
   import ss.implicits._
   import utils.SparkMLUtils._
+  import org.apache.spark.sql.functions._
 
   "LinearPerceptron" should {
 
@@ -47,6 +49,7 @@ class LinearPerceptronWineClassificationSuite extends WordSpec with Matchers wit
         .withColumnRenamed("Wine", "label")
         .toDouble("label")
         .filter($"label" =!= 2.0)
+        .withColumnReplace("label", when($"label" === "3", 0.0).otherwise(1.0))
         .showAllAndContinue
 
       val Array(trainingSplit, testSplit) = preparedWineDF.randomSplit(Array(0.8, 0.2))
@@ -56,7 +59,10 @@ class LinearPerceptronWineClassificationSuite extends WordSpec with Matchers wit
       val classifier = new LinearPerceptronClassifier()
       val vectorOfParameters = classifier.trainIteratively(preparedWineDF)
 
-      classifier.predict(testSplit, vectorOfParameters).showN_AndContinue(10)
+      val withPredictionsDF = classifier.predict(testSplit, vectorOfParameters).showN_AndContinue(10)
+
+      val evaluator = new BinaryClassificationEvaluator().setRawPredictionCol("prediction")
+      evaluator.evaluate(withPredictionsDF) shouldBe 1.0
 
     }
   }

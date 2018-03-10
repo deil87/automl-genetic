@@ -102,11 +102,11 @@ class LinearPerceptronClassifier {
     }
 
 
-    while(terminationCriteria) {
-      val res = input.sample(withReplacement = false, 1).map { row =>
+    while(terminationCriteria) { // TODO checking termination criteria once per dataset size is not efficient approach
+      val learningActions = input.sample(withReplacement = false, 1).map { row =>
 
         val featuresWithBias: Array[Double] = Array(1.0, row.features.toArray:_*)
-        val vectorOfFeaturesWithBias: VectorMLLib = Vectors.dense(featuresWithBias) // TODO we can't learn based on same vectorOfFeatures for whole batch of samples
+        val vectorOfFeaturesWithBias: VectorMLLib = Vectors.dense(featuresWithBias)
 
         val (learningAction, _) =  calculateAction(row)
 
@@ -115,7 +115,7 @@ class LinearPerceptronClassifier {
         // 2) use spark streaming with state ??
         (learningAction, vectorOfFeaturesWithBias)
       }
-      res.collect().foreach { case (action, vectorOfFeaturesWithBias) =>
+      learningActions.collect().foreach { case (action, vectorOfFeaturesWithBias) =>
         if(action == 1)
           vectorOfParameters = Vectors.dense(elementwiseAddition(vectorOfParameters.toArray, vectorOfFeaturesWithBias.toArray))
         if(action == -1)
