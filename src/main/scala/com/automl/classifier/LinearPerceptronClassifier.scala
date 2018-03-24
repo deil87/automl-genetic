@@ -6,10 +6,8 @@ import org.apache.spark.mllib.linalg.distributed.{IndexedRow, IndexedRowMatrix}
 import org.apache.spark.sql.functions.{col, monotonically_increasing_id}
 import org.apache.spark.sql.{DataFrame, Dataset, Row}
 import utils.{LabeledVector, UnlabeledVector}
-import breeze.linalg.{DenseVector => BDV}
 import org.apache.spark.mllib.linalg.{Vector => VectorMLLib}
 
-import scala.util.control.Breaks._
 import scala.util.Random
 
 class LinearPerceptronClassifier {

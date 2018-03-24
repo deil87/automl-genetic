@@ -51,6 +51,7 @@ class AutoML(data: DataFrame,
 
   val evolutionNumberKamon = Kamon.gauge("kamon.automl.evolution_number")
   val generationNumberKamon = Kamon.gauge("kamon.automl.generation_number")
+  val currentDatasizeKamon = Kamon.gauge("kamon.automl.current_datasize")
   val cacheHitsCounterKamon = Kamon.counter("kamon.automl.cache_hits")
 
   def isDataBig(df: DataFrame): Boolean = {
@@ -233,6 +234,7 @@ class AutoML(data: DataFrame,
     }
 
     var currentDataSize = initialSampleSize
+    currentDatasizeKamon.set(currentDataSize)
 
     val bestIndividualsFromAllEvolutions = collection.mutable.PriorityQueue[IndividualAlgorithmData]()
 
@@ -339,6 +341,7 @@ class AutoML(data: DataFrame,
             // data is doubled (both dimensionality and numerosity if possible).
             // we can increase range of hyperparameters to choose from.
             currentDataSize += evolutionDataSizeFactor
+            currentDatasizeKamon.set(currentDataSize)
             workingDataSet = sample(data, if (currentDataSize >= totalDataSize) totalDataSize else currentDataSize) // TODO should we sample new or append to previous data some new sample?
             evolutionNumber += 1
             evolutionNumberKamon.increment(1)
