@@ -13,5 +13,5 @@ trait BaggingMember extends EnsemblingMember {
 object BaggingMember {
 
   val simpleBagging = Bagging()
-  val poolOfBaggingModels: Set[BaggingMember] = Set(simpleBagging)
+  val poolOfBaggingModels: Set[EnsemblingMember] = Set(simpleBagging)
 }

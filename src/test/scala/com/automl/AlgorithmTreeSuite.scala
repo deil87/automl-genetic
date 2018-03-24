@@ -3,7 +3,7 @@ package com.automl
 import com.automl.helper.TemplateTreeHelper
 import com.automl.template._
 import com.automl.template.ensemble.bagging.Bagging
-import com.automl.template.ensemble.stacking.MyStackingImpl
+import com.automl.template.ensemble.stacking.GenericStacking
 import com.automl.template.simple._
 import org.apache.spark.sql.DataFrame
 import org.scalatest.{FunSuite, Matchers}

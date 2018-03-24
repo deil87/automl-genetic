@@ -14,6 +14,8 @@ class SparkBagging[A <: TemplateMember](models: Seq[TemplateTree[A]]) {
 
     val results: Seq[(TemplateTree[A], FitnessResult)] = models.zipWithIndex.map{ case (model, modelIdx) =>
       val trainingSample = trainingDF.sample(withReplacement = false, 0.6)
+
+      //TODO  Should we keep aside testDF? Maybe we are computing just training error. We need to split trainingSample into (train,test)
       (model, model.evaluateFitness(trainingSample, testDF))
     }
     val dfWithPredictionsFromBaseModels: Seq[DataFrame] = results
@@ -45,7 +47,6 @@ class SparkBagging[A <: TemplateMember](models: Seq[TemplateTree[A]]) {
     val evaluator = new RegressionEvaluator()
 
     val rmse: Double = evaluator.evaluate(mergedAndRegressedDF)
-
 
     FitnessResult(rmse, mergedAndRegressedDF)
   }

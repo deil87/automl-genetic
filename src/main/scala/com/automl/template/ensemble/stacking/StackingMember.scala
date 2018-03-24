@@ -7,5 +7,5 @@ trait StackingMember extends EnsemblingMember {
 }
 
 object StackingMember {
-  val MyStackingImpl = new MyStackingImpl()
+  val MyStackingImpl = new GenericStacking()
 }

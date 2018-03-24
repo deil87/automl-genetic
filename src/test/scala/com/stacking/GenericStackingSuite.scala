@@ -43,7 +43,7 @@ class GenericStackingSuite extends FunSuite with Matchers with SparkSessionProvi
     val preparedObservations = featuresAssembler.transform(observations)
 
 
-    val stacking = new GenericStacking(3)
+    val stacking = new SparkGenericStacking(3)
 
     val Array(trainingSplit,testSplit)  = preparedObservations.randomSplit(Array(0.8, 0.2),11L)
 
