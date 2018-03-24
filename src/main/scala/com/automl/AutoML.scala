@@ -1,5 +1,6 @@
 package com.automl
 
+import com.automl.dataset._
 import com.automl.helper._
 import com.automl.template._
 import com.automl.template.ensemble.EnsemblingMember
@@ -14,12 +15,10 @@ import scala.util.Random
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.control.Breaks._
 
 class MetaDB() {
   def getPopulationOfTemplates = ???  // Population of base models?
 }
-
 
 
 class AutoML(data: DataFrame,
@@ -31,7 +30,9 @@ class AutoML(data: DataFrame,
              initialPopulationSize: Option[Int] = None,
              isBigSizeThreshold: Long = 500,
              isBigDimensionsThreshold: Long = 200,
-             initialSampleSize: Long = 500) extends LazyLogging {
+             initialSampleSize: Long = 500,
+             dataSetSizeEvolutionStrategy: DataSetSizeEvolutionStrategy = new RandomDataSetSizeEvolutionStrategy()
+            ) extends LazyLogging {
 
   require(!useMetaDB && initialPopulationSize.isDefined, "If there is no metaDB information then we should start from scratch with population of defined size")
 
@@ -72,20 +73,12 @@ class AutoML(data: DataFrame,
 
   def getDataSize(df: DataFrame): Long = df.count()
 
-  def sample(df: DataFrame, size: Long): DataFrame = {
-    val isBalanced: Boolean = true // TODO add here concreate estimation of balancing
-    // TODO We sample both instances and attributes when constrains are violated to get a representative data subset.
-    if(isBalanced) {
-      //random subsampling
-      import org.apache.spark.sql.functions.rand
-      df.orderBy(rand()).limit(size.toInt)
-    }
-    else {
-      //stratified subsampling
-      ???
-    }
 
-  }
+  /*  Sampling  */
+  def isDataSetBalanced = true // TODO add here concreate estimation of balancing
+  implicit val samplingStrategy: SamplingStrategy = if(isDataSetBalanced) new RandomSampling() else new StratifiedSampling()
+
+
 
   val metaDB = new MetaDB() // TODO How it should look like?
   // 100-300 dims,  500 - 5000 examples, num classes,
@@ -187,11 +180,11 @@ class AutoML(data: DataFrame,
 
         val cacheKey = (materializedTemplate, workingDataSet.count())
         if (individualsCache.isDefinedAt(cacheKey)) {
-          logger.info(s"Cache hit happened for $idx individual based on: \n template: $template \n algorithm: $materializedTemplate \n")
+          logger.info(s"Cache hit happened for $idx-th individual based on: \n template: $template \n algorithm: $materializedTemplate \n")
           cacheHitsCounterKamon.increment(1)
         }
         val fr = individualsCache.getOrElseUpdate(cacheKey, {
-          logger.info(s"Calculated new value for $idx individual based on: \n template: $template \n algorithm: $materializedTemplate \n")
+          logger.info(s"Calculated new value for $idx-th individual based on: \n template: $template \n algorithm: $materializedTemplate \n")
           // TODO can we split it randomly here???
 
           val Array(trainingSplit, testSplit) = workingDataSet.randomSplit(Array(0.67, 0.33), 11L)
@@ -212,7 +205,7 @@ class AutoML(data: DataFrame,
   def run(): Unit = {
 
     var workingDataSet: DataFrame = if(isDataBig(data)) {
-      sample(data, initialSampleSize)
+      samplingStrategy.sample(data, initialSampleSize) //TODO maybe we can start using EvolutionStrategy even here?
     } else data
 
     var individualsTemplates = if(useMetaDB) {
@@ -236,7 +229,7 @@ class AutoML(data: DataFrame,
     var currentDataSize = initialSampleSize
     currentDatasizeKamon.set(currentDataSize)
 
-    val bestIndividualsFromAllEvolutions = collection.mutable.PriorityQueue[IndividualAlgorithmData]()
+    val bestIndividualsFromAllEvolutionsQueue = collection.mutable.PriorityQueue[IndividualAlgorithmData]()
 
 
     //The fitness of each template is updated during evolutions and when the optimization terminates,
@@ -278,6 +271,7 @@ class AutoML(data: DataFrame,
             logger.info(s"Time left: ${(maxTime - System.currentTimeMillis() + startTime) / 1000}")
             logger.info(s"LAUNCHING evolutionNumber=$evolutionNumber generationNumber=$generationNumber...")
 
+            logger.info("\nCurrent population:")
             PopulationHelper.print(individualsTemplates)
 
             // c) fitness function formulation
@@ -342,7 +336,8 @@ class AutoML(data: DataFrame,
             // we can increase range of hyperparameters to choose from.
             currentDataSize += evolutionDataSizeFactor
             currentDatasizeKamon.set(currentDataSize)
-            workingDataSet = sample(data, if (currentDataSize >= totalDataSize) totalDataSize else currentDataSize) // TODO should we sample new or append to previous data some new sample?
+
+            workingDataSet = dataSetSizeEvolutionStrategy.evolve(workingDataSet, newSize = currentDataSize, maxEvolutions, data)
             evolutionNumber += 1
             evolutionNumberKamon.increment(1)
             generationNumber = 0
@@ -359,7 +354,7 @@ class AutoML(data: DataFrame,
 
           chooseBestIndividual(individualsTemplates, workingDataSet, restOfTheTimeBox).foreach { template =>
             logger.info(s"Best candidate from  evolution #${evolutionNumber - 1} added to priority queue: $template")
-            bestIndividualsFromAllEvolutions.enqueue(template)
+            bestIndividualsFromAllEvolutionsQueue.enqueue(template)
           }
         }
 
@@ -368,18 +363,23 @@ class AutoML(data: DataFrame,
       try {
         Await.result(timeBoxCalculations, restOfTheTimeBox.milliseconds)
       } catch {
-        case e: TimeoutException => logger.debug(e.getMessage)
+        case e: TimeoutException => logger.info(s"Timeout for timebox:$timeBox has happened. Current evolutionNumber = $evolutionNumber. " + e.getMessage)
       }
     }
     // Final evaluation on different test data. Consider winners from all evolutions(evolutionNumbers) but put more faith into last ones because they have been chosen based on results on bigger  validation sets(better representative of a population).
-    val winner = bestIndividualsFromAllEvolutions.dequeue() // TODO warning - could be empty
+    if(bestIndividualsFromAllEvolutionsQueue.isEmpty) {
+      println("\n##############################################################")
+      println("None of the evolutions were finished within given time constraint")
+    } else {
 
-    println("\n##############################################################")
-    println("Fitness value of the BEST template: " +  winner.fitness.fitnessError)
-    println("Best template: " + TemplateTreeHelper.print2(winner.template)) // TODO make print2 actually a printing method
-    println("Other best individuals results:\n" + bestIndividualsFromAllEvolutions.dequeueAll.map(_.fitness.fitnessError).mkString(",\n"))
+      val winner = bestIndividualsFromAllEvolutionsQueue.dequeue() // TODO warning - could be empty
 
+      println("\n##############################################################")
+      println("Fitness value of the BEST template: " +  winner.fitness.fitnessError)
+      println("Best template: " + TemplateTreeHelper.print2(winner.template)) // TODO make print2 actually a printing method
+      println("Other best individuals results:\n" + bestIndividualsFromAllEvolutionsQueue.dequeueAll.map(_.fitness.fitnessError).mkString(",\n"))
 
+    }
   }
 
 }

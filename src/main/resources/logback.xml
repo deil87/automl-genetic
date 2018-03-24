@@ -35,9 +35,7 @@
         <OnMismatch>DENY</OnMismatch>
     </turboFilter>-->
 
-    <logger name="com.automl.AutoML" level="INFO">
-        <appender-ref ref="STDOUT" />
-    </logger>
+    <logger name="com.automl.AutoML" level="INFO"/>
     <logger name="com.automl.template" level="INFO" />
     <logger name="com.automl.template.simple" level="INFO" />
     <logger name="org.apache.spark" level="ERROR"/>
