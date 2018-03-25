@@ -6,18 +6,18 @@ import com.automl.template._
 import com.automl.template.ensemble.bagging.Bagging
 import com.automl.template.simple._
 import org.apache.spark.ml.evaluation.RegressionEvaluator
-import org.apache.spark.ml.feature.VectorAssembler
+import org.apache.spark.ml.feature.{StandardScaler, VectorAssembler}
 import org.apache.spark.ml.regression.{GBTRegressor, LinearRegression}
 import org.apache.spark.sql.DataFrame
 import org.scalatest.{FunSuite, Matchers}
-import utils.SparkMLUtils
+import utils.{BenchmarkHelper, SparkMLUtils}
 
 
 class GenericStackingSuite extends FunSuite with Matchers with SparkSessionProvider{
 
   import utils.SparkMLUtils._
 
-  lazy val airlineDF = SparkMLUtils.loadResourceDF("/airline2008-100k_rows.csv")
+  lazy val airlineDF = SparkMLUtils.loadResourceDF("/airline_sampled_100k.csv")
     .select("DayOfWeek", "Distance", "DepTime", "CRSDepTime", "DepDelay")
 
   val features = Array("Distance", "DayOfWeek")
@@ -32,11 +32,22 @@ class GenericStackingSuite extends FunSuite with Matchers with SparkSessionProvi
       .setInputCols(combinedFeatures)
       .setOutputCol(featuresColName)
   }
+
+  val scaler = new StandardScaler()
+    .setInputCol("features")
+    .setOutputCol("scaledFeatures")
+    .setWithStd(false)
+    .setWithMean(true)
+
   import org.apache.spark.sql.functions.monotonically_increasing_id
 
   val prepairedAirlineDF = airlineDF
     .limit(3000)
     .applyTransformation(featuresAssembler)
+    .applyTransformation(scaler)
+    .showN_AndContinue(10)
+    .withColumnReplace("features", "scaledFeatures")
+    .showN_AndContinue(10)
     .withColumnRenamed("DepDelay", "label")
     .toDouble("label")
     .filterOutNull("label")
@@ -75,7 +86,7 @@ class GenericStackingSuite extends FunSuite with Matchers with SparkSessionProvi
 
     val fitnessResult = genericStacking.ensemblingFitnessError(trainingSplit, testSplit, models)
 
-    val rmseFromLR = computeWithLR(trainingSplit, testSplit)
+    val rmseFromLR = LinearRegressionModel().fitnessError(trainingSplit, testSplit).fitnessError
     println(s"RMSE computed for Linear regression model $rmseFromLR")
 
     fitnessResult.fitnessError should be <= rmseFromLR
@@ -87,21 +98,38 @@ class GenericStackingSuite extends FunSuite with Matchers with SparkSessionProvi
 
   }
 
-  def computeWithLR(trainDF: DataFrame, testDF: DataFrame): Double = {
+  test("Generic stacking member should calculate fitness over tree of height 3 and with better performance than each particular member") {
 
-    val linearRegression = new LinearRegression()
+    val models = Seq(
+      LeafTemplate(DecisionTree()),
+      NodeTemplate(GenericStacking(), Seq(
+        NodeTemplate(Bagging(), Seq(
+          LeafTemplate(LinearRegressionModel())
+        )),
+        NodeTemplate(Bagging(), Seq(
+          LeafTemplate(LinearRegressionModel())
+        ))
+      ))
+    )
 
-    val model = linearRegression.fit(trainDF)
+    BenchmarkHelper.time("stacking") {
+      val Array(trainingSplit, testSplit) = prepairedAirlineDF.randomSplit(Array(0.8, 0.2))
 
-    val predictions = model.transform(testDF)
+      val genericStacking = GenericStacking(metaLearner = new GBTRegressor())
 
-    predictions.cache()
+      val fitnessResult = genericStacking.ensemblingFitnessError(trainingSplit, testSplit, models)
 
-    val evaluator = new RegressionEvaluator()
+      val rmseFromLR = LinearRegressionModel().fitnessError(trainingSplit, testSplit).fitnessError
+      println(s"RMSE computed for Linear regression model $rmseFromLR")
 
-    evaluator.evaluate(predictions)
+      fitnessResult.fitnessError should be <= rmseFromLR
+
+      val rmseFromGB = GradientBoosting().fitnessError(trainingSplit, testSplit).fitnessError
+      println(s"RMSE computed for GradientBoosting model $rmseFromGB")
+
+      fitnessResult.fitnessError should be <= rmseFromGB
+
+    }
   }
-
-
 }
 

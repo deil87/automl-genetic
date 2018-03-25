@@ -242,6 +242,10 @@ object SparkMLUtils {
       df.withColumn(colName+"_new", col).drop(colName).withColumnRenamed(colName+"_new", colName)
     }
 
+    def withColumnReplace(toOverride: String, overrideBy: String) = {
+      df.drop(toOverride).withColumnRenamed(overrideBy, toOverride)
+    }
+
     def showCount(prefix: String = "Count") = println(prefix + "_" + df.count())
 
     def showAll() = df.show(df.count().toInt, false)

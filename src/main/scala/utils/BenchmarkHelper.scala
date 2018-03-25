@@ -2,14 +2,23 @@ package utils
 
 import org.scalameter.{Key, Warmer, _}
 
+import scala.util.control.NonFatal
+
 object BenchmarkHelper {
 
   def time[R](marker: String)(block: => R): R = {
     val t0 = System.currentTimeMillis()
-    val result = block    // call-by-name
-    val t1 = System.currentTimeMillis()
-    println(s"$marker# Elapsed time: " + (t1 - t0) + "ms")
-    result
+    var result: Any = null
+    try {
+      result = block
+    } catch {
+      case NonFatal(ex) =>
+        println(s"$marker# Failure: ${ex.getMessage}")
+    } finally {
+      val t1 = System.currentTimeMillis()
+      println(s"$marker# Elapsed time: " + (t1 - t0) + "ms")
+    }
+    result.asInstanceOf[R]
   }
 
 
