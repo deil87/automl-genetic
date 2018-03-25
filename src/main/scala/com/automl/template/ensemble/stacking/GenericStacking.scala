@@ -31,9 +31,10 @@ case class GenericStacking(metaLearner: PipelineStage = new LinearRegression()) 
       stackingModel.addModel(nextMember, trainDF, testDF)
     })
 
-    val finalPredictions = stacking.performStacking(metaLearner) //TODO make sure that performStacking is returning predictions for testDF
+    val finalPredictions = stacking.performStacking(metaLearner)
+      .select("uniqueIdColumn", "features", "prediction") //TODO make sure that performStacking is returning predictions for testDF
     logger.info("Final predictions:")
-    finalPredictions.showN_AndContinue(100)
+    finalPredictions.showN_AndContinue(10)
 
     val evaluator = new RegressionEvaluator()
 
@@ -42,7 +43,7 @@ case class GenericStacking(metaLearner: PipelineStage = new LinearRegression()) 
 
     val rmse = evaluator.evaluate(predictionsReunitedWithLabels)
     println("RMSE Final:" + rmse)
-    FitnessResult(rmse, predictionsReunitedWithLabels) // TODO or we need to return only prediction column here?
+    FitnessResult(rmse, predictionsReunitedWithLabels)
   }
 
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
