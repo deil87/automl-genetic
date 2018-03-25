@@ -7,7 +7,7 @@ import org.apache.spark.ml.regression.{GBTRegressor, LinearRegression}
 import org.scalatest.{FunSuite, Matchers}
 
 
-class GenericStackingSuite extends FunSuite with Matchers with SparkSessionProvider with LazyLogging{
+class GenericStackingShowcaseSuite extends FunSuite with Matchers with SparkSessionProvider with LazyLogging{
 
   import ss.implicits._
   import utils.SparkMLUtils._

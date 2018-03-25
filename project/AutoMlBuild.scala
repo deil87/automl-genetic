@@ -2,12 +2,14 @@ import sbt.Keys._
 import sbt._
 
 object AutoMlBuild extends Build {
+
   lazy val testLibDependencies = List(
     "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
     "org.scalactic" %% "scalactic" % "3.0.1",
     "org.scalatest" %% "scalatest" % "3.0.1" % "test",
     "com.storm-enroute" %% "scalameter" % "0.7"
   )
+
   lazy val loggingLibDependencies = List(
     "ch.qos.logback" % "logback-classic" % "1.2.3",
     "com.typesafe.scala-logging" %% "scala-logging" % "3.7.2"
@@ -15,21 +17,24 @@ object AutoMlBuild extends Build {
 
   object Version {
     val deeplearning4jVersion = "0.9.1"
+    val sparkVersion = "2.1.0"
   }
 
   lazy val sparkDependencies = List(
-    "org.apache.spark" %% "spark-core" % "2.1.0" exclude("org.slf4j", "slf4j-log4j12"),
-    "org.apache.spark" %% "spark-sql" % "2.1.0",
-    "org.apache.spark" %% "spark-streaming" % "2.1.0",
-    "org.apache.spark" %% "spark-mllib" % "2.1.0",
-    "org.apache.spark" % "spark-streaming-twitter_2.11" % "1.6.3",
+    "org.apache.spark" %% "spark-core" % Version.sparkVersion,
+    "org.apache.spark" %% "spark-sql" % Version.sparkVersion,
+    "org.apache.spark" %% "spark-streaming" % Version.sparkVersion,
+    "org.apache.spark" %% "spark-mllib" % Version.sparkVersion,
+    "org.apache.spark" % "spark-streaming-twitter_2.11" % "1.6.3"
+  )
+
+  lazy val coreDependencies = List(
     "org.scalanlp" %% "breeze" % "0.13",
     "org.scalanlp" %% "breeze-viz" % "0.13" withSources(),
     "com.datastax.spark" % "spark-cassandra-connector_2.11" % "2.0.0-M3",
     "org.apache.spark" % "spark-streaming-kafka_2.11" % "1.6.3",
     "org.scalafx" %% "scalafx" % "2.2.76-R11",
     "com.teamdev.jxbrowser" % "jxbrowser-mac" % "6.0",
-
 
     "org.bytedeco" % "javacpp" % "1.3.3",
     "org.nd4j"% "nd4j-native" % Version.deeplearning4jVersion,
@@ -38,14 +43,19 @@ object AutoMlBuild extends Build {
     "org.deeplearning4j" % "deeplearning4j-nn" % Version.deeplearning4jVersion,
     "org.deeplearning4j" % "deeplearning4j-ui-components" % Version.deeplearning4jVersion ,
 
-    //h2o
+    // h2o
     "ai.h2o" % "sparkling-water-core_2.11" % "2.2.0",
 
+    // WEKA
     "nz.ac.waikato.cms.weka" % "weka-stable" % "3.8.1",
     "nz.ac.waikato.cms.weka" % "SMOTE" % "1.0.3",
 
+    // Visualization
+    "org.vegas-viz" %% "vegas" % "0.3.11",
+    "org.vegas-viz" %% "vegas-spark" % "0.3.11",
     "org.jzy3d" % "jzy3d-api" % "1.0.0",
 
+    //Monitoring
     "io.kamon" %% "kamon-core" % "1.0.0",
     "io.kamon" %% "kamon-prometheus" % "1.0.0",
     "io.kamon" %% "kamon-datadog" % "1.0.0-RC1-2dcf4510efe9df12e640504bfa30ecabb3422638",
@@ -58,11 +68,14 @@ object AutoMlBuild extends Build {
   )
 
 
-  lazy val libDependencies = sparkDependencies ++ testLibDependencies ++ loggingLibDependencies
+  lazy val libDependencies = coreDependencies ++ sparkDependencies ++ testLibDependencies ++ loggingLibDependencies
+  lazy val excludedDependencies = List(
+    "org.slf4j" % "slf4j-log4j12"
+  )
 
   val buildSettings = Seq(
-    version := "1.0",
-    organization := "com.example",
+    version := "0.1",
+    organization := "ai.automl-genetic",
     scalaVersion in ThisBuild := "2.11.7",
     resolvers ++= Nil,
     javaOptions += "-Xmx3000m",
@@ -76,6 +89,7 @@ object AutoMlBuild extends Build {
     file("."),
     settings = buildSettings ++ Seq(
       libraryDependencies ++= libDependencies,
+      excludeDependencies ++= excludedDependencies,
       resolvers += "com.teamdev" at "http://maven.teamdev.com/repository/products",
       resolvers += "jzy3d-snapshots" at "http://maven.jzy3d.org/releases",
       resolvers += "Local Maven Repository" at "file://"+ Path.userHome+"/.m2/repository",
