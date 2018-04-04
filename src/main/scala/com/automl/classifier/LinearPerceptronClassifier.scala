@@ -1,5 +1,6 @@
 package com.automl.classifier
 
+import org.apache.spark.ml.feature.OneHotEncoder
 import org.apache.spark.ml.linalg.{DenseVector, Vector}
 import org.apache.spark.mllib.linalg.{Matrices, Vectors}
 import org.apache.spark.mllib.linalg.distributed.{IndexedRow, IndexedRowMatrix}
@@ -28,6 +29,33 @@ class LinearPerceptronClassifier {
     )
 
     featuresMatrix
+  }
+
+  def getNumberOfClasses(df: DataFrame): Int = {
+    df.select("label").distinct().count().toInt
+  }
+
+  def toOneHotRepresentationForTargetVariable(df: DataFrame): DataFrame = {
+    val encoder = new OneHotEncoder()
+      .setDropLast(false)
+      .setInputCol("label")
+      .setOutputCol("labelOH")
+
+    val encoded = encoder.transform(df)
+
+    import org.apache.spark.sql.functions._
+    import df.sqlContext.sparkSession.implicits._
+    val  extractFun:  (Vector, Int) => Double = (x, i) => x.toArray(i)
+    val extractDoubleUDF = udf(extractFun)
+
+    encoded.show()
+
+    val withSeparateLabelColumns = (0 until getNumberOfClasses(df)).foldLeft(encoded) {
+      case (dataFrame, classIndex) =>
+        dataFrame.withColumn(s"label_$classIndex", extractDoubleUDF($"labelOH", lit(classIndex)))
+    }.drop("labelOH")
+    withSeparateLabelColumns.show()
+    withSeparateLabelColumns
   }
 
   /**
@@ -81,7 +109,7 @@ class LinearPerceptronClassifier {
 
     val calculateAction: LabeledVector => (Int, Boolean) = { row: LabeledVector =>
 
-      // val activation = featuresAsBreeze.dot(vectorOfParametersAsBreeze) //TODO breeze version of .dot is not serializable and can't be used with Spark
+      // val activation = featuresAsBreeze.dot(vectorOfParametersAsBreeze)
       // Uses netlib-native_system-osx-x86_64.jnilib
       val activation = Matrices.dense(numFeatures, 1, Array(1, row.features.toArray:_* )).transpose.multiply(vectorOfParameters) // or we can reshape?
 

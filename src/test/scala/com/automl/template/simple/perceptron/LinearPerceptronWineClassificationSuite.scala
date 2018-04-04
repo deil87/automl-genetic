@@ -1,70 +1,39 @@
 package com.automl.template.simple.perceptron
 
-import com.automl.classifier.LinearPerceptronClassifier
 import com.automl.spark.SparkSessionProvider
-import org.apache.spark.ml.evaluation.BinaryClassificationEvaluator
-import org.apache.spark.ml.feature.{StandardScaler, VectorAssembler}
+import org.apache.spark.ml.linalg.SparseVector
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
-import utils.SparkMLUtils
 
 
 class LinearPerceptronWineClassificationSuite extends WordSpec with Matchers with BeforeAndAfterAll with SparkSessionProvider {
 
   ss.sparkContext.setLogLevel("ERROR")
-  import ss.implicits._
-  import utils.SparkMLUtils._
-  import org.apache.spark.sql.functions._
 
   "LinearPerceptron" should {
 
-    "be able to separate dataset into two classes" in {
+    "be able to use OHE to represent target variable in a one-versus-others fashion" in {
+      import org.apache.spark.ml.feature.OneHotEncoder
 
-      val wineDF = SparkMLUtils.loadResourceDF("/dataset/wine.csv")
-        .showN_AndContinue(5)
-        .withColumnRenamed("Nonflavanoid.phenols", "nf_flavonoid")
-        .withColumnRenamed("Color.int", "color_int")
+      val df = ss.createDataFrame(Seq(
+        (0, 0),
+        (1, 3),
+        (2, 3),
+        (3, 1),
+        (4, 1),
+        (5, 2)
+      )).toDF("id", "category")
 
-      val features = Array("Mg", "Flavanoids", "nf_flavonoid", "Proanth", "color_int", "Hue", "OD", "Proline")
+      val encoder = new OneHotEncoder().setDropLast(false)
+        .setInputCol("category")
+        .setOutputCol("categoryVec")
 
-      val featuresColName: String = "features"
+      val encoded = encoder.transform(df)
+      val dense = encoded.select("categoryVec").collect().map(row => row.get(0).asInstanceOf[SparseVector].toDense)
 
-      def featuresAssembler = {
-        new VectorAssembler()
-          .setInputCols(features)
-          .setOutputCol(featuresColName)
-      }
-
-      val scaler = new StandardScaler()
-        .setInputCol("features")
-        .setOutputCol("scaledFeatures")
-        .setWithStd(true)
-        .setWithMean(false)
-
-      // We are selecting only 1 and 3 classes to make it binary classification problem
-      val preparedWineDF = wineDF
-        .applyTransformation(featuresAssembler)
-        .applyTransformation(scaler)
-        .drop("features")
-        .withColumnRenamed("scaledFeatures", "features")
-        .withColumnRenamed("Wine", "label")
-        .toDouble("label")
-        .filter($"label" =!= 2.0)
-        .withColumnReplace("label", when($"label" === "3", 0.0).otherwise(1.0))
-        .showAllAndContinue
-
-      val Array(trainingSplit, testSplit) = preparedWineDF.randomSplit(Array(0.8, 0.2))
-
-      trainingSplit.cache()
-
-      val classifier = new LinearPerceptronClassifier()
-      val vectorOfParameters = classifier.trainIteratively(preparedWineDF)
-
-      val withPredictionsDF = classifier.predict(testSplit, vectorOfParameters).showN_AndContinue(10)
-
-      val evaluator = new BinaryClassificationEvaluator().setRawPredictionCol("prediction")
-      evaluator.evaluate(withPredictionsDF) shouldBe 1.0
-
+      dense.slice(1,3).map(_.toArray(3)) shouldBe Array(1.0, 1.0)
+      println(dense.map(_.toString()).mkString("\n"))
     }
+
   }
 
   override protected def afterAll(): Unit = {

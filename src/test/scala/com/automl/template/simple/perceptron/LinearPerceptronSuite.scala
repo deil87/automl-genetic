@@ -88,6 +88,22 @@ class LinearPerceptronSuite extends WordSpec with Matchers with SparkSessionProv
 
     }
 
+    "be able to get number of classes for target variable" in {
+      val f = fixture
+      val classifier = new LinearPerceptronClassifier()
+      val numberOfClasses = classifier.getNumberOfClasses(f.preparedTrainDS)
+      numberOfClasses shouldBe 2
+
+    }
+
+    "be able to convert label column into one hot representation" in {
+      val f = fixture
+      val classifier = new LinearPerceptronClassifier()
+      val withSeparateLabels = classifier.toOneHotRepresentationForTargetVariable(f.preparedTrainDS)
+      withSeparateLabels.select("label_0").collect().slice(1, 3).map(_.get(0)) shouldBe Array(1.0, 1.0)
+      withSeparateLabels.select("label_1").collect().filter(_.get(0) == 1.0).map(_.get(0)) shouldBe Array(1.0, 1.0)
+    }
+
     "not be able to calculate elementwise addition with Breeze's vectors" in {
       val f = fixture
       import f.preparedTrainDS.sparkSession.implicits._
