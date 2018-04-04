@@ -11,6 +11,8 @@ import org.apache.spark.mllib.linalg.{Vector => VectorMLLib}
 
 import scala.util.Random
 
+import utils.SparkMLUtils._
+
 class LinearPerceptronClassifier {
 
   def extractFeaturesMatrix(featuresDF: DataFrame, withBias: Boolean = false): IndexedRowMatrix = {
@@ -54,10 +56,29 @@ class LinearPerceptronClassifier {
       case (dataFrame, classIndex) =>
         dataFrame.withColumn(s"label_$classIndex", extractDoubleUDF($"labelOH", lit(classIndex)))
     }.drop("labelOH")
-    withSeparateLabelColumns.show()
+    withSeparateLabelColumns.show() // TODO remove
     withSeparateLabelColumns
   }
 
+  def trainIterativelyMultyclasses(df: DataFrame): Seq[VectorMLLib] = {
+    val numberOfClasses = getNumberOfClasses(df)
+    val arrayOfVectorOfParameters: Seq[VectorMLLib] = if(numberOfClasses > 2) {
+      val withSeparatedLabelsPerClass = toOneHotRepresentationForTargetVariable(df)
+      withSeparatedLabelsPerClass.showAll()  //TODO remove
+      withSeparatedLabelsPerClass.cache()
+      ( 0 until numberOfClasses)
+        .map { focusClass =>
+          println(s"Calculating parameters for class $focusClass vs others")
+          val vectorOfParameters = trainIteratively(withSeparatedLabelsPerClass.withColumnReplace("label", s"label_$focusClass"))
+          println(s"Class $focusClass was successfully linearly separated from others")
+          vectorOfParameters
+        }
+    }
+    else {
+      Seq(trainIteratively(df))
+    }
+    arrayOfVectorOfParameters
+  }
   /**
     *
     * @param df
@@ -74,12 +95,12 @@ class LinearPerceptronClassifier {
     var vectorOfParameters = Vectors.dense(Array.fill(numFeatures)(Random.nextDouble()))
 
 
-    val elementwiseAddition: (Array[Double], Array[Double]) => Array[Double] = { (x:Array[Double], y: Array[Double]) =>
+    val elementWiseAddition: (Array[Double], Array[Double]) => Array[Double] = { (x:Array[Double], y: Array[Double]) =>
       require(x.length == y.length)
       x.zip(y).map{ case(xn, yn) => xn + yn}
     }
 
-    val elementwiseSubtraction: (Array[Double], Array[Double]) => Array[Double]  = { (x:Array[Double], y: Array[Double]) =>
+    val elementWiseSubtraction: (Array[Double], Array[Double]) => Array[Double]  = { (x:Array[Double], y: Array[Double]) =>
       require(x.length == y.length)
       x.zip(y).map{ case(xn, yn) => xn - yn}
     }
@@ -118,17 +139,26 @@ class LinearPerceptronClassifier {
       transferFunction(activationValue, row.label.toInt)
     }
 
+    var minNumberOfMisclassifications = input.count()
+    var numberOfUnsuccessfulLearningIterations = 0
+
     def terminationCriteria: Boolean = {
-      val res = input.map { row =>
-        calculateAction(row)._2 // true when misclassified.
+      val classifiedInput = input.map { row =>
+        calculateAction(row)._2 // ._2 == true when misclassified.
       }
-      val currentStateOfClassfication = res.collect()
-      println("Number of misclassifications: " + currentStateOfClassfication.count(_ == true))
-      !currentStateOfClassfication.forall(_ == false)
+      val currentStateOfClassification = classifiedInput.collect()
+      val numberOfMissclassifications = currentStateOfClassification.count(_ == true)
+      if(numberOfMissclassifications < minNumberOfMisclassifications) {
+        numberOfUnsuccessfulLearningIterations = 0
+        minNumberOfMisclassifications = numberOfMissclassifications
+      }
+      else numberOfUnsuccessfulLearningIterations += 1
+      println("Number of misclassifications: " + numberOfMissclassifications)
+      !currentStateOfClassification.forall(_ == false)
     }
 
 
-    while(terminationCriteria) { // TODO checking termination criteria once per dataset size is not efficient approach
+    while(terminationCriteria && numberOfUnsuccessfulLearningIterations < 50) { // TODO checking termination criteria once per dataset size is not efficient approach
       val learningActions = input.sample(withReplacement = false, 1).map { row =>
 
         val featuresWithBias: Array[Double] = Array(1.0, row.features.toArray:_*)
@@ -143,9 +173,9 @@ class LinearPerceptronClassifier {
       }
       learningActions.collect().foreach { case (action, vectorOfFeaturesWithBias) =>
         if(action == 1)
-          vectorOfParameters = Vectors.dense(elementwiseAddition(vectorOfParameters.toArray, vectorOfFeaturesWithBias.toArray))
+          vectorOfParameters = Vectors.dense(elementWiseAddition(vectorOfParameters.toArray, vectorOfFeaturesWithBias.toArray))
         if(action == -1)
-          vectorOfParameters = Vectors.dense(elementwiseSubtraction(vectorOfParameters.toArray, vectorOfFeaturesWithBias.toArray))
+          vectorOfParameters = Vectors.dense(elementWiseSubtraction(vectorOfParameters.toArray, vectorOfFeaturesWithBias.toArray))
       }
     }
     vectorOfParameters
@@ -156,7 +186,7 @@ class LinearPerceptronClassifier {
     * @param unlabeledDF
     * @return df with one extra column `prediction`
     */
-  def predict(unlabeledDF: DataFrame, vectorOfParameters: VectorMLLib): DataFrame = {
+  def predict(unlabeledDF: DataFrame, seqOfTrainedParameters: Seq[VectorMLLib]): DataFrame = {
 
     import unlabeledDF.sparkSession.implicits._
 
@@ -168,24 +198,56 @@ class LinearPerceptronClassifier {
 
     val numFeatures = unlabeledInput.head().features.size + 1
 
-    val calculateAction: UnlabeledVector => Double = { row: UnlabeledVector =>
+    val calculateAction: (UnlabeledVector, VectorMLLib) => Double = {
+      (row: UnlabeledVector, vectorOfParameters:VectorMLLib) =>
 
-      // val activation = featuresAsBreeze.dot(vectorOfParametersAsBreeze) //TODO breeze version of .dot is not serializable and can't be used with Spark
-      val activation = Matrices.dense(numFeatures, 1, Array(1, row.features.toArray:_* )).transpose.multiply(vectorOfParameters)
+        // val activation = featuresAsBreeze.dot(vectorOfParametersAsBreeze) //TODO breeze version of .dot is not serializable and can't be used with Spark
+        val activation = Matrices.dense(numFeatures, 1, Array(1, row.features.toArray:_* )).transpose.multiply(vectorOfParameters)
 
-      val activationValue = activation.values(0)
-      println("Activation value for test example:" + activationValue)
-      if(activationValue > 0)
-        1.0
-      else
-        0.0
+        val activationValue = activation.values(0)
+        println("Activation value for test example:" + activationValue)
+        if(activationValue > 0)
+          1.0
+        else
+          0.0
     }
 
-    val featuresWithPredictions: Dataset[FeaturesVectorWithPredictions] = unlabeledInput.map { row =>
-      val prediction: Double = calculateAction(row)
+    def featuresWithPredictionsBy(parameters:VectorMLLib) : Dataset[FeaturesVectorWithPredictions] = unlabeledInput.map { row =>
+      val prediction: Double = calculateAction(row, parameters)
       FeaturesVectorWithPredictions(row.id, row.features, prediction)
     }
-    featuresWithPredictions.toDF().join( unlabeledDfWithId.drop("features"), Seq("id"), joinType="left_outer" )
+
+    /*  Splitting into two cases 1) Binary 2) MultiClass  */
+    val featuresWithPredictions = if(seqOfTrainedParameters.length > 1) {
+      val predictionsFromEachPerceptron = seqOfTrainedParameters.map{ vectorOfParameters =>
+        featuresWithPredictionsBy(vectorOfParameters)
+      }
+      val joinedPredictionsDF = predictionsFromEachPerceptron.zipWithIndex
+        .map{ case (pred, index) =>
+          pred.toDF().drop("features").withColumnRenamed("prediction", s"prediction_$index")
+        }
+        .reduceLeft((acc: DataFrame, dfWithParticularPerceptronPrediction: DataFrame) =>
+          acc.join(dfWithParticularPerceptronPrediction, "id")
+        )
+
+      import org.apache.spark.sql.functions._
+      import unlabeledDF.sqlContext.sparkSession.implicits._
+      val  maxFun:  (Double, Double) => Double = (c1, c2) => Math.max(c1, c2)
+      val selectMaxColumn = udf(maxFun)
+
+      /* Preparing to find maximum column between all perceptron's predictions/actions_values */
+      val withfirstPredictionAsMax = joinedPredictionsDF.withColumn("maxPrediction", $"prediction_0")
+
+      val numberOfClasses = seqOfTrainedParameters.length
+      (1 until numberOfClasses)
+        .foldLeft(withfirstPredictionAsMax) { case (acc, focusClass) =>
+          acc.withColumnReplace("maxPrediction", selectMaxColumn($"maxPrediction", $"prediction_$focusClass"))
+        }.withColumnRenamed("maxPrediction", "prediction")
+    } else {
+      featuresWithPredictionsBy(seqOfTrainedParameters.head)
+    }
+
+    featuresWithPredictions.toDF().join( unlabeledDfWithId.drop("features"), Seq("id"), joinType="left_outer" ) //TODO do we need this here?
   }
 
 }

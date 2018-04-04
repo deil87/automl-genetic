@@ -77,11 +77,11 @@ class LinearPerceptronSuite extends WordSpec with Matchers with SparkSessionProv
 
     }
 
-    "be able to calculate parameters through the iterative Perceptron learning algorithm" in {
+    "be able to calculate parameters through the iterative Perceptron learning algorithm( binary case)" in {
       val f = fixture
       val classifier = new LinearPerceptronClassifier()
-      val activation = classifier.trainIteratively(f.preparedTrainDS)
-      val result = activation.toArray
+      val activation = classifier.trainIterativelyMultyclasses(f.preparedTrainDS)
+      val result = activation(0).toArray
       result(0) shouldBe 0.19033638814298248 +- 1.0
       result(1) shouldBe 3.8921764447475473  +- 0.8
       result(2) shouldBe -3.3293630571824764 +- 0.8
