@@ -2,7 +2,7 @@ package com.automl.template.simple.perceptron
 
 import com.automl.classifier.LinearPerceptronClassifier
 import com.automl.spark.SparkSessionProvider
-import org.apache.spark.ml.evaluation.BinaryClassificationEvaluator
+import org.apache.spark.ml.evaluation.{BinaryClassificationEvaluator, MulticlassClassificationEvaluator}
 import org.apache.spark.ml.feature.{StandardScaler, VectorAssembler}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 import utils.SparkMLUtils
@@ -15,14 +15,14 @@ class LinearPerceptronWineMultyClassificationSuite extends WordSpec with Matcher
   import ss.implicits._
   import utils.SparkMLUtils._
 
+  val wineDF = SparkMLUtils.loadResourceDF("/dataset/wine.csv")
+    .showN_AndContinue(5)
+    .withColumnRenamed("Nonflavanoid.phenols", "nf_flavonoid")
+    .withColumnRenamed("Color.int", "color_int")
+
   "LinearPerceptron" should {
 
     "be able to separate dataset into two classes( binary case)" in {
-
-      val wineDF = SparkMLUtils.loadResourceDF("/dataset/wine.csv")
-        .showN_AndContinue(5)
-        .withColumnRenamed("Nonflavanoid.phenols", "nf_flavonoid")
-        .withColumnRenamed("Color.int", "color_int")
 
       val features = Array("Mg", "Flavanoids", "nf_flavonoid", "Proanth", "color_int", "Hue", "OD", "Proline")
 
@@ -67,11 +67,6 @@ class LinearPerceptronWineMultyClassificationSuite extends WordSpec with Matcher
 
     "be able to separate dataset into three classes( multiclass case)" in {
 
-      val wineDF = SparkMLUtils.loadResourceDF("/dataset/wine.csv")
-        .showN_AndContinue(5)
-        .withColumnRenamed("Nonflavanoid.phenols", "nf_flavonoid")
-        .withColumnRenamed("Color.int", "color_int")
-
       val features = Array("Mg", "Flavanoids", "nf_flavonoid", "Proanth", "color_int", "Hue", "OD", "Proline")
 
       val featuresColName: String = "features"
@@ -104,12 +99,15 @@ class LinearPerceptronWineMultyClassificationSuite extends WordSpec with Matcher
       trainingSplit.cache()
 
       val classifier = new LinearPerceptronClassifier()
-      val seqOfVectorOfParameters = classifier.trainIterativelyMultyclasses(preparedWineDF)
+      val seqOfVectorOfParameters = classifier.trainIterativelyMulticlasses(preparedWineDF)
 
       val withPredictionsDF = classifier.predict(testSplit, seqOfVectorOfParameters).showN_AndContinue(30)
 
-//      val evaluator = new BinaryClassificationEvaluator().setRawPredictionCol("prediction")
-//      evaluator.evaluate(withPredictionsDF) shouldBe 1.0
+      val evaluator = new MulticlassClassificationEvaluator()
+      val f1Measure = evaluator.evaluate(withPredictionsDF)
+
+      println(s"F1 measure: $f1Measure")
+      f1Measure shouldBe 0.9 +- 0.1
 
     }
   }

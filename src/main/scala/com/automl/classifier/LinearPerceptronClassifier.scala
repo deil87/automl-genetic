@@ -60,7 +60,7 @@ class LinearPerceptronClassifier {
     withSeparateLabelColumns
   }
 
-  def trainIterativelyMultyclasses(df: DataFrame): Seq[VectorMLLib] = {
+  def trainIterativelyMulticlasses(df: DataFrame): Seq[VectorMLLib] = {
     val numberOfClasses = getNumberOfClasses(df)
     val arrayOfVectorOfParameters: Seq[VectorMLLib] = if(numberOfClasses > 2) {
       val withSeparatedLabelsPerClass = toOneHotRepresentationForTargetVariable(df)
@@ -198,23 +198,23 @@ class LinearPerceptronClassifier {
 
     val numFeatures = unlabeledInput.head().features.size + 1
 
-    val calculateAction: (UnlabeledVector, VectorMLLib) => Double = {
+    val calculateAction: (UnlabeledVector, VectorMLLib) => (Double, Double) = {
       (row: UnlabeledVector, vectorOfParameters:VectorMLLib) =>
 
-        // val activation = featuresAsBreeze.dot(vectorOfParametersAsBreeze) //TODO breeze version of .dot is not serializable and can't be used with Spark
+        // val activation = featuresAsBreeze.dot(vectorOfParametersAsBreeze)
         val activation = Matrices.dense(numFeatures, 1, Array(1, row.features.toArray:_* )).transpose.multiply(vectorOfParameters)
 
         val activationValue = activation.values(0)
         println("Activation value for test example:" + activationValue)
         if(activationValue > 0)
-          1.0
+          (activationValue, 1.0)
         else
-          0.0
+          (activationValue, 0.0)
     }
 
     def featuresWithPredictionsBy(parameters:VectorMLLib) : Dataset[FeaturesVectorWithPredictions] = unlabeledInput.map { row =>
-      val prediction: Double = calculateAction(row, parameters)
-      FeaturesVectorWithPredictions(row.id, row.features, prediction)
+      val (rawPrediction, prediction) = calculateAction(row, parameters)
+      FeaturesVectorWithPredictions(row.id, row.features, rawPrediction, prediction)
     }
 
     /*  Splitting into two cases 1) Binary 2) MultiClass  */
@@ -224,7 +224,9 @@ class LinearPerceptronClassifier {
       }
       val joinedPredictionsDF = predictionsFromEachPerceptron.zipWithIndex
         .map{ case (pred, index) =>
-          pred.toDF().drop("features").withColumnRenamed("prediction", s"prediction_$index")
+          pred.toDF().drop("features")
+            .withColumnRenamed("rawPrediction", s"rawPrediction_$index")
+            .withColumnRenamed("prediction", s"prediction_$index") // TODO this prediction colums contain only 1.0 or 0.0 because of the binary subtasks they were solving.  Do not confuse with multiclass predi
         }
         .reduceLeft((acc: DataFrame, dfWithParticularPerceptronPrediction: DataFrame) =>
           acc.join(dfWithParticularPerceptronPrediction, "id")
@@ -234,15 +236,19 @@ class LinearPerceptronClassifier {
       import unlabeledDF.sqlContext.sparkSession.implicits._
       val  maxFun:  (Double, Double) => Double = (c1, c2) => Math.max(c1, c2)
       val selectMaxColumn = udf(maxFun)
+      val  maxClass:  (Int, Double, Double, Int) => Double = (maxClass, mrp, nextRawPrediction, focusClass) => if(nextRawPrediction > mrp)  focusClass else maxClass
+      val selectMaxClass = udf(maxClass)
 
       /* Preparing to find maximum column between all perceptron's predictions/actions_values */
-      val withfirstPredictionAsMax = joinedPredictionsDF.withColumn("maxPrediction", $"prediction_0")
+      val withFirstPredictionAsMax = joinedPredictionsDF.withColumn("maxRawPrediction", $"rawPrediction_0").withColumn("maxClass", lit(0))
 
       val numberOfClasses = seqOfTrainedParameters.length
       (1 until numberOfClasses)
-        .foldLeft(withfirstPredictionAsMax) { case (acc, focusClass) =>
-          acc.withColumnReplace("maxPrediction", selectMaxColumn($"maxPrediction", $"prediction_$focusClass"))
-        }.withColumnRenamed("maxPrediction", "prediction")
+        .foldLeft(withFirstPredictionAsMax) { case (acc, focusClass) =>
+          acc
+            .withColumnReplace("maxClass", selectMaxClass($"maxClass", $"maxRawPrediction", $"rawPrediction_$focusClass", lit(focusClass)))
+            .withColumnReplace("maxRawPrediction", selectMaxColumn($"maxRawPrediction", $"rawPrediction_$focusClass"))
+        }.withColumnRenamed("maxClass", "prediction")
     } else {
       featuresWithPredictionsBy(seqOfTrainedParameters.head)
     }
@@ -252,4 +258,4 @@ class LinearPerceptronClassifier {
 
 }
 
-final case class FeaturesVectorWithPredictions(id: Double, features: org.apache.spark.ml.linalg.Vector, prediction: Double)
+final case class FeaturesVectorWithPredictions(id: Double, features: org.apache.spark.ml.linalg.Vector, rawPrediction: Double, prediction: Double)
