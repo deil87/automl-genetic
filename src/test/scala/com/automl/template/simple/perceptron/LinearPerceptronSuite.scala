@@ -44,26 +44,6 @@ class LinearPerceptronSuite extends WordSpec with Matchers with SparkSessionProv
 
   "LinearPerceptron" should {
 
-    "be able to create matrix from features vector" in {
-      val f = fixture
-
-      val classifier = new LinearPerceptronClassifier()
-      val matrix = classifier.extractFeaturesMatrix(f.preparedTrainDS.select("features"))
-
-      val expectedMatrix = new IndexedRowMatrix(
-        ss.sparkContext.parallelize(
-          Array(
-          IndexedRow(0 , Vectors.dense(4, 2)),
-          IndexedRow(1 , Vectors.dense(3, 4)),
-          IndexedRow(2 , Vectors.dense(4, 5)),
-          IndexedRow(3 , Vectors.dense(6, 3))
-          )
-        )
-      )
-      matrix.rows.collect() shouldBe expectedMatrix.rows.collect()
-
-    }
-
     "verify that DenseVector from breeze is mutable" in {
 
       val vectorOfParameters = Vectors.dense(Array.fill(5)(1.0))

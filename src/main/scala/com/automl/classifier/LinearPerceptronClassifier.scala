@@ -10,28 +10,9 @@ import utils.{LabeledVector, UnlabeledVector}
 import org.apache.spark.mllib.linalg.{Vector => VectorMLLib}
 
 import scala.util.Random
-
 import utils.SparkMLUtils._
 
 class LinearPerceptronClassifier {
-
-  def extractFeaturesMatrix(featuresDF: DataFrame, withBias: Boolean = false): IndexedRowMatrix = {
-
-    val featuresMatrix: IndexedRowMatrix = new IndexedRowMatrix(
-      featuresDF.rdd.map {
-        case Row(a)  =>
-          val vector = a.asInstanceOf[DenseVector]  // TODO whether it is true regardless construction of df approach?
-          org.apache.spark.mllib.linalg.Vectors.fromML(vector)
-      }.zipWithIndex.map { case (v, i) =>
-        if(withBias)
-          IndexedRow(i, Vectors.dense(1, v.toArray: _*)) // TODO maybe not the most efficient concatenation. Look for analog of DenseVector.vertcat(a,b)
-        else
-          IndexedRow(i, v)
-      }
-    )
-
-    featuresMatrix
-  }
 
   def getNumberOfClasses(df: DataFrame): Int = {
     df.select("label").distinct().count().toInt
@@ -92,18 +73,7 @@ class LinearPerceptronClassifier {
 
     val numFeatures = input.head().features.size + 1 // one for bias
 
-    var vectorOfParameters = Vectors.dense(Array.fill(numFeatures)(Random.nextDouble()))
-
-
-    val elementWiseAddition: (Array[Double], Array[Double]) => Array[Double] = { (x:Array[Double], y: Array[Double]) =>
-      require(x.length == y.length)
-      x.zip(y).map{ case(xn, yn) => xn + yn}
-    }
-
-    val elementWiseSubtraction: (Array[Double], Array[Double]) => Array[Double]  = { (x:Array[Double], y: Array[Double]) =>
-      require(x.length == y.length)
-      x.zip(y).map{ case(xn, yn) => xn - yn}
-    }
+    val vectorOfParameters = Vectors.dense(Array.fill(numFeatures)(Random.nextDouble()))
 
     /**
       *
@@ -141,6 +111,7 @@ class LinearPerceptronClassifier {
 
     var minNumberOfMisclassifications = input.count()
     var numberOfUnsuccessfulLearningIterations = 0
+    var minVectorOfParameters = Vectors.zeros(numFeatures)
 
     def terminationCriteria: Boolean = {
       val classifiedInput = input.map { row =>
@@ -151,6 +122,7 @@ class LinearPerceptronClassifier {
       if(numberOfMissclassifications < minNumberOfMisclassifications) {
         numberOfUnsuccessfulLearningIterations = 0
         minNumberOfMisclassifications = numberOfMissclassifications
+        minVectorOfParameters = vectorOfParameters
       }
       else numberOfUnsuccessfulLearningIterations += 1
       println("Number of misclassifications: " + numberOfMissclassifications)
@@ -172,13 +144,10 @@ class LinearPerceptronClassifier {
         (learningAction, vectorOfFeaturesWithBias)
       }
       learningActions.collect().foreach { case (action, vectorOfFeaturesWithBias) =>
-        if(action == 1)
-          vectorOfParameters = Vectors.dense(elementWiseAddition(vectorOfParameters.toArray, vectorOfFeaturesWithBias.toArray))
-        if(action == -1)
-          vectorOfParameters = Vectors.dense(elementWiseSubtraction(vectorOfParameters.toArray, vectorOfFeaturesWithBias.toArray))
+        breeze.linalg.axpy(action.toDouble, vectorOfFeaturesWithBias.toArray, vectorOfParameters.toArray)
       }
     }
-    vectorOfParameters
+    minVectorOfParameters
   }
 
   /**
@@ -232,8 +201,11 @@ class LinearPerceptronClassifier {
           acc.join(dfWithParticularPerceptronPrediction, "id")
         )
 
+      // <editor-fold defaultstate="collapsed" desc="Imports needed for sparkSQL">
       import org.apache.spark.sql.functions._
       import unlabeledDF.sqlContext.sparkSession.implicits._
+      // </editor-fold>
+
       val  maxFun:  (Double, Double) => Double = (c1, c2) => Math.max(c1, c2)
       val selectMaxColumn = udf(maxFun)
       val  maxClass:  (Int, Double, Double, Int) => Double = (maxClass, mrp, nextRawPrediction, focusClass) => if(nextRawPrediction > mrp)  focusClass else maxClass
