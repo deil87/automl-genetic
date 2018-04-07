@@ -24,7 +24,7 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
   Kamon.addReporter(new PrometheusReporter())
 
   trait Fixture {
-    val airlineDF = SparkMLUtils.loadResourceDF("/airline2008-2.csv")
+    val airlineDF = SparkMLUtils.loadParquet("src/test/resources/airline_allcolumns_sampled_100k_parquet")
       .select("DayOfWeek", "Distance", "DepTime", "CRSDepTime", "DepDelay")
     //TODO FlightNum+year_date_day for unique identifier of test examples
 

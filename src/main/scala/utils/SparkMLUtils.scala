@@ -20,6 +20,12 @@ object SparkMLUtils {
     def toMLLabelPoint = MLLabeledPoint(lp.label, new DenseVector(lp.features.toArray))
   }
 
+  implicit def datasetRowHelper(ds: Dataset[Row]) = new {
+    import ds.sparkSession.implicits._
+    def toMLLabelPoint: Dataset[MLLabeledPoint] = ds.as[MLLabeledPoint]
+    def toMLLibLabelPoint: Dataset[LabeledPoint] = ds.as[MLLabeledPoint].map(mllp => LabeledPoint(mllp.label, Vectors.fromML(mllp.features)))
+  }
+
   implicit class VectorsConverter(val vector: org.apache.spark.mllib.linalg.Vector) extends AnyVal {
     def toMLVector = new DenseVector(vector.toArray)
   }
@@ -32,15 +38,23 @@ object SparkMLUtils {
     loadResourceDF(resourcePath).as[SchemaType]
   }
 
-  def loadResourceDF(resourcePath: String)(implicit ss: SparkSession) = {
+  def loadResourceDF(resourcePath: String)(implicit ss: SparkSession): DataFrame = {
     loadAbsoluteDF(resource(resourcePath))
   }
-  def loadAbsoluteDF(absolutePath: String)(implicit ss: SparkSession) = {
+  def loadAbsoluteDF(absolutePath: String)(implicit ss: SparkSession): DataFrame = {
     import ss.implicits._
     ss.read
       .option("header", "true")
       .option("inferSchema", "true")
       .csv(absolutePath)
+  }
+
+  def loadParquetFromResources(resourcePath: String)(implicit ss: SparkSession): DataFrame = {
+    loadParquet(resource(resourcePath))
+  }
+
+  def loadParquet(absolutePath: String)(implicit ss: SparkSession): DataFrame = {
+    ss.read.parquet(absolutePath)
   }
 
   def resource(path: String): String = {
@@ -64,6 +78,10 @@ object SparkMLUtils {
 
     def applyIndexer(indexer: (Dataset[_]) => StringIndexerModel) =  {
       indexer(df).transform(df)
+    }
+
+    def applyIndexer(indexer: StringIndexer) =  {
+      indexer.fit(df).transform(df)
     }
 
     def applyBucketizer(bucketizer:  Bucketizer) = bucketizer.transform(df)
@@ -268,7 +286,7 @@ object SparkMLUtils {
     }
 
     def printSchema_AndContinue = {
-       df.printSchema(); df
+       df.printSchema(); df.schema.fields.find(field => field.name == "label").map(_.metadata).foreach(println); df
     }
 
     def showID_AndContinue(id: Int) = {

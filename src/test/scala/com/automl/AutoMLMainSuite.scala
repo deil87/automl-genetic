@@ -33,7 +33,7 @@ class AutoMLMainSuite extends WordSpec with Matchers with BeforeAndAfterAll with
 
       val population = Population.fromSeedPopulation(seedPopulation).withSize(10).build
 
-      val airlineDF = SparkMLUtils.loadResourceDF("/airline2008-2.csv")
+      val airlineDF = SparkMLUtils.loadParquet("src/test/resources/airline_allcolumns_sampled_100k_parquet")
         .select("DayOfWeek", "Distance", "DepTime", "CRSDepTime", "DepDelay")
 
       val features = Array("Distance", "DayOfWeek")
