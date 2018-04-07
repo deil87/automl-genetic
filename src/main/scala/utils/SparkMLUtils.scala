@@ -3,7 +3,7 @@ package utils
 import java.nio.file.Paths
 
 import com.stacking.DNNIteratorParams
-import org.apache.spark.ml.linalg.DenseVector
+import org.apache.spark.ml.linalg.{DenseVector, SparseVector}
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.sql._
@@ -12,6 +12,8 @@ import org.apache.spark.sql
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
+
+import scala.collection.mutable.ArrayBuffer
 
 object SparkMLUtils {
 
@@ -129,6 +131,7 @@ object SparkMLUtils {
       val indexer = new StringIndexer().setInputCol(sourceFeatureName).setOutputCol(sourceFeatureName + "_i").fit(df)
       val indexed = indexer.transform(df)
       val encoder = new OneHotEncoder()
+        .setDropLast(false)
         .setInputCol(sourceFeatureName+ "_i")
         .setOutputCol(sourceFeatureName + "_ohe")
       encoder.transform(indexed)
@@ -343,6 +346,20 @@ object SparkMLUtils {
       require(field.isDefined && field.get.dataType == columnType, "Field is absent or of a wrong type.")
     }
 
+    def computeColumnNamesForFeaturesVector(features: Array[String]): Array[String] = {
+      val firstRow = df.select(features.head, features.tail: _*).first()
+
+      firstRow.schema.fields.foldLeft(new ArrayBuffer[String]()) { (arr, strField) =>
+        val span = firstRow.getValuesMap(Seq(strField.name)).head._2.asInstanceOf[Any] match {
+          case x: SparseVector => x.asInstanceOf[SparseVector].size
+          case x => 1
+        }
+        for (i <- 0 until span) {
+          arr += strField.name + (if (span == 1) "" else i)
+        }
+        arr
+      }.toArray
+    }
   }
 
 }
