@@ -2,7 +2,7 @@ package utils
 
 import java.util.{Collections, Random}
 
-import com.stacking.DNNIteratorParams
+import com.automl.classifier.ensemble.stacking.DNNIteratorParams
 import org.apache.spark.sql._
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator
 import org.deeplearning4j.earlystopping.EarlyStoppingResult

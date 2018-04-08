@@ -1,4 +1,4 @@
-package com.stacking
+package com.automl.classifier.ensemble.stacking
 
 import com.automl.spark.SparkSessionProvider
 import com.typesafe.scalalogging.LazyLogging

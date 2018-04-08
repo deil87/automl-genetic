@@ -1,4 +1,4 @@
-package com.stacking
+package com.automl.classifier.ensemble.stacking
 
 import java.util.Random
 import java.util.concurrent.TimeUnit

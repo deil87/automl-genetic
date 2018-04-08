@@ -1,4 +1,4 @@
-package com.automl.spark.bagging
+package com.automl.classifier.ensemble.bagging
 
 import com.automl.helper.TemplateTreeHelper
 import com.automl.spark.SparkSessionProvider

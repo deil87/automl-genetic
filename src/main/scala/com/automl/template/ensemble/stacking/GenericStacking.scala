@@ -4,7 +4,7 @@ import com.automl.helper.FitnessResult
 import com.automl.regressor.EnsemblingRegressor
 import com.automl.template.{EvaluationMagnet, TemplateMember, TemplateTree, TreeContext}
 import com.automl.template.ensemble.EnsemblingMember
-import com.stacking.SparkGenericStacking
+import com.automl.classifier.ensemble.stacking.SparkGenericStacking
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.ml.regression.LinearRegression

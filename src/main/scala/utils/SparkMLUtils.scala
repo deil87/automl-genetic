@@ -2,7 +2,7 @@ package utils
 
 import java.nio.file.Paths
 
-import com.stacking.DNNIteratorParams
+import com.automl.classifier.ensemble.stacking.DNNIteratorParams
 import org.apache.spark.ml.linalg.{DenseVector, SparseVector}
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint

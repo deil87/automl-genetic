@@ -1,4 +1,4 @@
-package com.stacking
+package com.automl.classifier.ensemble.stacking
 
 import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.ml.{PipelineStage, Predictor}

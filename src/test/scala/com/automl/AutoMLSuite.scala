@@ -160,8 +160,9 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
 
       val ds2 = trainingSplit.limit(20)
       val ds3 = trainingSplit.limit(300)
-      autoMl.calculateFitnessResults(population, ds2)
-      autoMl.calculateFitnessResults(population, ds3)
+      val cache = autoMl.individualsCache
+      PopulationEvaluator.evaluateIndividuals(population, ds2)(cache)
+      PopulationEvaluator.evaluateIndividuals(population, ds3)(cache)
 
       autoMl.individualsCache.size should be (6)  // (numbers of templates in population) * (# of different sizes of training datasets)
     }
@@ -184,8 +185,7 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
       val testPopulation = new Population(template)
 
       val ds2 = trainingSplit.limit(20)
-      autoMl.calculateFitnessResults(testPopulation, ds2)
-      true shouldBe true
+      PopulationEvaluator.evaluateIndividuals(testPopulation, ds2)(autoMl.individualsCache)
     }
 
 

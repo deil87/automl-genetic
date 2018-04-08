@@ -1,4 +1,4 @@
-package com
+package com.automl.classifier.ensemble
 
 import org.apache.spark.ml.linalg.Vector
 import org.apache.spark.sql.{DataFrame, SparkSession}

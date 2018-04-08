@@ -2,7 +2,7 @@ package com.automl.template.ensemble.bagging
 
 import com.automl.helper.FitnessResult
 import com.automl.regressor.{AverageRegressor, EnsemblingRegressor}
-import com.automl.spark.bagging.SparkBagging
+import com.automl.classifier.ensemble.bagging.SparkBagging
 import com.automl.template.{EvaluationMagnet, TemplateMember, TemplateTree, TreeContext}
 import com.automl.template.ensemble.EnsemblingMember
 import com.typesafe.scalalogging.LazyLogging

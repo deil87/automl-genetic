@@ -1,6 +1,7 @@
 package com.automl
 
 import com.automl.dataset._
+import com.automl.evolution.dimension.EvolutionDimension
 import com.automl.helper._
 import com.automl.template._
 import com.automl.template.ensemble.EnsemblingMember
@@ -46,14 +47,12 @@ class AutoML(data: DataFrame,
     builder.build
   }
 
-  /**
-    * Kamon metrics
-    */
+  // <editor-fold defaultstate="collapsed" desc="Kamon metrics">
 
   val evolutionNumberKamon = Kamon.gauge("kamon.automl.evolution_number")
   val generationNumberKamon = Kamon.gauge("kamon.automl.generation_number")
   val currentDatasizeKamon = Kamon.gauge("kamon.automl.current_datasize")
-  val cacheHitsCounterKamon = Kamon.counter("kamon.automl.cache_hits")
+  // </editor-fold>
 
   def isDataBig(df: DataFrame): Boolean = {
     def numberOfDimensions: Int = df.columns.length
@@ -170,37 +169,24 @@ class AutoML(data: DataFrame,
 
   }
 
-  val individualsCache = mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]()  // TODO make it faster with reference to value
-
-  def calculateFitnessResults(population: Population, workingDataSet: DataFrame): Seq[IndividualAlgorithmData] = {
-
-    population.individuals.zipWithIndex
-      .map { case (individualTemplate, idx) => (idx, individualTemplate, TemplateTreeHelper.materialize(individualTemplate)) }
-      .map { case (idx, template, materializedTemplate) =>
-
-        val cacheKey = (materializedTemplate, workingDataSet.count())
-        if (individualsCache.isDefinedAt(cacheKey)) {
-          logger.info(s"Cache hit happened for $idx-th individual based on: \n template: $template \n algorithm: $materializedTemplate \n")
-          cacheHitsCounterKamon.increment(1)
-        }
-        val fr = individualsCache.getOrElseUpdate(cacheKey, {
-          logger.info(s"Calculated new value for $idx-th individual based on: \n template: $template \n algorithm: $materializedTemplate \n")
-          // TODO can we split it randomly here???
-
-          val Array(trainingSplit, testSplit) = workingDataSet.randomSplit(Array(0.67, 0.33), 11L)
-          materializedTemplate.evaluateFitness(trainingSplit, testSplit)
-        })
-        val iad = IndividualAlgorithmData(idx.toString, template, materializedTemplate, fr)
-        iad.sendMetric()
-        iad
-      }
-  }
+  implicit val individualsCache = mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]()  // TODO make it faster with reference to value
 
   def chooseBestIndividual(population: Population, workingDataSet: DataFrame, availableTime: Double): Option[IndividualAlgorithmData] = {
-    val individualsWithEvaluationResults = calculateFitnessResults(population, workingDataSet)
+    val individualsWithEvaluationResults = PopulationEvaluator.evaluateIndividuals(population, workingDataSet)
 
     individualsWithEvaluationResults.sortWith(_.fitness.fitnessError < _.fitness.fitnessError).headOption // TODO maybe keep them in sorted heap?
   }
+
+
+  /*def runEvolution(
+                    dimensions: Set[EvolutionDimension] //Probably we need a tree of dimensions in order to predefine dependencies
+                  ) = {
+
+    dimensions.map(evDim =>
+      evDim.evolve()
+    )
+
+  }*/
 
   def run(): Unit = {
 
@@ -208,7 +194,7 @@ class AutoML(data: DataFrame,
       samplingStrategy.sample(data, initialSampleSize) //TODO maybe we can start using EvolutionStrategy even here?
     } else data
 
-    var individualsTemplates = if(useMetaDB) {
+    var individualsTemplates: Population = if(useMetaDB) {
       //With the metadatabase, the initial population is filled by best individuals from most similar meta data
       // (pair- wise similarities of attributes statistics)
 
@@ -279,7 +265,7 @@ class AutoML(data: DataFrame,
             //The fitness of a template is proportional to the average performance of models generated on training folds
             // and evaluated on testing folds, while the data is divided into folds multiple times.
 
-            val evaluatedIndividuals: Seq[IndividualAlgorithmData] = calculateFitnessResults(individualsTemplates, workingDataSet)
+            val evaluatedIndividuals: Seq[IndividualAlgorithmData] = PopulationEvaluator.evaluateIndividuals(individualsTemplates, workingDataSet)
 
             //Sorted individuals bases on fitnessError
             evaluatedIndividuals.zipWithIndex.sortBy(_._1.fitness.fitnessError).map { case (indivData, idx) =>
@@ -321,7 +307,7 @@ class AutoML(data: DataFrame,
             val offspring = applyMutation(new Population(individualsForMutation)) // individualsForMutation
 
             val subjectsToSurvival = new Population(individualsTemplates.individuals ++ offspring.individuals)
-            val evaluationResultsForAll = calculateFitnessResults(subjectsToSurvival, workingDataSet)
+            val evaluationResultsForAll = PopulationEvaluator.evaluateIndividuals(subjectsToSurvival, workingDataSet)
 
             //Select 50% best of all the (individuals + offspring)
             val survivedForNextGenerationSeed: Seq[TemplateTree[TemplateMember]] = parentSelectionByFitnessRank(0.5, evaluationResultsForAll).map(_.template)
