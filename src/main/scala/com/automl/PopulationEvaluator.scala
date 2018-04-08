@@ -5,6 +5,7 @@ import com.automl.template.{TemplateMember, TemplateTree}
 import com.typesafe.scalalogging.LazyLogging
 import kamon.Kamon
 import kamon.metric.CounterMetric
+import org.apache.spark.ml.param.Params
 import org.apache.spark.sql.DataFrame
 
 import scala.collection.mutable
@@ -13,7 +14,12 @@ object PopulationEvaluator extends LazyLogging{
 
   private val cacheHitsCounterKamon = Kamon.counter("kamon.automl.cache_hits")
 
-  def evaluateIndividuals(population: Population, workingDataSet: DataFrame)(implicit cache: mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]): Seq[IndividualAlgorithmData] = {
+  def evaluateIndividuals(population: Population,
+                          workingDataSet: DataFrame,
+                          hyperParamsMap: Map[String, Seq[Params]] = Map.empty)
+                         (implicit cache: mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]): Seq[EvaluatedTemplateData] = {
+
+    //TODO make use of hyperParamsMap for templated/nodes/classifiers
 
     population.individuals.zipWithIndex
       .map { case (individualTemplate, idx) => (idx, individualTemplate, TemplateTreeHelper.materialize(individualTemplate)) }
@@ -31,7 +37,7 @@ object PopulationEvaluator extends LazyLogging{
           val Array(trainingSplit, testSplit) = workingDataSet.randomSplit(Array(0.67, 0.33), 11L)
           materializedTemplate.evaluateFitness(trainingSplit, testSplit)
         })
-        val iad = IndividualAlgorithmData(idx.toString, template, materializedTemplate, fr)
+        val iad = EvaluatedTemplateData(idx.toString, template, materializedTemplate, fr)
         iad.sendMetric()
         iad
       }

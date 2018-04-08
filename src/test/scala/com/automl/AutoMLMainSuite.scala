@@ -1,5 +1,6 @@
 package com.automl
 
+import com.automl.evolution.dimension.{TemplateEvolutionDimension, TemplateHyperParametersEvolutionDimension}
 import com.automl.spark.SparkSessionProvider
 import com.automl.template._
 import com.automl.template.simple._
@@ -71,7 +72,10 @@ class AutoMLMainSuite extends WordSpec with Matchers with BeforeAndAfterAll with
         seedPopulation = seedPopulation,
         maxGenerations = 5)
 
-      autoMl.run()
+      val templateEvDim = new TemplateEvolutionDimension
+      val hyperParamsEvDim = new TemplateHyperParametersEvolutionDimension
+
+      autoMl.runEvolution(templateEvDim, hyperParamsEvDim)
 
     }
   }

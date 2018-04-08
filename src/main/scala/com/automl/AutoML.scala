@@ -1,8 +1,11 @@
 package com.automl
 
 import com.automl.dataset._
-import com.automl.evolution.dimension.EvolutionDimension
+import com.automl.evolution.dimension.{EvolutionDimension, TemplateEvolutionDimension, TemplateHyperParametersEvolutionDimension}
+import com.automl.evolution.mutation.TemplateMutationStrategy
+import com.automl.evolution.selection.RankSelectionStrategy
 import com.automl.helper._
+import com.automl.report.AutoMLReporter
 import com.automl.template._
 import com.automl.template.ensemble.EnsemblingMember
 import com.automl.template.simple.SimpleModelMember
@@ -77,8 +80,6 @@ class AutoML(data: DataFrame,
   def isDataSetBalanced = true // TODO add here concreate estimation of balancing
   implicit val samplingStrategy: SamplingStrategy = if(isDataSetBalanced) new RandomSampling() else new StratifiedSampling()
 
-
-
   val metaDB = new MetaDB() // TODO How it should look like?
   // 100-300 dims,  500 - 5000 examples, num classes,
   // metalerning landmarks(vector of performance of simple fast algorithms-> Set(DT, Bagging{KNN, GBL})
@@ -87,135 +88,33 @@ class AutoML(data: DataFrame,
 
   def generateInitialPopulation(size: Int): Population = Population.fromSeedPopulation(seedPopulation).withSize(size).build
 
-  def stagnationDetected(evaluationResult: Any): Boolean = false // TODO No stagnation detected for now
+  def stagnationDetected(evaluationResult: Any): Boolean = {
+    // If we run into stagnation?
+    // We could check wheter our structures are not changing any more( bad mutation algorithm) or
+    // fitness values of our individuals do not improve(or within threshold) when datasize is maximum.
+    // We might never reach this state
+    false
+  } // TODO No stagnation detected for now
 
-  def parentSelectionByFitnessRank(selectionShare: Double, individuals: Seq[IndividualAlgorithmData]): Seq[IndividualAlgorithmData] = {
-    require(selectionShare < 1 && selectionShare > 0, "Selection share parameter shoud be in range (0, 1)" )
-    val numberOfCompetitors = individuals.length
-    val numberOfParents = (numberOfCompetitors * selectionShare).toInt
-    val orderedByFitness = individuals.sortWith(_.fitness.fitnessError > _.fitness.fitnessError)
-
-    val probabilityStrategy = new LinearRankingProbabilityStrategy(numberOfCompetitors, parameter_S = 1.5)
-
-    val ranked = orderedByFitness
-      .zipWithIndex
-      .map { case (ind, rank) =>
-        ind.withRank(rank).withProbability(probabilityStrategy.computeProbabilityFor(rank))
-      }
-
-    val rankedWithCumulativeProbs = ranked.drop(1).scanLeft(ranked.head){ case (acc, indd2) => indd2.copy(probability = indd2.probability + acc.probability)}
-    logger.debug(rankedWithCumulativeProbs.map(r => (r.rank, r.probability)).mkString("\n"))
-
-    var currentParentIndex = 0
-    val selectedParents = new Array[IndividualAlgorithmData](numberOfParents)
-    while (currentParentIndex < numberOfParents) {
-      val r = Random.nextDouble()
-      val rouletteWheel = rankedWithCumulativeProbs.dropWhile(individualData => individualData.probability < r)
-      val selected = rouletteWheel.headOption.getOrElse(rankedWithCumulativeProbs.last)
-      logger.debug(s"Selected for r = $r : $selected")
-      selectedParents(currentParentIndex) = selected
-      currentParentIndex += 1
-    }
-    selectedParents // TODO choose optimal data structure. Implicit conversion here.
-  }
-
-
-  def applyMutation(population: Population): Population = {
-    logger.info(s"\n\nStarting new mutation phase...")
-
-    def mutate(individual: TemplateTree[TemplateMember]) = {
-
-      val individualsTreeHeight = individual.height
-      val initialProbability, probStep: Double = 1.0 / individualsTreeHeight
-      logger.info(s"Initial probability: $initialProbability, probStep: $probStep")
-      val mutationProbabilities = MutationProbabilities(initialProbability)
-
-      def getRandomEnsemblingMember = EnsemblingMember.poolOfEnsemblingModels.toSeq.randElement
-      def getRandomBaseMember: TemplateMember = SimpleModelMember.poolOfSimpleModels.randElement
-
-      val structOrMemberThreshold = 0.5
-
-      def traverseAndMutate(individual: TemplateTree[TemplateMember], mutProbs: MutationProbabilities): TemplateTree[TemplateMember] = individual match {
-        case lt@LeafTemplate(_) =>
-          if (structOrMemberThreshold >= Random.nextDouble()) {
-            if (mutProbs.structureProb >= Random.nextDouble()) {
-
-              val numberOfNewBaseModels = Random.nextInt(4) + 1 // TODO parameter?
-
-              val newMember = NodeTemplate(getRandomEnsemblingMember, Seq(lt) ++ (0 to numberOfNewBaseModels).map(_ => LeafTemplate(getRandomBaseMember)))
-              logger.info(s"\nStructural mutation happened for $lt --> $newMember")
-              newMember
-            }
-            else if (mutProbs.memberProb >= Random.nextDouble()) {
-              val newMember: TemplateMember = getRandomBaseMember
-              logger.info(s"\nMember mutation happened for $lt --> $newMember")
-              LeafTemplate(newMember)
-            }
-            else lt
-          }
-          else lt
-
-        case nt@NodeTemplate(ensemblingMember, subMembers) =>
-          val updatedMutationProbs = mutProbs.increaseAllBy(probStep)
-
-          NodeTemplate(ensemblingMember, subMembers.map(traverseAndMutate(_, updatedMutationProbs)))
-
-      }
-
-      traverseAndMutate(individual, mutationProbabilities)
-    }
-
-    new Population(population.individuals map mutate)
-
-  }
-
-  implicit val individualsCache = mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]()  // TODO make it faster with reference to value
-
-  def chooseBestIndividual(population: Population, workingDataSet: DataFrame, availableTime: Double): Option[IndividualAlgorithmData] = {
-    val individualsWithEvaluationResults = PopulationEvaluator.evaluateIndividuals(population, workingDataSet)
-
-    individualsWithEvaluationResults.sortWith(_.fitness.fitnessError < _.fitness.fitnessError).headOption // TODO maybe keep them in sorted heap?
-  }
-
-
-  /*def runEvolution(
-                    dimensions: Set[EvolutionDimension] //Probably we need a tree of dimensions in order to predefine dependencies
-                  ) = {
-
-    dimensions.map(evDim =>
-      evDim.evolve()
-    )
-
-  }*/
-
-  def run(): Unit = {
+  /*Probably we need a tree of dimensions in order to predefine dependencies*/
+  def runEvolution(templateEvDim: TemplateEvolutionDimension,
+                   hyperParamsEvDim: TemplateHyperParametersEvolutionDimension // TODO unused
+                  ): Unit = {
 
     var workingDataSet: DataFrame = if(isDataBig(data)) {
       samplingStrategy.sample(data, initialSampleSize) //TODO maybe we can start using EvolutionStrategy even here?
     } else data
 
-    var individualsTemplates: Population = if(useMetaDB) {
-      //With the metadatabase, the initial population is filled by best individuals from most similar meta data
-      // (pair- wise similarities of attributes statistics)
-
-      // The probability that a template is selected for seeding the population is inversely proportional to the
-      // squared distance of meta data vectors and proportional to a robust performance of the template.
-      //The robust performance is defined as average rank of template performance on similar data sets.
-      // Then, as the algorithm runs, templates consisting of one base algorithm are evaluated on the data set
-      // and stored into the metadatabase. Their performance is used as landmarking attribute [22] and together with
-      // data statistics make up meta-features. The meta-features vector is then compared to other vectors stored in
-      // the metadatabase and the most similar records are returned.
+    var populationOfTemplates: Population = if(useMetaDB) {
       new Population(metaDB.getPopulationOfTemplates)
     } else {
-      //In case that the metadatabase is not used, base models form the population.
-      //The advantage is that each type of base model is considered before ensembles are taken into account
       generateInitialPopulation(initialPopulationSize.get)
     }
 
     var currentDataSize = initialSampleSize
     currentDatasizeKamon.set(currentDataSize)
 
-    val bestIndividualsFromAllEvolutionsQueue = collection.mutable.PriorityQueue[IndividualAlgorithmData]()
+    val bestEvaluatedTemplatesFromAllGenerationsQueue = collection.mutable.PriorityQueue[EvaluatedTemplateData]()
 
 
     //The fitness of each template is updated during evolutions and when the optimization terminates,
@@ -235,8 +134,6 @@ class AutoML(data: DataFrame,
       val timeBoxCalculations = Future {
         logger.info("timeboxing", s"TimeBox # ${timeBox.index} launched:")
 
-        //While time is available, we run a sequence of evolutions that are gradually
-        //exploring the state space of possible templates.
         def condition = System.currentTimeMillis() - startTime < timeBox.duration
 
         while (condition) {
@@ -258,60 +155,22 @@ class AutoML(data: DataFrame,
             logger.info(s"LAUNCHING evolutionNumber=$evolutionNumber generationNumber=$generationNumber...")
 
             logger.info("\nCurrent population:")
-            PopulationHelper.print(individualsTemplates)
+            PopulationHelper.print(populationOfTemplates)
 
-            // c) fitness function formulation
-            //It is estimated by a multiple crossvalidation (CV) [83,81]
-            //The fitness of a template is proportional to the average performance of models generated on training folds
-            // and evaluated on testing folds, while the data is divided into folds multiple times.
+            val (evolvedPopulation , bestSurvivedEvaluatedTemplate) = templateEvDim.evolve(populationOfTemplates, workingDataSet)
+            populationOfTemplates = evolvedPopulation
 
-            val evaluatedIndividuals: Seq[IndividualAlgorithmData] = PopulationEvaluator.evaluateIndividuals(individualsTemplates, workingDataSet)
-
-            //Sorted individuals bases on fitnessError
-            evaluatedIndividuals.zipWithIndex.sortBy(_._1.fitness.fitnessError).map { case (indivData, idx) =>
-              (idx, s"$idx) ${indivData.fitness.fitnessError} \n")
-            }.sortBy(_._1).foreach { case (_, str) => logger.info(str) }
-
-
-            // GL(t) = 100 * (  Eva(t)/ Eopt(t) - 1 )
-            //        High generalization loss is one obvious candidate reason to stop training, because
-            //        it directly indicates overfitting. This leads us to the 1rst class of stopping
-            //        criteria: stop as soon as the generalization loss exceeds a certain
-            //          threshold. We define the class GL as
-            //        GL : stop after first epoch t with GL(t) > alpha
-            //How can we do this multiple time? In parallel?
-
-            if (evolutionNumber == 0 && !useMetaDB) {
+            /*if (evolutionNumber == 0 && !useMetaDB) {
               //putInfoInto MetaDB
             }
 
+            if (stagnationDetected(evaluatedTemplatesData)) // we are breaking our while loop - early stopping?
+              generationNumber = maxGenerations*/
 
-            // If we run into stagnation?
-            // We could check wheter our structures are not changing any more( bad mutation algorithm) or
-            // fitness values of our individuals do not improve(or within threshold) when datasize is maximum.
-            // We might never reach this state
-            if (stagnationDetected(evaluatedIndividuals)) // we are breaking our while loop - early stopping?
-              generationNumber = maxGenerations
+            //TODO we were putting into queue only best from evolution not from each generation before.
+            logger.info(s"Best candidate from  evolution #${evolutionNumber - 1} generation #$generationNumber added to priority queue: $bestSurvivedEvaluatedTemplate")
+            bestSurvivedEvaluatedTemplate.foreach(template => bestEvaluatedTemplatesFromAllGenerationsQueue.enqueue(template))
 
-            //Second phase: We are going to compute fitness functions and rank all the individuals.
-            // Draw from these population with the probability distribution proportional to rank values.
-            val individualsForMutation = parentSelectionByFitnessRank(0.5, evaluatedIndividuals).map(_.template)
-
-            //b) design of genetic operators and evolution
-            //Parameters of a node are mutated by applying Gaussian noise to the current value
-            //We do not use crossover, just mutations similar to the approach used in a standard GP
-
-            // First phase: recombination or mutation. Ensure that diversity is ok .
-            // Maybe check child/mutant on ability to survive by itself. Then ensure that the size of population is ok
-            // What kind of parameters we mutate
-            val offspring = applyMutation(new Population(individualsForMutation)) // individualsForMutation
-
-            val subjectsToSurvival = new Population(individualsTemplates.individuals ++ offspring.individuals)
-            val evaluationResultsForAll = PopulationEvaluator.evaluateIndividuals(subjectsToSurvival, workingDataSet)
-
-            //Select 50% best of all the (individuals + offspring)
-            val survivedForNextGenerationSeed: Seq[TemplateTree[TemplateMember]] = parentSelectionByFitnessRank(0.5, evaluationResultsForAll).map(_.template)
-            individualsTemplates = Population.fromSeedPopulation(new Population(survivedForNextGenerationSeed)).withSize(initialPopulationSize.get).build
             generationNumber += 1
             generationNumberKamon.increment(1)
           }
@@ -329,21 +188,10 @@ class AutoML(data: DataFrame,
             generationNumber = 0
             generationNumberKamon.set(0)
           } else {
-            // We've got individuals survived after being traind on whole datasets.
-            // Next step is to refine results and choose the best argorithm that we run into on our way here.
-            // We should skip 'datasize loop' and 'time loop' and call chooseBestTemplate
             logger.info("We reached maxDataSize and maxNumberOfGenerations")
             doEscapeFlag = true // TODO ?? do we need this
-            //increase validation part of data. Start using k-folds CV. Of-by-one validation. then multiple round of CV.
-            // in general we start using as much data as possible to prevent overfitting and decrease generalization error.
-          }
-
-          chooseBestIndividual(individualsTemplates, workingDataSet, restOfTheTimeBox).foreach { template =>
-            logger.info(s"Best candidate from  evolution #${evolutionNumber - 1} added to priority queue: $template")
-            bestIndividualsFromAllEvolutionsQueue.enqueue(template)
           }
         }
-
       }
 
       try {
@@ -352,20 +200,8 @@ class AutoML(data: DataFrame,
         case e: TimeoutException => logger.info(s"Timeout for timebox:$timeBox has happened. Current evolutionNumber = $evolutionNumber. " + e.getMessage)
       }
     }
-    // Final evaluation on different test data. Consider winners from all evolutions(evolutionNumbers) but put more faith into last ones because they have been chosen based on results on bigger  validation sets(better representative of a population).
-    if(bestIndividualsFromAllEvolutionsQueue.isEmpty) {
-      println("\n##############################################################")
-      println("None of the evolutions were finished within given time constraint")
-    } else {
 
-      val winner = bestIndividualsFromAllEvolutionsQueue.dequeue() // TODO warning - could be empty
-
-      println("\n##############################################################")
-      println("Fitness value of the BEST template: " +  winner.fitness.fitnessError)
-      println("Best template: " + TemplateTreeHelper.print2(winner.template)) // TODO make print2 actually a printing method
-      println("Other best individuals results:\n" + bestIndividualsFromAllEvolutionsQueue.dequeueAll.map(_.fitness.fitnessError).mkString(",\n"))
-
-    }
+    AutoMLReporter.show(bestEvaluatedTemplatesFromAllGenerationsQueue) // TODO we need to return best individual for validation on testSplit
   }
 
 }

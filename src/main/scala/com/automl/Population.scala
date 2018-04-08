@@ -6,6 +6,7 @@ import scala.util.Random
 
 class Population(val individuals: Seq[ TemplateTree[TemplateMember]]) {
 
+  def size: Int = individuals.length
 }
 
 object Population {
