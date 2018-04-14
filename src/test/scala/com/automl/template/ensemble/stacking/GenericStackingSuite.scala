@@ -15,7 +15,7 @@ class GenericStackingSuite extends FunSuite with Matchers with SparkSessionProvi
 
   import utils.SparkMLUtils._
 
-  lazy val airlineDF = SparkMLUtils.loadResourceDF("/airline_sampled_100k.csv")
+  lazy val airlineDF = SparkMLUtils.loadParquet("src/test/resources/airline_allcolumns_sampled_100k_parquet")
     .select("DayOfWeek", "Distance", "DepTime", "CRSDepTime", "DepDelay")
 
   val features = Array("Distance", "DayOfWeek")
@@ -66,7 +66,7 @@ class GenericStackingSuite extends FunSuite with Matchers with SparkSessionProvi
 
   }
 
-  test("Generic stacking member should calculate fitness over complex tree of members and with better performance than each particular member") {
+  ignore("Generic stacking member should calculate fitness over complex tree of members and with better performance than each particular member") {
 
     val models = Seq(
       LeafTemplate(new LinearRegressionModel()),
@@ -96,7 +96,7 @@ class GenericStackingSuite extends FunSuite with Matchers with SparkSessionProvi
 
   }
 
-  test("Generic stacking member should calculate fitness over tree of height 3 and with better performance than each particular member") {
+  ignore("Generic stacking member should calculate fitness over tree of height 3 and with better performance than each particular member") {
 
     val models = Seq(
       LeafTemplate(DecisionTree()),

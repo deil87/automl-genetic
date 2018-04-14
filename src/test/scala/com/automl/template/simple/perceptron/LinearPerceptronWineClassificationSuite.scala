@@ -37,7 +37,7 @@ class LinearPerceptronWineClassificationSuite extends WordSpec with Matchers wit
   }
 
   override protected def afterAll(): Unit = {
-    ss.stop()
+//    ss.stop()
   }
 }
 

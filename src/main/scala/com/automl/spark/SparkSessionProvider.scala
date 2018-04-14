@@ -6,6 +6,8 @@ trait SparkSessionProvider {
 
     implicit val ss: SparkSession = SparkSessionProvider.ss
 
+  println("Numbers of cached RDDs:"  + ss.sparkContext.getPersistentRDDs.size)
+
 }
 
 object SparkSessionProvider {

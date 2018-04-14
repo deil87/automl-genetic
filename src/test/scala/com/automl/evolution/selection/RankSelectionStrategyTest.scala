@@ -28,18 +28,20 @@ class RankSelectionStrategyTest extends WordSpec with Matchers{
         }
       )
 
-      import breeze.plot._
+      // <editor-fold defaultstate="collapsed" desc="Uncomment if you need to visualise distribution">
+      /*import breeze.plot._
 
       val f = Figure()
       val p2 = f.subplot(0)
       p2 += hist(selectedParents.map(_.rank), 100)
       p2.title = "A normal distribution"
       f.saveas("subplots.png")
-      Thread.sleep(50000)
+      Thread.sleep(50000)*/
+      // </editor-fold>
 
       PopulationHelper.print(new Population(selectedParents.map(_.template)))
 
-      selectedParents.length shouldBe 50
+      selectedParents.length shouldBe 500
     }
 
   }

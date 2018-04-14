@@ -16,7 +16,6 @@ class TemplateEvolutionDimensionSuite extends WordSpec with Matchers with SparkS
   trait Fixture {
     val airlineDF = SparkMLUtils.loadParquet("src/test/resources/airline_allcolumns_sampled_100k_parquet")
       .select("DayOfWeek", "Distance", "DepTime", "CRSDepTime", "DepDelay")
-    //TODO FlightNum+year_date_day for unique identifier of test examples
 
     val features = Array("Distance", "DayOfWeek")
     val oheFeatures = Array.empty

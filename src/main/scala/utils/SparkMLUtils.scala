@@ -250,6 +250,9 @@ object SparkMLUtils {
     def toDouble(field: String) = {
       df.withColumnReplace(field, $"$field".cast("double"))
     }
+    def toLong(field: String) = {
+      df.withColumnReplace(field, $"$field".cast("long"))
+    }
     def toDouble(field: Iterable[String])(implicit sparkSession: SparkSession) = {
       import sparkSession.implicits._
       field.foldLeft(df)((res, next) => res.withColumnReplace(next, $"$next".cast("double")))

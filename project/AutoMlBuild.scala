@@ -4,9 +4,13 @@ import sbt._
 object AutoMlBuild extends Build {
 
   lazy val testLibDependencies = List(
-    "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
-    "org.scalactic" %% "scalactic" % "3.0.1",
-    "org.scalatest" %% "scalatest" % "3.0.1" % "test",
+    "org.scalacheck" %% "scalacheck" % "1.13.4" % Test,
+    "org.scalactic" %% "scalactic" % "3.0.1" % Test,
+    "org.scalatest" %% "scalatest" % "3.0.1" % Test,
+    "org.pegdown" % "pegdown" % "1.6.0" % Test
+  )
+
+  lazy val bencmarkingDependencies = List(
     "com.storm-enroute" %% "scalameter" % "0.7"
   )
 
@@ -68,7 +72,7 @@ object AutoMlBuild extends Build {
   )
 
 
-  lazy val libDependencies = coreDependencies ++ sparkDependencies ++ testLibDependencies ++ loggingLibDependencies
+  lazy val libDependencies = coreDependencies ++ sparkDependencies ++ testLibDependencies ++ bencmarkingDependencies ++ loggingLibDependencies
   lazy val excludedDependencies = List(
     "org.slf4j" % "slf4j-log4j12"
   )
@@ -78,9 +82,11 @@ object AutoMlBuild extends Build {
     organization := "ai.automl-genetic",
     scalaVersion in ThisBuild := "2.11.7",
     resolvers ++= Nil,
-    javaOptions += "-Xmx3000m",
+    javaOptions += "-Xmx6000m",
+    fork in Test:= true,
     unmanagedBase in Compile := baseDirectory.value / "lib",
     unmanagedBase in Test := baseDirectory.value / "lib",
+    testOptions in Test ++= Seq(Tests.Argument(TestFrameworks.ScalaTest, "-o"), Tests.Argument(TestFrameworks.ScalaTest, "-h", "target/test-reports")),
     parallelExecution in Test := false
   )
 

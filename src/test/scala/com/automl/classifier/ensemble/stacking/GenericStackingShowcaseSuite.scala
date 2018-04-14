@@ -32,7 +32,7 @@ class GenericStackingShowcaseSuite extends FunSuite with Matchers with SparkSess
         (15, 1, 100.0),
         (16, 2, 200.0)
       )
-    ).toDF("id", "num", "label")
+    ).toDF("uniqueIdColumn", "num", "label").toLong("uniqueIdColumn")
 
     def featuresAssembler = {
       new VectorAssembler()

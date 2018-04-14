@@ -10,7 +10,7 @@ class DataSetSizeEvolutionStrategyTest extends WordSpec  with Matchers with Spar
 
   val total = 1000
 
-  val testDF: DataFrame = SparkMLUtils.loadResourceDF("/airline2008-100k_rows.csv")
+  val testDF: DataFrame = SparkMLUtils.loadParquet("src/test/resources/airline_allcolumns_sampled_100k_parquet")
     .limit(total)
     .select("DayOfWeek", "Distance", "DepTime", "CRSDepTime", "DepDelay")
     .withColumn("uniqueIdColumn", monotonically_increasing_id)

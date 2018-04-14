@@ -14,9 +14,7 @@ class AutoMLMainSuite extends WordSpec with Matchers with BeforeAndAfterAll with
 
   ss.sparkContext.setLogLevel("ERROR")
 
-  import kamon.prometheus.PrometheusReporter
   import utils.SparkMLUtils._
-  Kamon.addReporter(new PrometheusReporter())
 
   "AutoML" should {
 
@@ -81,7 +79,7 @@ class AutoMLMainSuite extends WordSpec with Matchers with BeforeAndAfterAll with
   }
 
   override protected def afterAll(): Unit = {
-    ss.stop()
+//    ss.stop()
   }
 }
 

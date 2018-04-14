@@ -17,9 +17,8 @@ class RandomForestSuite extends FunSuite with Matchers with SparkSessionProvider
 
   import utils.SparkMLUtils._
 
-  val airlineDF = SparkMLUtils.loadResourceDF("/airline2008-2.csv")
+  val airlineDF = SparkMLUtils.loadParquet("src/test/resources/airline_allcolumns_sampled_100k_parquet")
     .select("DayOfWeek", "Distance", "DepTime", "CRSDepTime", "DepDelay")
-  //TODO FlightNum+year_date_day for unique identifier of test examples
 
   val features = Array("Distance", "DayOfWeek")
   val oheFeatures = Array.empty

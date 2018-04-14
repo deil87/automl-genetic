@@ -6,7 +6,6 @@ import com.automl.helper.{FitnessResult, PopulationHelper}
 import com.automl.spark.SparkSessionProvider
 import com.automl.template._
 import com.automl.template.simple._
-import kamon.Kamon
 import org.apache.spark.ml.feature.VectorAssembler
 import org.scalatest.{Matchers, WordSpec}
 import utils.SparkMLUtils
@@ -14,47 +13,7 @@ import utils.SparkMLUtils
 
 class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
 
-  ss.sparkContext.setLogLevel("ERROR")
-
-
-  import kamon.prometheus.PrometheusReporter
   import utils.SparkMLUtils._
-  Kamon.addReporter(new PrometheusReporter())
-
-  trait Fixture {
-    val airlineDF = SparkMLUtils.loadParquet("src/test/resources/airline_allcolumns_sampled_100k_parquet")
-      .select("DayOfWeek", "Distance", "DepTime", "CRSDepTime", "DepDelay")
-    //TODO FlightNum+year_date_day for unique identifier of test examples
-
-    val features = Array("Distance", "DayOfWeek")
-    val oheFeatures = Array.empty
-
-    val combinedFeatures = features
-
-    val featuresColName: String = "features"
-
-    def featuresAssembler = {
-      new VectorAssembler()
-        .setInputCols(combinedFeatures)
-        .setOutputCol(featuresColName)
-    }
-    import org.apache.spark.sql.functions.monotonically_increasing_id
-
-    val preparedAirlineDF = airlineDF
-      .limit(5000)
-      .applyTransformation(featuresAssembler)
-      .withColumnRenamed("DepDelay", "label")
-      .toDouble("label")
-      .filterOutNull("label")
-      .withColumn("uniqueIdColumn", monotonically_increasing_id)
-      .showN_AndContinue(10)
-      .cache()
-
-    val Array(trainingSplit, testSplit) = preparedAirlineDF.randomSplit(Array(0.8, 0.2))
-
-    trainingSplit.cache()
-
-  }
 
   "AutoML" should {
 
@@ -105,9 +64,8 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
 
       val population = Population.fromSeedPopulation(seedPopulation).withSize(10).build
 
-      val airlineDF = SparkMLUtils.loadResourceDF("/airline2008-2.csv")
+      val airlineDF = SparkMLUtils.loadParquet("src/test/resources/airline_allcolumns_sampled_100k_parquet")
         .select("DayOfWeek", "Distance", "DepTime", "CRSDepTime", "DepDelay")
-      //TODO FlightNum+year_date_day for unique identifier of test examples
 
       val features = Array("Distance", "DayOfWeek")
       val oheFeatures = Array.empty
@@ -145,11 +103,6 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
       autoMl.runEvolution(templateEvDim, hyperParamsEvDim)
 
     }
-
-    /* test("we take values from cache correctly even for complex templates") {
-
-     }
-   */
 
   }
 }

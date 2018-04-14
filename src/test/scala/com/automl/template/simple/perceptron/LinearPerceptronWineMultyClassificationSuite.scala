@@ -15,6 +15,8 @@ class LinearPerceptronWineMultyClassificationSuite extends WordSpec with Matcher
   import ss.implicits._
   import utils.SparkMLUtils._
 
+  println(ss.sparkContext.getConf.getAll.map(t => t._1 + ":" + t._2).mkString("\n"))
+
   val wineDF = SparkMLUtils.loadResourceDF("/dataset/wine.csv")
     .showN_AndContinue(5)
     .withColumnRenamed("Nonflavanoid.phenols", "nf_flavonoid")
@@ -113,7 +115,7 @@ class LinearPerceptronWineMultyClassificationSuite extends WordSpec with Matcher
   }
 
   override protected def afterAll(): Unit = {
-    ss.stop()
+//    ss.stop()
   }
 }
 
