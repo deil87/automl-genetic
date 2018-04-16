@@ -102,7 +102,22 @@ object AutoMlBuild extends Build {
       resolvers += Resolver.bintrayRepo("kamon-io", "snapshots"),
       ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) }
       )
-
   )
+
+  lazy val webServer: Project = Project(
+    "webserver",
+    file("webserver"),
+    settings = Seq(
+      scalaVersion in ThisBuild := "2.11.7",
+      unmanagedBase in Compile := {
+        println("baseDirectory:" + baseDirectory.value)
+        val path = baseDirectory.value / "static"
+        path
+      },
+      libraryDependencies ++= Seq(
+        "com.typesafe.akka" %% "akka-stream" % "2.5.12",
+        "com.typesafe.akka" %% "akka-http"   % "10.1.1"
+      ))
+  ) dependsOn root
 
 }
