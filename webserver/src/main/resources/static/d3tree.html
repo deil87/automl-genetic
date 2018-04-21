@@ -46,6 +46,14 @@
 <div id="individual1"></div>
 <div id="individual2"></div>
 <script type="text/javascript">
+
+    d3.selection.prototype.appendHTML =
+        d3.selection.enter.prototype.appendHTML = function(HTMLString) {
+            return this.select(function() {
+                return this.appendChild(document.importNode(new DOMParser().parseFromString(HTMLString, 'text/html').body.childNodes[0], true));
+            });
+        };
+
     var sfid = 1000;
     var w = 150,
         h = 150,
@@ -62,23 +70,35 @@
 
     setTimeout(func, 15000);
 
+    var div = d3.select("body").append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0);
+
     var vis = d3.select("#individual1").append("svg:svg")
         .attr("width", w)
         .attr("height", h)
         .append("svg:g")
         .attr("transform", "translate(10, 10)");
 
-    vis.selectAll("rect")
-        .data(tree(root))
-        .enter().append("svg:rect")
+    var gNodes = vis.selectAll("g")
+        .data(tree(root), nodeId)
+        .enter()
+        .appendHTML('<g><rect/><text/></g>')
+        .select('rect')
         .attr("class", "node_rect")
-        .attr("x", x)
-        .attr("y", y);
+        .attr("x", 55)
+        .attr("y", 0);
+        /*.append(function(d) {
+            console.log(d);
+            //create a node
+            var g = document.createElementNS("http://www.w3.org/2000/svg", "g");
 
-
-    var div = d3.select("body").append("div")
-        .attr("class", "tooltip")
-        .style("opacity", 0);
+            /!*g.append("svg:rect")
+                .attr("class", "node_rect")
+                .attr("x", 55)
+                .attr("y", 0);*!/
+            return g;
+        })*/
 
     function update() {
         if (data.length >= 100) {
@@ -93,23 +113,26 @@
         var nodes = tree(root);
 
         // Update the nodes…
-        var node = vis.selectAll("rect.node_rect")
-            .data(nodes, nodeId)
-            .enter()
+        var updatedItems = vis.selectAll("g")
+            .data(nodes, nodeId);
+        var enteringItems = updatedItems
+            .enter();
+
+        console.log(updatedItems);
+        console.log(enteringItems);
+
+        var nodeG = enteringItems
             .append("g")
             .attr("transform", function(d) {
-                console.log(d);
                 return "translate(0,0)";
             });
 
         // Enter any new nodes at the parent's previous position.
-        node.append("svg:rect")
+        nodeG.append("svg:rect")
             .attr("class", "node_rect")
             .attr("x", function(d) {return d.data.x0; })
             .attr("y", function(d) { return d.data.y0; })
             .on("mouseover", function (d) {
-                console.log(d);
-
                 div.transition()
                     .duration(200)
                     .style("opacity", .9);
@@ -118,34 +141,29 @@
                     .style("top", (d3.event.pageY - 28) + "px");
             })
             .on("mouseout", function (d) {
-                console.log(d);
                 div.transition()
                     .duration(500)
                     .style("opacity", 0);
             });
 
-        node.append("svg:text")
+        nodeG.append("svg:text")
             .text(function(d) { return 'DT' });
 
-        node.exit().remove();
+        console.log(nodeG);
 
         // Transition nodes to their new position.
-        node.transition()
+        nodeG.transition()
             .duration(duration)
             .attr("transform", function(d) {
-                console.log(d);
                 return "translate(" + d.x + "," + d.y + ")";
-            })
-
-            /*.attr("x", x)
-            .attr("y", y)*/;
+            });
 
         // Update the links…
         var link = vis.selectAll("path.link")
             .data(tree.links(nodes), linkId);
 
         // Enter any new links at the parent's previous position.
-        link.enter().insert("svg:path", "rect")
+        link.enter().insert("svg:path", "g")
             .attr("class", "link")
             .attr("d", function(d) {
                 var o = {x: d.source.data.x0, y: d.source.data.y0};
