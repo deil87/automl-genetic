@@ -83,20 +83,9 @@
     function buildHeap(inData){
         treeUnflattened = unflatten( inData );
         var preparedTree = {"name" : "root" , "children" : treeUnflattened };
-        console.log(JSON.stringify(preparedTree));
+//        console.log(JSON.stringify(preparedTree));
 
         root = d3.hierarchy(preparedTree, function(d) { return d.children; });
-
-        /*var ancestors = root.children[0].children[1].ancestors();
-        var descendants = root.descendants();
-        var leaves = root.leaves();
-        var path = root.path(root.children[0].children[1]);
-        var links = root.links();
-        showArrayElements(ancestors, "root.children[0].children[1].ancestors()");
-        showArrayElements(descendants, "root.descendants()");
-        showArrayElements(leaves, "root.leaves()");
-        showArrayElements(path, "root.path(root.children[0].children[1])");
-        showLinkArrayElements(links, "root.links()");*/
 
         root.x0 = 0;
         root.y0 = width/2;
@@ -106,25 +95,51 @@
 
 
     // just leaving this global so i can mess with it in the console
+    var previousNodes = [];
     var nodes;
+    var onTimeFlag = true;
 
     function update(source){
 
         var treeData = tree(source);
-        nodes = treeData.descendants();
+        if(onTimeFlag) {
+            nodes = treeData.descendants();
+            onTimeFlag = false;
+        } else {
+            var newItem = treeData.descendants().slice(-1);
+            nodes = previousNodes.concat( newItem);
+        }
+
+        previousNodes = nodes;
         var links = treeData.descendants().slice(1);
 
         // ****************** Nodes section ***************************
         // Update the nodes...
-        var node = g.selectAll('g.node')
-            .data(nodes, function(d) {return d.id ? d : (d.id = ++i, d) });
+        var selection = g.selectAll('g.node');
+
+        var some_map = _.map(selection._groups[0], function(item) {
+            return {id: item.__data__.id, node: item.__data__}
+        });
+
+        var node = selection
+            .data(nodes, function(d) {
+                return d.id || (d.id = ++i); //TODO we can't return here a complex objects. D3 won't be able to deep compare them.
+//                return d.id ? {id: d.id, x: d.x, y: d.y} : (d.id = ++i, {id: d.id, x: d.x, y: d.y});
+            });
 
         // Enter any new modes at the parent's previous position.
         var nodeEnter = node.enter().append('g')
             .attr('class', 'node')
+            .attr("x", x)
+            .attr("y", y)
             .attr("transform", function(d) {
-                return "translate(" + d.x + "," + d.y + ")";
-//                return "translate(" + source.x0 + "," + source.y0 + ")";
+                var tr = "translate(" + (d.parent ? d.parent.data.x0 : d.x0) + "," + (d.parent ? d.parent.data.y0 : d.y0) + ")";
+//                var tr = "translate(" + d.parent.data.x0 + ","+  d.parent.data.y0 + ")";
+                return tr;
+            })
+            .each(function(datum, index, outerIndex) {
+                console.log("New entered item " + index + ", datum = ");
+                console.log(datum);
             })
             .on('click', click);
 
@@ -145,14 +160,16 @@
             .attr("text-anchor", function(d) {
                 return d.children || d._children ? "end" : "start";
             })
-            .text(function(d) { return d.data.name; });
+            .text(function(d) { return d.data.id + ":" + d.data.parentid; });
 
         // UPDATE
         var nodeUpdate = nodeEnter.merge(node);
 
-        // Transition to the proper position for the node
+        // Transition entered and existent nodes to the proper position for the node
         nodeUpdate.transition()
             .duration(duration)
+            .attr("x", x)
+            .attr("y", y)
             .attr("transform", function(d) {
                 return "translate(" + d.x + "," + d.y + ")";
             });
@@ -172,7 +189,6 @@
             .duration(duration)
             .attr("transform", function(d) {
                 return "translate(" + d.x + "," + d.y + ")";
-//                return "translate(" + source.x + "," + source.y + ")";
             })
             .remove();
 
@@ -187,7 +203,7 @@
 // ****************** links section ***************************
 
         // Update the links...
-        var link = g.selectAll('path.link')
+        /*var link = g.selectAll('path.link')
             .data(links, function(d) { return d; });
 
         // Enter any new links at the parent's previous position.
@@ -214,7 +230,7 @@
                 var o = {x: d.x0, y: d.y0};
                 return diagonal(o, o)
             })
-            .remove();
+            .remove();*/
 
         // Store the old positions for transition.
         nodes.forEach(function(d, i){
@@ -222,8 +238,16 @@
             d.y0 = d.y;
         });
 
-        console.log(nodes[0])
+//        console.log(nodes[0])
 
+    }
+
+    function x(d) {
+        return d.data.x0 = d.x;
+    }
+
+    function y(d) {
+        return d.data.y0 = d.y;
     }
 
     // Creates a curved (diagonal) path from parent to the child nodes
@@ -258,30 +282,8 @@
         update(d);
     }
 
-    // will make all the children null and store the real vals in _children
-    function collapse(d) {
-        if(d.children) {
-            d._children = d.children;
-            d.children = null;
-            d._children.forEach(collapse)
-
-        }
-    }
-
 
     buildHeap( data )
-
-    function showArrayElements(data, title) {
-        d3.select('#content')
-            .append('div')
-            .html('<span>' + title + '</span>: ' + data.map(function(d) {return d.data.name;}).join(', '))
-    }
-
-    function showLinkArrayElements(data, title) {
-        d3.select('#content')
-            .append('div')
-            .html('<span>' + title + '</span>: ' + data.map(function(d) {return d.source.data.name + ' -> ' + d.target.data.name;}).join(', '))
-    }
 
 </script>
 </body>
