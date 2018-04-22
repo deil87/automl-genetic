@@ -94,7 +94,8 @@
             data.splice(50, 1);
         }
         // Add a new datum to a random parent.
-        var d = {id: "ohai"+(++sfid)}, parent = data[~~(Math.random() * data.length)];
+        var d = {id: "ohai"+(++sfid)},
+            parent = data[~~(Math.random() * data.length)];
         if (parent.children) parent.children.push(d); else parent.children = [d];
         data.push(d);
 

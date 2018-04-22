@@ -26,6 +26,8 @@
 
 <div id="heap"></div>
 
+<div id="content"></div>
+
 <!-- load the d3.js library -->
 
 <script type="text/javascript" src="/root/webserver/static/js/d3-dispatch/d3-dispatch.js"></script>
@@ -36,11 +38,24 @@
 <script type="text/javascript" src="/root/webserver/static/js/d3-color/d3-color.js"></script>
 <script type="text/javascript" src="/root/webserver/static/js/d3-ease/d3-ease.js"></script>
 <script type="text/javascript" src="/root/webserver/static/js/d3-transition/d3-transition.js"></script>
+<script type="text/javascript" src="/root/webserver/static/js/underscore.js"></script>
+<script type="text/javascript" src="/root/webserver/static/js/unflatten.js"></script>
 <script>
 
-    var numbs = [ 4, 7, 8, 2, 3, 1, 23, 34, 99 ];
-
     var sfid = 1000;
+    var data = [{id: 0}];
+
+    function addNewDataItem() {
+        var d = {id: "ohai" + (++sfid)},
+            parent = data[~~(Math.random() * data.length)];
+        d.parentid = parent.id;
+//        if (parent.children) parent.children.push(d); else parent.children = [d];
+        data.push(d);
+    }
+
+    for (k = 0; k < 10; k++) {
+        addNewDataItem();
+    }
 
     var margin = {top: 20, right: 90, bottom: 30, left: 90},
         width = 960 - margin.left - margin.right,
@@ -50,10 +65,10 @@
         duration = 5000,
         root;
 
-    var timer = setInterval(function() { buildHeap(numbs); }, duration);
-
-    var counter = 0;
-    var treeData = {};
+    var timer = setInterval(function() {
+            addNewDataItem();
+            buildHeap(data);
+        }, duration);
 
     var svg = d3.select("#heap")
         .append("svg")
@@ -63,16 +78,25 @@
     var g = svg.append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    var tree = d3.tree()
-        .size([width, height]);
-
+    var tree = d3.tree().size([width, height]);
 
     function buildHeap(inData){
+        treeUnflattened = unflatten( inData );
+        var preparedTree = {"name" : "root" , "children" : treeUnflattened };
+        console.log(JSON.stringify(preparedTree));
 
-        var newsource = {name: inData[0], children: getChildren(0, inData) };
-//   console.log('dl', newsource)
+        root = d3.hierarchy(preparedTree, function(d) { return d.children; });
 
-        root = d3.hierarchy(newsource, function(d) { return d.children; });
+        /*var ancestors = root.children[0].children[1].ancestors();
+        var descendants = root.descendants();
+        var leaves = root.leaves();
+        var path = root.path(root.children[0].children[1]);
+        var links = root.links();
+        showArrayElements(ancestors, "root.children[0].children[1].ancestors()");
+        showArrayElements(descendants, "root.descendants()");
+        showArrayElements(leaves, "root.leaves()");
+        showArrayElements(path, "root.path(root.children[0].children[1])");
+        showLinkArrayElements(links, "root.links()");*/
 
         root.x0 = 0;
         root.y0 = width/2;
@@ -86,30 +110,21 @@
 
     function update(source){
 
-        if (numbs.length >= 100) {
-            numbs.splice(50, 1);
-        }
-
-        numbs.push(Math.floor(Math.random() * 100));
-        // Add a new datum to a random parent.
-//        var d = {id: "ohai"+(++sfid)}, parent = data[~~(Math.random() * data.length)];
-//        if (parent.children) parent.children.push(d); else parent.children = [d];
-//        data.push(d);
-
-        var treeData = tree(root);
+        var treeData = tree(source);
         nodes = treeData.descendants();
         var links = treeData.descendants().slice(1);
 
         // ****************** Nodes section ***************************
         // Update the nodes...
         var node = g.selectAll('g.node')
-            .data(nodes, function(d) {return d.id || (d.id = ++i); });
+            .data(nodes, function(d) {return d.id ? d : (d.id = ++i, d) });
 
         // Enter any new modes at the parent's previous position.
         var nodeEnter = node.enter().append('g')
             .attr('class', 'node')
             .attr("transform", function(d) {
-                return "translate(" + source.x0 + "," + source.y0 + ")";
+                return "translate(" + d.x + "," + d.y + ")";
+//                return "translate(" + source.x0 + "," + source.y0 + ")";
             })
             .on('click', click);
 
@@ -121,7 +136,7 @@
                 return d._children ? "lightsteelblue" : "#fff";
             });
 
-// Add labels for the nodes
+        // Add labels for the nodes
         nodeEnter.append('text')
             .attr("dy", ".35em")
             .attr("x", function(d) {
@@ -152,10 +167,12 @@
 
 
         // Remove any exiting nodes
-        var nodeExit = node.exit().transition()
+        var nodesAboutToExit = node.exit();
+        var nodeExit = nodesAboutToExit.transition()
             .duration(duration)
             .attr("transform", function(d) {
-                return "translate(" + source.x + "," + source.y + ")";
+                return "translate(" + d.x + "," + d.y + ")";
+//                return "translate(" + source.x + "," + source.y + ")";
             })
             .remove();
 
@@ -171,13 +188,13 @@
 
         // Update the links...
         var link = g.selectAll('path.link')
-            .data(links, function(d) { return d.id; });
+            .data(links, function(d) { return d; });
 
         // Enter any new links at the parent's previous position.
         var linkEnter = link.enter().insert('path', "g")
             .attr("class", "link")
             .attr('d', function(d){
-                var o = {y: source.y0, x: source.x0}
+                var o = {y: d.y0, x: d.x0};
                 return diagonal(o, o)
 
             });
@@ -194,95 +211,34 @@
         var linkExit = link.exit().transition()
             .duration(duration)
             .attr('d', function(d) {
-                var o = {x: source.x, y: source.y}
+                var o = {x: d.x0, y: d.y0};
                 return diagonal(o, o)
             })
             .remove();
 
         // Store the old positions for transition.
         nodes.forEach(function(d, i){
-//   console.log(d)
             d.x0 = d.x;
             d.y0 = d.y;
         });
 
         console.log(nodes[0])
-        //nodes[0].data.children = nodes[0].data._children;
-        //nodes[0].data._children = null;
-
 
     }
-
-    // Takes an index and an array and finds all the children.
-    // returns an array which can be added to children of the root node to
-    // make a json thing which can be used to make a d3.hierarchy();
-    function getChildren(i, arr) {
-        var childs = [];
-
-        if( arr[i+1+ i] ){
-            childs[0] = {name: arr[i*2+1], children: []}
-            if( arr[i+i+2] ){
-                //  console.log(arr[i+1+ i], arr[i+i+2])
-                childs[1] = {name: arr[i * 2 + 2], children:[]}  ;
-            }
-        }
-
-        var nextin = i * 2 + 1;
-        if(arr[nextin*2+1]){
-            //  console.log('more children')
-            childs[0].children = getChildren(nextin, arr)
-            childs[0]._children = null;
-
-            if( arr[nextin*2 + 2 ]){
-                childs[1].children = getChildren(nextin+1, arr);
-                childs[1]._children = null;
-            }
-        }
-        return childs;
-    }
-
-
-    // not called but kind of what I might use to annimate the swap thing while
-    // balancing binary heaps
-    function expandChildren(index, chi){
-        setTimeout(function () {
-            //buildHeap([ 4, 3, 2, 9, 14, 29] );
-            console.log('hooho', nodes)
-            if(nodes[index].children === null){
-                nodes[0].children = [nodes[0]._children[chi]]
-            }
-            else{
-                console.log( typeof nodes[0]. children)
-                nodes[index].children.push(nodes[index]._children[1])
-            }
-// .h(nodes[0]._children[0]);
-            //nodes[0]._children ;
-
-// console.log(nodes[index])
-            update(nodes[index])
-            if(chi < 1){
-                expandChildren(0, 1)
-            }
-        }, 3000);
-
-    }
-
-    //expandChildren(0, 0);
-
 
     // Creates a curved (diagonal) path from parent to the child nodes
     // switched around all the x's and y's from orig so it's verticle
     function diagonal(s, d) {
-        //console.log('in diag and s = ', s);
-        //console.log('d = ', d)
-
-        path = `M ${s.x} ${s.y}
+            return "M" + d.x + "," + d.y
+                + "C" + d.x + "," + (d.y + s.y) / 2
+                + " " + s.x + "," +  (d.y + s.y) / 2
+                + " " + s.x + "," + s.y;
+       /* path = `M ${s.x} ${s.y}
           C ${(s.x + d.x) / 2} ${s.y},
             ${(s.x + d.x) / 2} ${d.y},
-            ${d.x} ${d.y}`
+            ${d.x} ${d.y}`;
 
-        return path;
-
+        return path;*/
     }
 
 
@@ -305,7 +261,7 @@
     // will make all the children null and store the real vals in _children
     function collapse(d) {
         if(d.children) {
-            d._children = d.children
+            d._children = d.children;
             d.children = null;
             d._children.forEach(collapse)
 
@@ -313,7 +269,19 @@
     }
 
 
-    buildHeap( numbs )
+    buildHeap( data )
+
+    function showArrayElements(data, title) {
+        d3.select('#content')
+            .append('div')
+            .html('<span>' + title + '</span>: ' + data.map(function(d) {return d.data.name;}).join(', '))
+    }
+
+    function showLinkArrayElements(data, title) {
+        d3.select('#content')
+            .append('div')
+            .html('<span>' + title + '</span>: ' + data.map(function(d) {return d.source.data.name + ' -> ' + d.target.data.name;}).join(', '))
+    }
 
 </script>
 </body>
