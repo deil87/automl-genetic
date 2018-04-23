@@ -46,14 +46,14 @@
     var data = [{id: 0}];
 
     function addNewDataItem() {
-        var d = {id: "ohai" + (++sfid)},
+        var d = {id: (++sfid)},
             parent = data[~~(Math.random() * data.length)];
         d.parentid = parent.id;
 //        if (parent.children) parent.children.push(d); else parent.children = [d];
         data.push(d);
     }
 
-    for (k = 0; k < 10; k++) {
+    for (k = 0; k < 3; k++) {
         addNewDataItem();
     }
 
@@ -80,9 +80,11 @@
 
     var tree = d3.tree().size([width, height]);
 
+    var preparedTree = {"id" : "root" };
+
     function buildHeap(inData){
         treeUnflattened = unflatten( inData );
-        var preparedTree = {"name" : "root" , "children" : treeUnflattened };
+        preparedTree.children = treeUnflattened;
 //        console.log(JSON.stringify(preparedTree));
 
         root = d3.hierarchy(preparedTree, function(d) { return d.children; });
@@ -102,30 +104,31 @@
     function update(source){
 
         var treeData = tree(source);
-        if(onTimeFlag) {
+//        if(onTimeFlag) {
             nodes = treeData.descendants();
-            onTimeFlag = false;
-        } else {
-            var newItem = treeData.descendants().slice(-1);
-            nodes = previousNodes.concat( newItem);
-        }
+        var itemtmp = treeData.descendants().slice(-1);
+//            onTimeFlag = false;
+//        } else {
+//            var newItem = treeData.descendants().slice(-1);
+//            nodes = previousNodes.concat( newItem);
+//        }
 
-        previousNodes = nodes;
+        previousNodes = nodes; // TODO Debug here and understand why they are all completely different.
         var links = treeData.descendants().slice(1);
 
         // ****************** Nodes section ***************************
         // Update the nodes...
         var selection = g.selectAll('g.node');
 
-        var some_map = _.map(selection._groups[0], function(item) {
+        /*var some_map = _.map(selection._groups[0], function(item) {
             return {id: item.__data__.id, node: item.__data__}
-        });
+        });*/
 
         var node = selection
             .data(nodes, function(d) {
-                return d.id || (d.id = ++i); //TODO we can't return here a complex objects. D3 won't be able to deep compare them.
-//                return d.id ? {id: d.id, x: d.x, y: d.y} : (d.id = ++i, {id: d.id, x: d.x, y: d.y});
-            });
+                return d.data.id || (d.data.id = ++sfid); //TODO we can't return here a complex objects. D3 won't be able to deep compare them.
+            }); // TODO Issue: We are adding kind of new items every time. That is why we redrawing all nodes at once.
+        //TODO And all previous nodes are to be removed( we can see exit transition)
 
         // Enter any new modes at the parent's previous position.
         var nodeEnter = node.enter().append('g')
@@ -133,8 +136,14 @@
             .attr("x", x)
             .attr("y", y)
             .attr("transform", function(d) {
-                var tr = "translate(" + (d.parent ? d.parent.data.x0 : d.x0) + "," + (d.parent ? d.parent.data.y0 : d.y0) + ")";
-//                var tr = "translate(" + d.parent.data.x0 + ","+  d.parent.data.y0 + ")";
+                var tr;
+                try {
+                    tr = "translate(" + (d.parent ? d.parent.data.x0 : d.x0) + "," + (d.parent ? d.parent.data.y0 : d.y0) + ")";
+                }
+                catch(err) {
+                    console.log("Error");
+                    console.log(d);
+                }
                 return tr;
             })
             .each(function(datum, index, outerIndex) {
@@ -165,6 +174,10 @@
         // UPDATE
         var nodeUpdate = nodeEnter.merge(node);
 
+        /*nodeUpdate.each(function(datum, index, outerIndex) {
+            x(datum);
+            y(datum);
+        });*/
         // Transition entered and existent nodes to the proper position for the node
         nodeUpdate.transition()
             .duration(duration)
