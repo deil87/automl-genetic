@@ -20,6 +20,19 @@
     stroke-width: 2px;
 }
 
+div.tooltip {
+    position: absolute;
+    text-align: center;
+    width: 60px;
+    height: 28px;
+    padding: 2px;
+    font: 12px sans-serif;
+    background: lightsteelblue;
+    border: 0px;
+    border-radius: 8px;
+    pointer-events: none;
+}
+
 </style>
 
 <body>
@@ -78,6 +91,10 @@
     var g = svg.append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+    var div = d3.select("body").append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0);
+
     var tree = d3.tree().size([width, height]);
 
     var preparedTree = {"id" : "root" };
@@ -128,21 +145,9 @@
             .attr("x", x)
             .attr("y", y)
             .attr("transform", function(d) {
-                var tr;
-                try {
-                    tr = "translate(" + (d.parent ? d.parent.data.x0 : d.x0) + "," + (d.parent ? d.parent.data.y0 : d.y0) + ")";
-                }
-                catch(err) {
-                    console.log("Error");
-                    console.log(d);
-                }
+                var tr = "translate(" + (d.parent ? d.parent.data.x0 : d.x0) + "," + (d.parent ? d.parent.data.y0 : d.y0) + ")";
                 return tr;
-            })
-            .each(function(datum, index, outerIndex) {
-                console.log("New entered item " + index + ", datum = ");
-                console.log(datum);
-            })
-            .on('click', click);
+            });
 
         // Add Circle for the nodes
         nodeEnter.append('circle')
@@ -150,7 +155,20 @@
             .attr('r', 1e-6)
             .style("fill", function(d) {
                 return d._children ? "lightsteelblue" : "#fff";
-            });
+            })
+            .on("mouseover", function (d) {
+                div.transition()
+                    .duration(200)
+                    .style("opacity", .9);
+                div.html("Hello" + "<br/>" + "world:" + d.data.id)
+                    .style("left", (d3.event.pageX) + "px")
+                    .style("top", (d3.event.pageY - 28) + "px");
+            })
+            .on("mouseout", function (d) {
+                div.transition()
+                    .duration(500)
+                    .style("opacity", 0);
+            });;
 
         // Add labels for the nodes
         nodeEnter.append('text')
@@ -166,15 +184,11 @@
         // UPDATE
         var nodeUpdate = nodeEnter.merge(node);
 
-        /*nodeUpdate.each(function(datum, index, outerIndex) {
-            x(datum);
-            y(datum);
-        });*/
         // Transition entered and existent nodes to the proper position for the node
         nodeUpdate.transition()
             .duration(duration)
-            .attr("x", x)
-            .attr("y", y)
+//            .attr("x", x)
+//            .attr("y", y)
             .attr("transform", function(d) {
                 return "translate(" + d.x + "," + d.y + ")";
             });
@@ -217,9 +231,18 @@
         var linkEnter = link.enter().insert('path', "g")
             .attr("class", "link")
             .attr('d', function(d){
-                var o = {y: d.y0, x: d.x0};
-                return diagonal(o, o)
+                var o2 = {x: d.x, y: d.y};
+                var o4 = {x: d.parent.x, y: d.parent.y};
+                var o = { x: (d.parent ? d.parent.data.x0 : d.x0) , y: (d.parent ? d.parent.data.y0 : d.y0)};
+                var o3 = { x: d.data.x0 , y: d.data.y0};
+                console.log("Diagonal before (" + d.data.id + ":" + d.parent.data.id +"): stringify(o)"  + JSON.stringify(o)
+                + "dxy:" + d.x + "," +  d.y
+                + " -- d.parent.xy " + d.parent.x + "," +  d.parent.y
+                + " -- d.parent.data.x0y0 " + d.parent.data.x0 + "," +  d.parent.data.y0
+                + " -- d.data.x0y0 " + d.data.x0 + "," +  d.data.y0
+                );
 
+                return diagonal(o, o)
             });
 
         // UPDATE
@@ -228,13 +251,27 @@
         // Transition back to the parent element position
         linkUpdate.transition()
             .duration(duration)
-            .attr('d', function(d){ return diagonal(d, d.parent) });
+            .attr("x", x)
+            .attr("y", y)
+            .attr('d', function(d){
+                var o = { x: (d.parent ? d.parent.data.x0 : d.x0), y: (d.parent ? d.parent.data.y0 : d.y0) };
+                var o2 = {x: d.x, y: d.y};
+                var o3 = { x: d.data.x0 , y: d.data.y0};
+                console.log("Diagonal after (" + d.data.id + ":"+ d.parent.data.id + "): dxy:" + d.x + "," +  d.y
+                    + " -- d.parent.xy " + d.parent.x + "," +  d.parent.y
+                    + " -- d.parent.data.x0y0 " + d.parent.data.x0 + "," +  d.parent.data.y0
+                    + " -- d.data.x0y0 " + d.data.x0 + "," +  d.data.y0
+                );
+
+                return diagonal(d, d.parent)
+            });
 
         // Remove any exiting links
         var linkExit = link.exit().transition()
             .duration(duration)
             .attr('d', function(d) {
                 var o = {x: d.x0, y: d.y0};
+                console.log("Removed link");
                 return diagonal(o, o)
             })
             .remove();
@@ -269,24 +306,6 @@
 
         return path;*/
     }
-
-
-    // Toggle children on click.
-    function click(d) {
-// use the following to superficially change the text of the node.
-//  this.getElementsByTagName('text')[0].textContent = "clicked all over"
-
-        if (d.children) {
-            d._children = d.children;
-            d.children = null;
-        } else {
-            d.children = d._children;
-            d._children = null;
-        }
-
-        update(d);
-    }
-
 
     buildHeap( data )
 
