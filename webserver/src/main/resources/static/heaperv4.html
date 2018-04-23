@@ -99,19 +99,11 @@
     // just leaving this global so i can mess with it in the console
     var previousNodes = [];
     var nodes;
-    var onTimeFlag = true;
 
     function update(source){
 
         var treeData = tree(source);
-//        if(onTimeFlag) {
-            nodes = treeData.descendants();
-        var itemtmp = treeData.descendants().slice(-1);
-//            onTimeFlag = false;
-//        } else {
-//            var newItem = treeData.descendants().slice(-1);
-//            nodes = previousNodes.concat( newItem);
-//        }
+        nodes = treeData.descendants();
 
         previousNodes = nodes; // TODO Debug here and understand why they are all completely different.
         var links = treeData.descendants().slice(1);
@@ -216,8 +208,10 @@
 // ****************** links section ***************************
 
         // Update the links...
-        /*var link = g.selectAll('path.link')
-            .data(links, function(d) { return d; });
+        var link = g.selectAll('path.link')
+            .data(links, function(d) {
+                return d.data.id;
+            });
 
         // Enter any new links at the parent's previous position.
         var linkEnter = link.enter().insert('path', "g")
@@ -243,15 +237,13 @@
                 var o = {x: d.x0, y: d.y0};
                 return diagonal(o, o)
             })
-            .remove();*/
+            .remove();
 
         // Store the old positions for transition.
         nodes.forEach(function(d, i){
             d.x0 = d.x;
             d.y0 = d.y;
         });
-
-//        console.log(nodes[0])
 
     }
 
