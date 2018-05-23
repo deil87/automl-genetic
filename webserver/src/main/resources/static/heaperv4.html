@@ -62,7 +62,6 @@ div.tooltip {
         var d = {id: (++sfid)},
             parent = data[~~(Math.random() * data.length)];
         d.parentid = parent.id;
-//        if (parent.children) parent.children.push(d); else parent.children = [d];
         data.push(d);
     }
 
@@ -97,12 +96,11 @@ div.tooltip {
 
     var tree = d3.tree().size([width, height]);
 
-    var preparedTree = {"id" : "root" };
 
     function buildHeap(inData){
-        treeUnflattened = unflatten( inData );
+        var treeUnflattened = unflatten( inData );
+        var preparedTree = {"id" : "root" };
         preparedTree.children = treeUnflattened;
-//        console.log(JSON.stringify(preparedTree));
 
         root = d3.hierarchy(preparedTree, function(d) { return d.children; });
 
@@ -112,9 +110,6 @@ div.tooltip {
         update(root)
     }
 
-
-    // just leaving this global so i can mess with it in the console
-    var previousNodes = [];
     var nodes;
 
     function update(source){
@@ -122,22 +117,16 @@ div.tooltip {
         var treeData = tree(source);
         nodes = treeData.descendants();
 
-        previousNodes = nodes; // TODO Debug here and understand why they are all completely different.
         var links = treeData.descendants().slice(1);
 
         // ****************** Nodes section ***************************
         // Update the nodes...
         var selection = g.selectAll('g.node');
 
-        /*var some_map = _.map(selection._groups[0], function(item) {
-            return {id: item.__data__.id, node: item.__data__}
-        });*/
-
         var node = selection
             .data(nodes, function(d) {
-                return d.data.id || (d.data.id = ++sfid); //TODO we can't return here a complex objects. D3 won't be able to deep compare them.
-            }); // TODO Issue: We are adding kind of new items every time. That is why we redrawing all nodes at once.
-        //TODO And all previous nodes are to be removed( we can see exit transition)
+                return d.data.id || (d.data.id = ++sfid);
+            });
 
         // Enter any new modes at the parent's previous position.
         var nodeEnter = node.enter().append('g')
@@ -168,7 +157,10 @@ div.tooltip {
                 div.transition()
                     .duration(500)
                     .style("opacity", 0);
-            });;
+            })
+            .on("click", function(d) {
+                return click(d, source);
+            });
 
         // Add labels for the nodes
         nodeEnter.append('text')
@@ -187,8 +179,6 @@ div.tooltip {
         // Transition entered and existent nodes to the proper position for the node
         nodeUpdate.transition()
             .duration(duration)
-//            .attr("x", x)
-//            .attr("y", y)
             .attr("transform", function(d) {
                 return "translate(" + d.x + "," + d.y + ")";
             });
@@ -231,17 +221,7 @@ div.tooltip {
         var linkEnter = link.enter().insert('path', "g")
             .attr("class", "link")
             .attr('d', function(d){
-                var o2 = {x: d.x, y: d.y};
-                var o4 = {x: d.parent.x, y: d.parent.y};
                 var o = { x: (d.parent ? d.parent.data.x0 : d.x0) , y: (d.parent ? d.parent.data.y0 : d.y0)};
-                var o3 = { x: d.data.x0 , y: d.data.y0};
-                console.log("Diagonal before (" + d.data.id + ":" + d.parent.data.id +"): stringify(o)"  + JSON.stringify(o)
-                + "dxy:" + d.x + "," +  d.y
-                + " -- d.parent.xy " + d.parent.x + "," +  d.parent.y
-                + " -- d.parent.data.x0y0 " + d.parent.data.x0 + "," +  d.parent.data.y0
-                + " -- d.data.x0y0 " + d.data.x0 + "," +  d.data.y0
-                );
-
                 return diagonal(o, o)
             });
 
@@ -254,15 +234,6 @@ div.tooltip {
             .attr("x", x)
             .attr("y", y)
             .attr('d', function(d){
-                var o = { x: (d.parent ? d.parent.data.x0 : d.x0), y: (d.parent ? d.parent.data.y0 : d.y0) };
-                var o2 = {x: d.x, y: d.y};
-                var o3 = { x: d.data.x0 , y: d.data.y0};
-                console.log("Diagonal after (" + d.data.id + ":"+ d.parent.data.id + "): dxy:" + d.x + "," +  d.y
-                    + " -- d.parent.xy " + d.parent.x + "," +  d.parent.y
-                    + " -- d.parent.data.x0y0 " + d.parent.data.x0 + "," +  d.parent.data.y0
-                    + " -- d.data.x0y0 " + d.data.x0 + "," +  d.data.y0
-                );
-
                 return diagonal(d, d.parent)
             });
 
@@ -270,7 +241,7 @@ div.tooltip {
         var linkExit = link.exit().transition()
             .duration(duration)
             .attr('d', function(d) {
-                var o = {x: d.x0, y: d.y0};
+                var o = { x: (d.parent ? d.parent.data.x0 : d.x0) , y: (d.parent ? d.parent.data.y0 : d.y0)};
                 console.log("Removed link");
                 return diagonal(o, o)
             })
@@ -299,13 +270,34 @@ div.tooltip {
                 + "C" + d.x + "," + (d.y + s.y) / 2
                 + " " + s.x + "," +  (d.y + s.y) / 2
                 + " " + s.x + "," + s.y;
-       /* path = `M ${s.x} ${s.y}
-          C ${(s.x + d.x) / 2} ${s.y},
-            ${(s.x + d.x) / 2} ${d.y},
-            ${d.x} ${d.y}`;
-
-        return path;*/
     }
+
+    function click(d, source) {
+//        source.children.forEach(collapse);
+        if (d.children) {
+            d._children = d.children;
+            d.children = null;
+            update( source );
+        } else if(d._children){
+            d.children = d._children;
+            d._children = null;
+
+            update( source ); //TODO this is not enough because by timer we are using `data` from scratch and display them again.
+            //TODO maybe we can update `data` and set field collapsed....so that field with childrens will be `_children`.
+        }
+        else {
+           console.log("No children");
+        }
+
+    }
+
+    /*function collapse(d) {
+        if(d.children) {
+            d._children = d.children;
+            d._children.forEach(collapse);
+            d.children = null
+        }
+    }*/
 
     buildHeap( data )
 
