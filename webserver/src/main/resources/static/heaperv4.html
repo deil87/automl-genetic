@@ -2,7 +2,7 @@
 <meta charset="utf-8">
 <style> /* set the CSS */
 
-.node circle {
+.node rect {
     fill: #fff;
     stroke: steelblue;
     stroke-width: 3px;
@@ -154,9 +154,10 @@ div.treeCell {
                 });
 
             // Add Circle for the nodes
-            nodeEnter.append('circle')
+            nodeEnter.append('rect')
                 .attr('class', 'node')
-                .attr('r', 1e-6)
+                .attr("width", 30)
+                .attr("height", 30)
                 .style("fill", function (d) {
                     return d._children ? "lightsteelblue" : "#fff";
                 })

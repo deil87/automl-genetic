@@ -1,17 +1,20 @@
 package com.automl.evolution.dimension
+import com.automl.evolution.diversity.DistinctDiversityStrategy
 import com.automl.{EvaluatedTemplateData, Population, PopulationEvaluator}
 import com.automl.evolution.mutation.TemplateMutationStrategy
 import com.automl.evolution.selection.RankSelectionStrategy
-import com.automl.helper.FitnessResult
+import com.automl.helper.{FitnessResult, PopulationHelper}
 import com.automl.template.{TemplateMember, TemplateTree}
+import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.ml.param.Params
 import org.apache.spark.sql.DataFrame
 
 import scala.collection.mutable
 
-class TemplateEvolutionDimension extends EvolutionDimension {
+class TemplateEvolutionDimension extends EvolutionDimension with LazyLogging{
 
-  val mutationStrategy = new TemplateMutationStrategy //TODO to constructor
+  val distinctStrategy = new DistinctDiversityStrategy()
+  val mutationStrategy = new TemplateMutationStrategy(distinctStrategy)
   val selectionStrategy = new RankSelectionStrategy
 
   // Dependencies on other dimensions. Hardcoded for now.
@@ -33,9 +36,15 @@ class TemplateEvolutionDimension extends EvolutionDimension {
     //Draw from these population with the probability distribution proportional to rank values.
     val templatesForMutation = selectionStrategy.parentSelection(0.5, evaluatedTemplatesData).map(_.template)
 
-    val offspring = mutationStrategy.mutate(new Population(templatesForMutation))
+    //Problem: initial duplication of individuals. Are we allowed repetitions at all? For now lets keep it 100% diverse.
+    val distincts = population.individuals.distinct
+    val repetitions = population.individuals.diff(distincts)
+    val offspring = mutationStrategy.mutate(new Population(templatesForMutation ++ repetitions)) // TODO kind of unfair that repetitions win as `templatesForMutation`
+    //TODO we can keep track on those who have already passed mutate function and see whether a new one is a duplicate or not.
+    logger.info("\nOffspring population:")
+    PopulationHelper.print(offspring)
 
-    val subjectsToSurvival = new Population(population.individuals ++ offspring.individuals)
+    val subjectsToSurvival = new Population(distincts ++ offspring.individuals)
 
     val evaluationResultsForAll = evaluate(subjectsToSurvival, workingDF, hyperParamsMap) //TODO we can evaluate only offspring here
 

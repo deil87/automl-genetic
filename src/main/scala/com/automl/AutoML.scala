@@ -158,12 +158,10 @@ class AutoML(data: DataFrame,
             PopulationHelper.print(populationOfTemplates)
 
             val (evolvedPopulation , bestSurvivedEvaluatedTemplate) = templateEvDim.evolve(populationOfTemplates, workingDataSet)
+            // TODO If we stuck here for too long then we are not updating `populationOfTemplates` and starting next generation from scratch.
             populationOfTemplates = evolvedPopulation
 
-            /*if (evolutionNumber == 0 && !useMetaDB) {
-              //putInfoInto MetaDB
-            }
-
+            /*
             if (stagnationDetected(evaluatedTemplatesData)) // we are breaking our while loop - early stopping?
               generationNumber = maxGenerations*/
 

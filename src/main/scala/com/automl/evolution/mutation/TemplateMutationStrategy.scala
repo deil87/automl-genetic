@@ -1,6 +1,7 @@
 package com.automl.evolution.mutation
 
 import com.automl.Population
+import com.automl.evolution.diversity.DiversityStrategy
 import com.automl.helper.MutationProbabilities
 import com.automl.template.ensemble.EnsemblingMember
 import com.automl.template.simple.SimpleModelMember
@@ -9,11 +10,13 @@ import com.typesafe.scalalogging.LazyLogging
 
 import scala.util.Random
 
-class TemplateMutationStrategy extends LazyLogging {
+//Operate on a population-wide scale, so mutation function is somewhere inside in the dungeons
+
+class TemplateMutationStrategy(diversityStrategy: DiversityStrategy) extends LazyLogging {
 
   def mutate(population: Population): Population = {
 
-    logger.info(s"\n\nStarting new mutation phase...")
+    logger.info(s"\n\nStarting new mutation phase for the population...")
 
     def mutate(individual: TemplateTree[TemplateMember]) = {
 
@@ -58,6 +61,7 @@ class TemplateMutationStrategy extends LazyLogging {
       traverseAndMutate(individual, mutationProbabilities)
     }
 
-    new Population(population.individuals map mutate)
+    val res = diversityStrategy.apply(population, mutate)
+    res
   }
 }

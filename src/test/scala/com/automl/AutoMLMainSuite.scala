@@ -58,13 +58,13 @@ class AutoMLMainSuite extends WordSpec with Matchers with BeforeAndAfterAll with
         .showN_AndContinue(10)
         .cache()
 
-      val Array(trainingSplit, testSplit) = preparedAirlineDF.randomSplit(Array(0.8, 0.2))
+      val Array(trainingSplit, testSplit) = preparedAirlineDF.randomSplit(Array(0.8, 0.2)) // TODO testSplit is never used
 
       trainingSplit.cache()
 
       val autoMl = new AutoML(
         data = trainingSplit,
-        maxTime = 400000,
+        maxTime = 300000,
         useMetaDB = false,
         initialPopulationSize = Some(7),
         seedPopulation = seedPopulation,
