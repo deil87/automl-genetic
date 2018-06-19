@@ -7,7 +7,7 @@ import com.automl.evolution.selection.RankSelectionStrategy
 import com.automl.helper._
 import com.automl.report.AutoMLReporter
 import com.automl.template._
-import com.automl.template.ensemble.EnsemblingMember
+import com.automl.template.ensemble.EnsemblingModelMember
 import com.automl.template.simple.SimpleModelMember
 import com.typesafe.scalalogging.{LazyLogging, Logger}
 import kamon.Kamon
@@ -29,6 +29,8 @@ class AutoML(data: DataFrame,
              maxTime: Long,
              maxGenerations: Int = 10,
              maxEvolutions: Int = 5,
+             maxDepthOfEnsemble: Int = 3,
+             maxNumberOfChildrenPerEnsemblingNode: Int = 10,
              useMetaDB: Boolean,
              seedPopulation: Population = Population.firstEverPopulation, // TODO make it optional because of useMetaDB
              initialPopulationSize: Option[Int] = None,

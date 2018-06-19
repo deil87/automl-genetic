@@ -1,9 +1,9 @@
 package com.automl.template.ensemble.boosting
 
-import com.automl.template.ensemble.EnsemblingMember
+import com.automl.template.ensemble.EnsemblingModelMember
 
 
-trait BoostingMember extends EnsemblingMember {
+trait BoostingMember extends EnsemblingModelMember {
   override def name: String = "boosting " + super.name
 }
 

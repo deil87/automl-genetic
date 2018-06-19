@@ -1,5 +1,11 @@
 package com.automl.helper
 
+import com.automl.template.ensemble.EnsemblingModelMember
+import com.automl.template.simple.SimpleModelMember
+import com.automl.template.{TemplateMember, TemplateTree}
+
+import scala.collection.mutable
+
 case class Probability(value: Double) {
 
   require(value <= 1 && value >= 0, s"Probability only make sense within [0,1]. Attempt to set it to $value")
@@ -17,18 +23,5 @@ case class Probability(value: Double) {
 
 }
 
-case class MutationProbabilities(structureProb: Probability, memberProb: Probability) {
-  def increaseAllBy(delta: Double): MutationProbabilities = {
-    val updated = copy(
-      structureProb = structureProb.increaseBy(delta),
-      memberProb = memberProb.increaseBy(delta)
-    )
-    println(s"ProbabilityOfStructMutation increased to: ${updated.structureProb}, ProbabilityOfMemberMutation increased to: ${updated.memberProb}")
-    updated
-  }
-}
 
-object MutationProbabilities {
-  def apply(initialProbability: Double): MutationProbabilities = new MutationProbabilities(Probability(initialProbability), Probability(initialProbability))
 
-}

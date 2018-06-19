@@ -1,9 +1,9 @@
 package com.automl.template.ensemble.bagging
 
 import com.automl.regressor.{AverageRegressor, EnsemblingRegressor}
-import com.automl.template.ensemble.EnsemblingMember
+import com.automl.template.ensemble.EnsemblingModelMember
 
-trait BaggingMember extends EnsemblingMember {
+trait BaggingMember extends EnsemblingModelMember {
   override def name: String = "bagging " + super.name
 
   override def ensemblingRegressor: EnsemblingRegressor = new AverageRegressor()
@@ -12,6 +12,6 @@ trait BaggingMember extends EnsemblingMember {
 
 object BaggingMember {
 
-  val simpleBagging = Bagging()
-  val poolOfBaggingModels: Set[EnsemblingMember] = Set(simpleBagging)
+  val SimpleBagging = Bagging()
+  val poolOfBaggingModels: Set[EnsemblingModelMember] = Set(SimpleBagging)
 }

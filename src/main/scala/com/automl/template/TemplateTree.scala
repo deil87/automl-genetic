@@ -2,7 +2,7 @@ package com.automl.template
 
 import java.util.UUID
 
-import com.automl.template.ensemble.EnsemblingMember
+import com.automl.template.ensemble.EnsemblingModelMember
 import com.automl.template.simple.SimpleModelMember
 import org.apache.spark.sql.DataFrame
 import com.automl.helper.FitnessResult
@@ -37,14 +37,14 @@ case class LeafTemplate[+A <: TemplateMember](member: A) extends TemplateTree[A]
 
 //TODO make upper bound for E type EnsemblingMember
 case class NodeTemplate[+A <: TemplateMember](member: A, subMembers: Seq[TemplateTree[A]] = Nil) extends TemplateTree[A] {
-  require(member.isInstanceOf[EnsemblingMember], "NodeTemplates's member shoud be of ensembling type")
+  require(member.isInstanceOf[EnsemblingModelMember], "NodeTemplates's member shoud be of ensembling type")
 
   //We delegating calculation to ensemble member as well
   override def evaluateFitness(trainDF: DataFrame, testDF: DataFrame)(implicit tc: TreeContext = TreeContext()): FitnessResult = {
     val updatedTC = TemplateTree.updateNodeTC(member.name, height, tc)
     //member.fitnessError(trainDF, testDF, subMembers)
     //or
-    member.asInstanceOf[EnsemblingMember].ensemblingFitnessError(trainDF, testDF, subMembers)(updatedTC)
+    member.asInstanceOf[EnsemblingModelMember].ensemblingFitnessError(trainDF, testDF, subMembers)(updatedTC)
   }
 }
 

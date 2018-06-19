@@ -4,7 +4,7 @@ import com.automl.helper.FitnessResult
 import com.automl.regressor.{AverageRegressor, EnsemblingRegressor}
 import com.automl.classifier.ensemble.bagging.SparkBagging
 import com.automl.template.{EvaluationMagnet, TemplateMember, TemplateTree, TreeContext}
-import com.automl.template.ensemble.EnsemblingMember
+import com.automl.template.ensemble.EnsemblingModelMember
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.ml.classification.NaiveBayes
 import org.apache.spark.ml.evaluation.RegressionEvaluator

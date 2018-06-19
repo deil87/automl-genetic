@@ -9,7 +9,7 @@ import com.automl.template.ensemble.cascading.CascadingMember
 import com.automl.template.ensemble.stacking.StackingMember
 import org.apache.spark.sql._
 
-trait EnsemblingMember extends TemplateMember {
+trait EnsemblingModelMember extends TemplateMember {
   override def name: String = "ensembling member"
 
   def ensemblingFitnessError[A <: TemplateMember](trainDF: DataFrame,
@@ -21,7 +21,7 @@ trait EnsemblingMember extends TemplateMember {
 }
 
 
-object EnsemblingMember {
-  val poolOfEnsemblingModels =
+object EnsemblingModelMember {
+  val poolOfEnsemblingModels: Set[EnsemblingModelMember] =
     BaggingMember.poolOfBaggingModels + StackingMember.MyStackingImpl /*++ BoostingMember.poolOfBoostingModels + StackingMember.MyStackingImpl + CascadingMember.MyCascadingImpl*/
 }

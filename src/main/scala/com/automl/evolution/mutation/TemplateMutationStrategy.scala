@@ -2,8 +2,7 @@ package com.automl.evolution.mutation
 
 import com.automl.Population
 import com.automl.evolution.diversity.DiversityStrategy
-import com.automl.helper.MutationProbabilities
-import com.automl.template.ensemble.EnsemblingMember
+import com.automl.template.ensemble.EnsemblingModelMember
 import com.automl.template.simple.SimpleModelMember
 import com.automl.template.{LeafTemplate, NodeTemplate, TemplateMember, TemplateTree}
 import com.typesafe.scalalogging.LazyLogging
@@ -20,45 +19,41 @@ class TemplateMutationStrategy(diversityStrategy: DiversityStrategy) extends Laz
 
     def mutate(individual: TemplateTree[TemplateMember]) = {
 
-      val individualsTreeHeight = individual.height
-      val initialProbability, probStep: Double = 1.0 / individualsTreeHeight
-      logger.info(s"Initial probability: $initialProbability, probStep: $probStep")
-      val mutationProbabilities = MutationProbabilities(initialProbability)
 
-      def getRandomEnsemblingMember = EnsemblingMember.poolOfEnsemblingModels.toSeq.randElement
+
+      def getRandomEnsemblingMember = EnsemblingModelMember.poolOfEnsemblingModels.toSeq.randElement
 
       def getRandomBaseMember: TemplateMember = SimpleModelMember.poolOfSimpleModels.randElement
 
-      val structOrMemberThreshold = 0.5
+      val hierarhy2memberMutationthreshold = 0.8 // When we have explored this fraction of combinations on particular # of levels then we can allow for hierarchical mutations.
 
-      def traverseAndMutate(individual: TemplateTree[TemplateMember], mutProbs: MutationProbabilities): TemplateTree[TemplateMember] = individual match {
-        case lt@LeafTemplate(_) =>
-          if (structOrMemberThreshold >= Random.nextDouble()) {
-            if (mutProbs.structureProb >= Random.nextDouble()) {
+      def probOfHierarhyMutation(individual: TemplateTree[TemplateMember]) = {
+        val individualHeight = individual.height
 
-              val numberOfNewBaseModels = Random.nextInt(4) + 1 // TODO parameter?
+        if(individualHeight == 1) {
 
-              val newMember = NodeTemplate(getRandomEnsemblingMember, Seq(lt) ++ (0 to numberOfNewBaseModels).map(_ => LeafTemplate(getRandomBaseMember)))
-              logger.info(s"\nStructural mutation happened for $lt --> $newMember")
-              newMember
-            }
-            else if (mutProbs.memberProb >= Random.nextDouble()) {
-              val newMember: TemplateMember = getRandomBaseMember
-              logger.info(s"\nMember mutation happened for $lt --> $newMember")
-              LeafTemplate(newMember)
-            }
-            else lt
-          }
-          else lt
-
-        case nt@NodeTemplate(ensemblingMember, subMembers) =>
-          val updatedMutationProbs = mutProbs.increaseAllBy(probStep)
-
-          NodeTemplate(ensemblingMember, subMembers.map(traverseAndMutate(_, updatedMutationProbs)))
+        }
 
       }
 
-      traverseAndMutate(individual, mutationProbabilities)
+
+      def traverseAndMutate(individual: TemplateTree[TemplateMember]): TemplateTree[TemplateMember] = individual match {
+        case lt@LeafTemplate(_) =>
+
+              NodeTemplate(getRandomEnsemblingMember, Seq(lt) ++ (0 to ???).map(_ => LeafTemplate(getRandomBaseMember)))
+              //newMember
+//
+//              val newMember: TemplateMember = getRandomBaseMember
+//              LeafTemplate(???/*newMember*/)
+
+        case nt@NodeTemplate(ensemblingMember, subMembers) =>
+          val updatedMutationProbs = ??? // mutProbs.increaseAllBy(probStep)
+
+          NodeTemplate(ensemblingMember, subMembers.map(traverseAndMutate(_)))
+
+      }
+
+      traverseAndMutate(individual)
     }
 
     val res = diversityStrategy.apply(population, mutate)
