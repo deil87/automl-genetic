@@ -23,5 +23,28 @@ case class Probability(value: Double) {
 
 }
 
+object Probability {
 
+  implicit val probNum = new Numeric[Probability]{
+    override def plus(x: Probability, y: Probability): Probability = ???
+
+    override def minus(x: Probability, y: Probability): Probability = ???
+
+    override def times(x: Probability, y: Probability): Probability = ???
+
+    override def negate(x: Probability): Probability = ???
+
+    override def fromInt(x: Int): Probability = ???
+
+    override def toInt(x: Probability): Int = ???
+
+    override def toLong(x: Probability): Long = ???
+
+    override def toFloat(x: Probability): Float = ???
+
+    override def toDouble(x: Probability): Double = ???
+
+    override def compare(x: Probability, y: Probability): Int = ???
+  }
+}
 
