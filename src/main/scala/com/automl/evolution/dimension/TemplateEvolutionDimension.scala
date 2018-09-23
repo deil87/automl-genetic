@@ -1,4 +1,5 @@
 package com.automl.evolution.dimension
+import akka.actor.{ActorRef, ActorSystem}
 import com.automl.evolution.diversity.DistinctDiversityStrategy
 import com.automl.{EvaluatedTemplateData, Population, PopulationEvaluator}
 import com.automl.evolution.mutation.TemplateMutationStrategy
@@ -11,19 +12,20 @@ import org.apache.spark.sql.DataFrame
 
 import scala.collection.mutable
 
-class TemplateEvolutionDimension extends EvolutionDimension with LazyLogging{
+class TemplateEvolutionDimension(implicit val as: ActorSystem) extends EvolutionDimension with LazyLogging{
 
   val distinctStrategy = new DistinctDiversityStrategy()
   val mutationStrategy = new TemplateMutationStrategy(distinctStrategy)
   val selectionStrategy = new RankSelectionStrategy
 
-  // Dependencies on other dimensions. Hardcoded for now.
+  // Dependencies on other dimensions. Hardcoded for now. Should come from AutoML.runEvolution method parameters.
   val hyperParamsEvDim = new TemplateHyperParametersEvolutionDimension
 
   implicit val templatesEvaluationCache = mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]()  // TODO make it faster with reference to value
 
   override def evolve(population: Population, workingDF: DataFrame): (Population, Option[EvaluatedTemplateData]) = {
 
+    //TODO implement Template pattern ( separate login into multiple functions and introduce them in EvolutionDimension)
     /* Template dimension depends on others dimensions and we need to get data from them first.
     This could be implemented in a custom hardcoded evaluator or with dependencies tree */
     val hyperParamsMap: Map[String, Seq[Params]] = hyperParamsEvDim.getBestPopulation()
@@ -64,7 +66,7 @@ class TemplateEvolutionDimension extends EvolutionDimension with LazyLogging{
   }
 
   def evaluate(population: Population, workingDF: DataFrame, hyperParamsMap: Map[String, Seq[Params]]): Seq[EvaluatedTemplateData] =
-    PopulationEvaluator.evaluateIndividuals(population, workingDF, hyperParamsMap)
+    new PopulationEvaluator().evaluateIndividuals(population, workingDF, hyperParamsMap)
 
   def applyMutation() = {}
   def select()= {}

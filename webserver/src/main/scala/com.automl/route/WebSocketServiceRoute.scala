@@ -7,17 +7,16 @@ import akka.http.scaladsl.server.directives.ContentTypeResolver.Default
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{Flow, Sink, Source}
 
-class WebSocketServiceRoute(implicit as: ActorSystem) {
+class WebSocketServiceRoute(notifier: ActorRef)(implicit as: ActorSystem) {
 
   def flow: Flow[Message, Message, Any] = {
-    val client = as.actorOf(Props(classOf[ClientConnectionActor]))
-    val in = Sink.actorRef(client, 'sinkclose)
-    val out = Source.actorRef(8, OverflowStrategy.fail).mapMaterializedValue { a ⇒
-      client ! ('income → a)
-      println(s"New client connected ${client.path.name}")
-      a
+    val sink = Sink.actorRef(notifier, 'sinkclose)
+    val source = Source.actorRef(8, OverflowStrategy.fail).mapMaterializedValue { webClientActor ⇒
+      notifier ! ('income → webClientActor)
+      println(s"New client connected ${webClientActor.path.name}")
+      webClientActor
     }
-    Flow.fromSinkAndSource(in, out)
+    Flow.fromSinkAndSource(sink, source)
   }
 
   val route = path("ws"){
@@ -43,7 +42,8 @@ class ClientConnectionActor extends Actor {
       context.watch(a)
     }
     case Terminated(a) if connection.contains(a) ⇒ connection = None; context.stop(self)
-    case 'sinkclose ⇒ context.stop(self)
+    case 'sinkclose ⇒
+      context.stop(self)
 
     case TextMessage.Strict(t) ⇒ connection.foreach(_ ! TextMessage.Strict(s"echo $t"))
     case _ ⇒ // ignore

@@ -29,7 +29,7 @@
 </div>
 
 <form>
-    connection to: <input type="text" id="endpoint" name="endpoint" value="ws://echo.websocket.org"  style="width: 200px" ><br>
+    connection to: <input type="text" id="endpoint" name="endpoint" value="ws://localhost:8088/ws"  style="width: 200px" ><br>
 </form>
 
 <input type="button" onclick="connectToWS()" value="connect to WebSocket endpoint" /><br><br>
@@ -76,7 +76,7 @@
     function sendMsg() {
         var message = document.getElementById("myMessage").value;
         myWebSocket.send(message);
-        console.log((new Date()).getTime());
+        console.log("Time of sending message to server:" + (new Date()).getTime());
     }
     function closeConn() {
         myWebSocket.close();

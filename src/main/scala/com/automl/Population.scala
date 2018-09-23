@@ -5,7 +5,7 @@ import com.automl.template.{TemplateMember, TemplateTree}
 
 import scala.util.Random
 
-class Population(val individuals: Seq[ TemplateTree[TemplateMember]], mutationProbabilities: MutationProbabilities = null) {
+class Population(val individuals: Seq[ TemplateTree[TemplateMember]], val mutationProbabilities: MutationProbabilities = null) {
 
   def size: Int = individuals.length
 }

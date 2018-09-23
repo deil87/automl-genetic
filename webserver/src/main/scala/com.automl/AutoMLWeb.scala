@@ -1,11 +1,15 @@
 package com.automl
-import akka.actor.ActorSystem
+import java.util.concurrent.TimeUnit
+
+import akka.actor.{ActorSystem, Props}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
-import com.automl.route.{StaticResourcesRoute, WebSocketServiceRoute}
+import akka.util.Timeout
+import com.automl.route.{ClientConnectionActor, WebClientNotifierActor, StaticResourcesRoute, WebSocketServiceRoute}
 
 import scala.io.StdIn
+import scala.util.{Failure, Success}
 
 object AutoMLWeb extends App {
 
@@ -15,8 +19,11 @@ object AutoMLWeb extends App {
 
   implicit val executionContext = system.dispatcher
 
+  val notifier = system.actorOf(Props(classOf[WebClientNotifierActor]))
+
   val staticRoute = new StaticResourcesRoute().staticResources
-  val wsRoute = new WebSocketServiceRoute().route
+  val wsRoute = new WebSocketServiceRoute(notifier).route
+
 
   private val port = 8088
   val bindingFuture = Http().bindAndHandle(staticRoute ~ wsRoute, "localhost", port)

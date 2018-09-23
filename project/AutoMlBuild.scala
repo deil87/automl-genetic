@@ -3,10 +3,14 @@ import sbt._
 
 object AutoMlBuild extends Build {
 
+  //Test dependencies are not transitive?
   lazy val testLibDependencies = List(
     "org.scalacheck" %% "scalacheck" % "1.13.4" % Test,
     "org.scalactic" %% "scalactic" % "3.0.1" % Test,
     "org.scalatest" %% "scalatest" % "3.0.1" % Test,
+    "com.pholser" % "junit-quickcheck-core" % "0.8.1",
+
+    "com.pholser" % "junit-quickcheck-generators" % "0.8.1",
     "org.pegdown" % "pegdown" % "1.6.0" % Test
   )
 
@@ -23,6 +27,11 @@ object AutoMlBuild extends Build {
     val deeplearning4jVersion = "0.9.1"
     val sparkVersion = "2.1.0"
   }
+
+  lazy val akkaDependencies = List(
+    "com.typesafe.akka" %% "akka-stream" % "2.5.12",
+    "com.typesafe.akka" %% "akka-http"   % "10.1.1"
+  )
 
   lazy val sparkDependencies = List(
     "org.apache.spark" %% "spark-core" % Version.sparkVersion,
@@ -72,7 +81,7 @@ object AutoMlBuild extends Build {
   )
 
 
-  lazy val libDependencies = coreDependencies ++ sparkDependencies ++ testLibDependencies ++ bencmarkingDependencies ++ loggingLibDependencies
+  lazy val libDependencies = coreDependencies ++ sparkDependencies ++ akkaDependencies ++ testLibDependencies ++ bencmarkingDependencies ++ loggingLibDependencies
   lazy val excludedDependencies = List(
     "org.slf4j" % "slf4j-log4j12"
   )
@@ -104,6 +113,7 @@ object AutoMlBuild extends Build {
       )
   )
 
+  //Be carefull not to put test in `source` directory of the module. For now there is no test directory.
   lazy val webServer: Project = Project(
     "webserver",
     file("webserver"),
@@ -114,10 +124,20 @@ object AutoMlBuild extends Build {
         val path = baseDirectory.value / "static"
         path
       },
-      libraryDependencies ++= Seq(
-        "com.typesafe.akka" %% "akka-stream" % "2.5.12",
-        "com.typesafe.akka" %% "akka-http"   % "10.1.1"
-      ))
+      libraryDependencies ++= testLibDependencies
+    )
   ) dependsOn root
+
+  lazy val benchmark: Project = Project(
+    "benchmark",
+    file("benchmark"),
+    settings = Seq(
+      scalaVersion in ThisBuild := "2.11.7",
+      libraryDependencies ++= testLibDependencies
+//      testOptions in Test ++= Seq(Tests.Argument(TestFrameworks.ScalaTest, "-o"), Tests.Argument(TestFrameworks.ScalaTest, "-h", "target/test-reports")),
+//      parallelExecution in Test := false,
+//      fork in Test:= true
+    )
+  ) dependsOn webServer
 
 }

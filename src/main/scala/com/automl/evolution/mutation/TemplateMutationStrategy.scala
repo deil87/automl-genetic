@@ -13,6 +13,11 @@ import scala.util.Random
 
 class TemplateMutationStrategy(diversityStrategy: DiversityStrategy) extends LazyLogging {
 
+  /**
+    *
+    * @param population Among other things it contains population-wide mutation probabilities
+    * @return
+    */
   def mutate(population: Population): Population = {
 
     logger.info(s"\n\nStarting new mutation phase for the population...")
@@ -20,34 +25,31 @@ class TemplateMutationStrategy(diversityStrategy: DiversityStrategy) extends Laz
     def mutate(individual: TemplateTree[TemplateMember]) = {
 
 
-
       def getRandomEnsemblingMember = EnsemblingModelMember.poolOfEnsemblingModels.toSeq.randElement
 
       def getRandomBaseMember: TemplateMember = SimpleModelMember.poolOfSimpleModels.randElement
 
-      val hierarhy2memberMutationthreshold = 0.8 // When we have explored this fraction of combinations on particular # of levels then we can allow for hierarchical mutations.
+      def chooseMutationTypeBasedOnPopulationWideMutationProbabilities = {
+        val probabilities: MutationProbabilities = population.mutationProbabilities
 
-      def probOfHierarhyMutation(individual: TemplateTree[TemplateMember]) = {
-        val individualHeight = individual.height
-
-        if(individualHeight == 1) {
-
-        }
 
       }
 
-
+      // We should perform one action of mutation per template. Somewhere in the tree.
       def traverseAndMutate(individual: TemplateTree[TemplateMember]): TemplateTree[TemplateMember] = individual match {
         case lt@LeafTemplate(_) =>
 
+          // Here we can start mutate other dimensions. Do not change structure. Or mutate into ensembling node.
+          // And we are not mutating leaf nodes. directly. Being in Ensemble node we can decide to add Ensemble children.
               NodeTemplate(getRandomEnsemblingMember, Seq(lt) ++ (0 to ???).map(_ => LeafTemplate(getRandomBaseMember)))
-              //newMember
-//
-//              val newMember: TemplateMember = getRandomBaseMember
-//              LeafTemplate(???/*newMember*/)
+
 
         case nt@NodeTemplate(ensemblingMember, subMembers) =>
-          val updatedMutationProbs = ??? // mutProbs.increaseAllBy(probStep)
+
+          //TODO Check how well we have explored space. Should be automatically controlled by MutationProbabilities on this Ensemple node.
+
+
+          // Here we can start mutate other dimensions. Do not change structure.
 
           NodeTemplate(ensemblingMember, subMembers.map(traverseAndMutate(_)))
 

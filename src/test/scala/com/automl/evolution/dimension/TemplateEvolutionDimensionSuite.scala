@@ -1,5 +1,6 @@
 package com.automl.evolution.dimension
 
+import akka.actor.ActorSystem
 import com.automl.{AutoML, Population, PopulationEvaluator}
 import com.automl.spark.SparkSessionProvider
 import com.automl.template.ensemble.bagging.Bagging
@@ -14,6 +15,9 @@ class TemplateEvolutionDimensionSuite extends WordSpec with Matchers with SparkS
   import utils.SparkMLUtils._
 
   trait Fixture {
+
+    implicit val system = ActorSystem("AutoMLSuite-system")
+
     val airlineDF = SparkMLUtils.loadParquet("src/test/resources/airline_allcolumns_sampled_100k_parquet")
       .select("DayOfWeek", "Distance", "DepTime", "CRSDepTime", "DepDelay")
 

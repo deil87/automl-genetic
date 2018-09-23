@@ -37,4 +37,8 @@ class RankSelectionStrategy extends LazyLogging{
     }
     selectedParents // TODO choose optimal data structure. Implicit conversion here.
   }
+
+  def selectByProbability() = {
+
+  }
 }

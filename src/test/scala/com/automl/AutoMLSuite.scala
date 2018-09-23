@@ -1,5 +1,6 @@
 package com.automl
 
+import akka.actor.ActorSystem
 import com.automl.evolution.dimension.{TemplateEvolutionDimension, TemplateHyperParametersEvolutionDimension}
 import com.automl.evolution.diversity.DistinctDiversityStrategy
 import com.automl.evolution.mutation.TemplateMutationStrategy
@@ -15,6 +16,8 @@ import utils.SparkMLUtils
 class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
 
   import utils.SparkMLUtils._
+
+  implicit val system = ActorSystem("AutoMLSuite-system")
 
   "AutoML" should {
 
