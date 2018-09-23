@@ -12,6 +12,14 @@ class RankSelectionStrategy extends LazyLogging{
     require(selectionShare < 1 && selectionShare > 0, "Selection share parameter shoud be in range (0, 1)" )
     val numberOfCompetitors = individuals.length
     val numberOfParents = (numberOfCompetitors * selectionShare).toInt
+
+    parentSelectionBySize(numberOfParents, individuals)
+  }
+
+  def parentSelectionBySize(selectionShare: Double, individuals: Seq[EvaluatedTemplateData]): Seq[EvaluatedTemplateData] = {
+    require(selectionShare < 1 && selectionShare > 0, "Selection share parameter shoud be in range (0, 1)" )
+    val numberOfCompetitors = individuals.length
+    val numberOfParents = (numberOfCompetitors * selectionShare).toInt
     val orderedByFitness = individuals.sortWith(_.fitness.fitnessError > _.fitness.fitnessError)
 
     val probabilityStrategy = new LinearRankingProbabilityStrategy(numberOfCompetitors, parameter_S = 1.5)

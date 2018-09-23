@@ -41,7 +41,14 @@ class TemplateMutationStrategy(diversityStrategy: DiversityStrategy) extends Laz
 
           // Here we can start mutate other dimensions. Do not change structure. Or mutate into ensembling node.
           // And we are not mutating leaf nodes. directly. Being in Ensemble node we can decide to add Ensemble children.
+          val decidedToMutateLeafIntoEnsemble = false
+          if(decidedToMutateLeafIntoEnsemble)
               NodeTemplate(getRandomEnsemblingMember, Seq(lt) ++ (0 to ???).map(_ => LeafTemplate(getRandomBaseMember)))
+          else {
+//            lt.mutate
+//            How to decide which dimension we are going to mutate?
+          }
+
 
 
         case nt@NodeTemplate(ensemblingMember, subMembers) =>
