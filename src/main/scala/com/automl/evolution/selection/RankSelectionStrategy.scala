@@ -16,18 +16,16 @@ class RankSelectionStrategy extends LazyLogging{
     parentSelectionBySize(numberOfParents, individuals)
   }
 
-  def parentSelectionBySize(selectionShare: Double, individuals: Seq[EvaluatedTemplateData]): Seq[EvaluatedTemplateData] = {
-    require(selectionShare < 1 && selectionShare > 0, "Selection share parameter shoud be in range (0, 1)" )
-    val numberOfCompetitors = individuals.length
-    val numberOfParents = (numberOfCompetitors * selectionShare).toInt
+  def parentSelectionBySize(numberOfParents: Int, individuals: Seq[EvaluatedTemplateData]): Seq[EvaluatedTemplateData] = {
     val orderedByFitness = individuals.sortWith(_.fitness.fitnessError > _.fitness.fitnessError)
 
-    val probabilityStrategy = new LinearRankingProbabilityStrategy(numberOfCompetitors, parameter_S = 1.5)
+    val numberOfCompetitors = individuals.length
+    val linearRankingProbabilityStrategy = new LinearRankingProbabilityStrategy(numberOfCompetitors, parameter_S = 1.5)
 
-    val ranked = orderedByFitness
+    val ranked: Seq[EvaluatedTemplateData] = orderedByFitness
       .zipWithIndex
       .map { case (ind, rank) =>
-        ind.withRank(rank).withProbability(probabilityStrategy.computeProbabilityFor(rank))
+        ind.withRank(rank).withProbability(linearRankingProbabilityStrategy.computeProbabilityFor(rank))
       }
 
     val rankedWithCumulativeProbs = ranked.drop(1).scanLeft(ranked.head){ case (acc, indd2) => indd2.copy(probability = indd2.probability + acc.probability)}

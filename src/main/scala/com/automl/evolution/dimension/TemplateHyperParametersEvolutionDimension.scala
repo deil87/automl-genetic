@@ -3,7 +3,7 @@ import com.automl.Population
 import org.apache.spark.ml.param.Params
 import org.apache.spark.sql.DataFrame
 
-class TemplateHyperParametersEvolutionDimension extends EvolutionDimension {
+class TemplateHyperParametersEvolutionDimension(evolveEveryGenerations: Int = 1) extends EvolutionDimension {
 
   override def evolve(population: Population, workingDF: DataFrame) = ???
 

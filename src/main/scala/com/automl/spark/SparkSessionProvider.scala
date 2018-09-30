@@ -1,12 +1,13 @@
 package com.automl.spark
 
+import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.SparkSession
 
-trait SparkSessionProvider {
+trait SparkSessionProvider extends LazyLogging{
 
     implicit val ss: SparkSession = SparkSessionProvider.ss
 
-  println("Numbers of cached RDDs:"  + ss.sparkContext.getPersistentRDDs.size)
+  logger.debug("Numbers of cached RDDs:"  + ss.sparkContext.getPersistentRDDs.size)
 
 }
 

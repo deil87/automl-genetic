@@ -88,7 +88,10 @@ class AutoML(data: DataFrame,
   // Except from statistical metrics we can use base model's performance metrics as a metrics to choose similar datasets.
   // SHould find Euclidian or Manhattan distance between vectors of of this metrics.
 
-  def generateInitialPopulation(size: Int): Population = Population.fromSeedPopulation(seedPopulation).withSize(size).build
+  def generateInitialPopulation(size: Int): Population = Population.fromSeedPopulation(seedPopulation)
+    .withSize(size)
+    .withDefaultMutationProbs
+    .build
 
   def stagnationDetected(evaluationResult: Any): Boolean = {
     // If we run into stagnation?

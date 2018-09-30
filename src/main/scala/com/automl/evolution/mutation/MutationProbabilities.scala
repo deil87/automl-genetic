@@ -1,5 +1,6 @@
 package com.automl.evolution.mutation
 
+import com.automl.evolution.selection.CumulativeProbabilitySelector
 import com.automl.helper.Probability
 import com.automl.template.TemplateMember
 import com.automl.template.ensemble.EnsemblingModelMember
@@ -36,12 +37,21 @@ case class MutationProbabilities(complexityFactor: Double = 0.8,
 
   var maxExperiencedProbabilityValue: Double = 0
 
-  def update(updatedMember: TemplateMember, score: Double): Unit = {
+  def moveToExperienceSection(updatedMember: TemplateMember): Unit = {
     noveltySection.remove(updatedMember) match {
-      case Some(noveltyPob) => //Case when there were no experience before
+      case Some(noveltyPob) => experienceSection += ((updatedMember, ProbabilityContext(noveltyPob, Nil)))
+      case None => throw new IllegalStateException("We can't move to experience because moving member is not present in the novelty section")
+    }
+  }
+
+  def update(updatedMember: TemplateMember, score: Double): Unit = {
+    experienceSection.find{ case (member, prc) => member == updatedMember} match {
+      case Some((member, prc)) =>
+
+        val newProbCtx = ProbabilityContext(prc.finalProb, prc.scores :+ score)
+        experienceSection.update(member, newProbCtx)
 
         //At first we just add new credit item. We move amount of probability from novelty to experience section. Then we will recalculate all probabilities.
-        experienceSection += ((updatedMember, ProbabilityContext(noveltyPob, Seq(score))))
         val allScores = experienceSection.flatMap(_._2.scores) //TODO implement as incremental avg count?
         val amountOfAvailableExperienceProb = experienceSection.map(_._2.finalProb.value).sum
 
@@ -87,10 +97,7 @@ case class MutationProbabilities(complexityFactor: Double = 0.8,
 
           simpleNoveltySubsection.foreach{ case (tm, prob) => noveltySection.update(tm, Probability(maxExperiencedProbabilityValue))}
         }
-      case None =>
-        val newProbCtx = experienceSection.get(updatedMember).map( probCtx => ProbabilityContext(probCtx.finalProb, probCtx.scores :+ score))
-          .getOrElse(throw new IllegalStateException("Template member should be either in novelty or experience section"))
-        experienceSection.update(updatedMember, newProbCtx)
+      case None => throw new IllegalStateException("Template member should be in experience section ( moved from novelty with .moveToExperienceSection method)")
     }
 
     printTabular("NoveltySection", noveltySection)
@@ -102,6 +109,15 @@ case class MutationProbabilities(complexityFactor: Double = 0.8,
 
   private def simpleNoveltySubsection = {
     noveltySection.filter(_._1.isInstanceOf[SimpleModelMember])
+  }
+
+  def getNextMember = {
+    val currentProbabilities = probabilities.map{case (member, probability) => (member, probability.value)}.toList
+
+    val selector = new CumulativeProbabilitySelector(currentProbabilities)
+
+    selector.getNext
+
   }
 
   def rearrangeTemplatesByRank(ranks:  Seq[(TemplateMember, Double)], amountOfAvailableExperienceProb: Double) = {

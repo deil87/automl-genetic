@@ -2,7 +2,7 @@ package com.automl.evolution.dimension
 import akka.actor.{ActorRef, ActorSystem}
 import com.automl.evolution.diversity.DistinctDiversityStrategy
 import com.automl.{EvaluatedTemplateData, Population, PopulationEvaluator}
-import com.automl.evolution.mutation.TemplateMutationStrategy
+import com.automl.evolution.mutation.{MutationProbabilities, TemplateMutationStrategy}
 import com.automl.evolution.selection.RankSelectionStrategy
 import com.automl.helper.{FitnessResult, PopulationHelper}
 import com.automl.template.{TemplateMember, TemplateTree}
@@ -12,7 +12,7 @@ import org.apache.spark.sql.DataFrame
 
 import scala.collection.mutable
 
-class TemplateEvolutionDimension(implicit val as: ActorSystem) extends EvolutionDimension with LazyLogging{
+class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1)(implicit val as: ActorSystem) extends EvolutionDimension with LazyLogging{
 
   val distinctStrategy = new DistinctDiversityStrategy()
   val mutationStrategy = new TemplateMutationStrategy(distinctStrategy)
@@ -49,8 +49,9 @@ class TemplateEvolutionDimension(implicit val as: ActorSystem) extends Evolution
       losersEvaluations.diff(distinctsInLosersTemplates).map(_.template)
     } else Nil
 
+    val populationCombined = new Population(bestTemplatesSelectedForMutation ++ duplicateTemplatesInLosersToMutate, population.mutationProbabilities)
     // If we made sure that mutation Strategy ensures diversity than we need to perform extra mutations for duplications only in the case of cold start in the first iteration.
-    val offspring = mutationStrategy.mutate(new Population(bestTemplatesSelectedForMutation ++ duplicateTemplatesInLosersToMutate)) // duplicates are kind of a winners as well and that is unfair but we will eliminate it int the first iteration
+    val offspring = mutationStrategy.mutate(populationCombined) // duplicates are kind of a winners as well and that is unfair but we will eliminate it int the first iteration
 
     //TODO we can keep track on those who have already passed mutate function and see whether a new one is a duplicate or not.
     logger.info("\nOffspring population:")
@@ -64,7 +65,7 @@ class TemplateEvolutionDimension(implicit val as: ActorSystem) extends Evolution
     val survivedForNextGenerationEvaluatedTemplates = selectionStrategy.parentSelectionBySize(population.size, evaluationResultsForNewExpandedGeneration)
     val bestSurvivedEvaluatedTemplate: Option[EvaluatedTemplateData] = chooseBestIndividual(evaluationResultsForNewExpandedGeneration)
 
-    val evolvedPopulation = new Population(survivedForNextGenerationEvaluatedTemplates.map(_.template))
+    val evolvedPopulation = new Population(survivedForNextGenerationEvaluatedTemplates.map(_.template), offspring.mutationProbabilities)
 
     // Do backpropagation of fitness
     //hyperParamsEvDim.evolve()

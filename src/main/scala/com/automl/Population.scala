@@ -13,17 +13,21 @@ class Population(val individuals: Seq[ TemplateTree[TemplateMember]], val mutati
 object Population {
   lazy val firstEverPopulation = new Population(TemplateTree.firstPopulation.toSeq)
 
-  case class PopulationBuilder(individuals: Seq[ TemplateTree[TemplateMember]]) {
+  case class PopulationBuilder(individuals: Seq[ TemplateTree[TemplateMember]], mutationProbabilities: MutationProbabilities) {
     def withSize(populationSize: Int): PopulationBuilder = {
       val rnd = new Random()
       val spanned = Seq.fill(populationSize)(individuals(rnd.nextInt(individuals.size)))
       this.copy(individuals = spanned)
     }
 
-    def build: Population = new Population(individuals)
+    def withDefaultMutationProbs: PopulationBuilder = {
+      this.copy(mutationProbabilities = MutationProbabilities())
+    }
+
+    def build: Population = new Population(individuals, mutationProbabilities)
   }
 
   def fromSeedPopulation(classifiersPopulation: Population): PopulationBuilder = {
-    PopulationBuilder(classifiersPopulation.individuals)
+    PopulationBuilder(classifiersPopulation.individuals, null)
   }
 }

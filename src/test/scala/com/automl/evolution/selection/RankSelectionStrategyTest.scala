@@ -18,15 +18,17 @@ class RankSelectionStrategyTest extends WordSpec with Matchers{
         LeafTemplate(DecisionTree())
       )
 
-      val individualsSpanned = Population.fromSeedPopulation(new Population(individuals)).withSize(1000).build.individuals
+      val populationSize = 10
+      val selectionShare = 0.5
+
+      val individualsSpanned = Population.fromSeedPopulation(new Population(individuals)).withSize(populationSize).build.individuals
 
       val selectionStrategy = new RankSelectionStrategy
-      val selectedParents = selectionStrategy.parentSelection(
-        0.5,
-        individualsSpanned.zipWithIndex.map { case (inds, idx) =>
-          EvaluatedTemplateData(idx.toString, inds, null, FitnessResult(Random.nextDouble(), null))
-        }
-      )
+      val evaluatedTemplateDatas = individualsSpanned.zipWithIndex.map { case (inds, idx) =>
+        EvaluatedTemplateData(idx.toString, inds, null, FitnessResult(Random.nextDouble(), null))
+      }
+
+      val selectedParents = selectionStrategy.parentSelection(selectionShare, evaluatedTemplateDatas)
 
       // <editor-fold defaultstate="collapsed" desc="Uncomment if you need to visualise distribution">
       /*import breeze.plot._
@@ -41,7 +43,7 @@ class RankSelectionStrategyTest extends WordSpec with Matchers{
 
       PopulationHelper.print(new Population(selectedParents.map(_.template)))
 
-      selectedParents.length shouldBe 500
+      selectedParents.length shouldBe (populationSize * selectionShare)
     }
 
   }
