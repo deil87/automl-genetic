@@ -17,7 +17,8 @@
     </filter>-->
         <encoder>
             <!--<pattern>%d{HH:mm:ss.SSS} %-5level %msg%n</pattern>-->
-            <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} %msg%n</pattern>
+            <!--<pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} %msg%n</pattern>-->
+            <pattern>%d{HH:mm:ss.SSS} %-5level %msg%n</pattern>
         </encoder>
     </appender>
 
@@ -35,11 +36,12 @@
         <OnMismatch>DENY</OnMismatch>
     </turboFilter>-->
 
+    <logger name="com.automl" level="INFO"/>
     <logger name="com.automl.AutoML" level="INFO"/>
     <logger name="com.automl.template" level="INFO" />
     <logger name="com.automl.template.simple" level="INFO" />
-    <logger name="com.automl.evolution.selection" level="DEBUG"/>
-    <logger name="com.automl.spark" level="DEBUG"/> <!--probably is not working in the traits (SparkSessionProvider) -->
+    <!--<logger name="com.automl.evolution.selection" level="DEBUG"/>-->
+    <!--<logger name="com.automl.spark" level="DEBUG"/>-->
     <logger name="org.apache.spark" level="ERROR"/>
 
     <root level="INFO">

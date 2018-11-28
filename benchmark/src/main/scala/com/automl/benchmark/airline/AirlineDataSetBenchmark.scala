@@ -59,7 +59,7 @@ class AirlineDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProv
 
     val autoMl = new AutoML(
       data = trainingSplit,
-      maxTime = 30000,
+      maxTime = 60000,
       useMetaDB = false,
       initialPopulationSize = Some(7),
       seedPopulation = seedPopulation,

@@ -2,12 +2,13 @@ package com.automl.template.simple
 
 import com.automl.helper.FitnessResult
 import com.automl.template.EvaluationMagnet
+import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.ml.regression.GBTRegressor
 import org.apache.spark.sql._
 
-case class GradientBoosting() extends SimpleModelMember {
+case class GradientBoosting() extends SimpleModelMember with LazyLogging{
   override def name: String = "Gradient boosting " + super.name
 
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
@@ -27,7 +28,7 @@ case class GradientBoosting() extends SimpleModelMember {
     val evaluator = new RegressionEvaluator()
 
     val rmse = evaluator.evaluate(predictions)
-    println(s"$name : RMSE = " + rmse)
+    logger.info(s"$name : RMSE = " + rmse)
     FitnessResult(rmse, predictions)
   }
 

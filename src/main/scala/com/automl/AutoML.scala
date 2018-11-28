@@ -130,16 +130,17 @@ class AutoML(data: DataFrame,
 
     val startTime = System.currentTimeMillis()
 
-    println("TimeBoxes " + timeBoxes.timeBoxes.map(_.duration).mkString(","))
-    logger.info("timeboxing", "TimeBoxes schedule" + timeBoxes.timeBoxes.map(_.duration).mkString(","))
+    println("TimeBoxes " + timeBoxes.timeBoxes.map(_.limit).mkString(","))
+    logger.info("timeboxing", "TimeBoxes schedule" + timeBoxes.timeBoxes.map(_.limit).mkString(","))
 
     timeBoxes.timeBoxes foreach { timeBox =>
-      def restOfTheTimeBox = Math.max(timeBox.duration - (System.currentTimeMillis() - startTime), 1000)
+      // Following should be equal to current (timebox.limit - previousTimeBox.limit)
+      def restOfTheTimeBox = Math.max(timeBox.limit - (System.currentTimeMillis() - startTime), 1000)
 
       val timeBoxCalculations = Future {
-        logger.info("timeboxing", s"TimeBox # ${timeBox.index} launched:")
+        logger.info(s"T$timeBox launched:")
 
-        def condition = System.currentTimeMillis() - startTime < timeBox.duration
+        def condition = System.currentTimeMillis() - startTime < timeBox.limit
 
         while (condition) {
 
@@ -200,7 +201,10 @@ class AutoML(data: DataFrame,
       try {
         Await.result(timeBoxCalculations, restOfTheTimeBox.milliseconds)
       } catch {
-        case e: TimeoutException => logger.info(s"Timeout for timebox:$timeBox has happened. Current evolutionNumber = $evolutionNumber. " + e.getMessage)
+        case e: TimeoutException =>
+          val infoMessage = s"Timeout for $timeBox has happened. Current evolutionNumber = $evolutionNumber. "
+          logger.info(infoMessage)
+          logger.debug(infoMessage + e.getMessage)
       }
     }
 

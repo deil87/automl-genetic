@@ -67,7 +67,7 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1)(implicit val a
 
     val evolvedPopulation = new Population(survivedForNextGenerationEvaluatedTemplates.map(_.template), offspring.mutationProbabilities)
 
-    // Do backpropagation of fitness
+    // Do backpropagation of fitness. Evolve other dimensions by using new evaluations/best templates
     //hyperParamsEvDim.evolve()
 
     (evolvedPopulation, bestSurvivedEvaluatedTemplate)

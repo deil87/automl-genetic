@@ -81,10 +81,8 @@ object AutoMlBuild extends Build {
   )
 
 
-  lazy val libDependencies = coreDependencies ++ sparkDependencies ++ akkaDependencies ++ testLibDependencies ++ bencmarkingDependencies ++ loggingLibDependencies
-  lazy val excludedDependencies = List(
-    "org.slf4j" % "slf4j-log4j12"
-  )
+  lazy val libDependencies = (coreDependencies ++ sparkDependencies ++ akkaDependencies ++ testLibDependencies ++ bencmarkingDependencies)
+    .map(_.exclude("org.slf4j", "slf4j-log4j12"))
 
   val buildSettings = Seq(
     version := "0.1",
@@ -100,11 +98,11 @@ object AutoMlBuild extends Build {
   )
 
   lazy val root: Project = Project(
-    "root",
+    "automl_genetic",
     file("."),
     settings = buildSettings ++ Seq(
-      libraryDependencies ++= libDependencies,
-      excludeDependencies ++= excludedDependencies,
+      libraryDependencies ++= libDependencies ++ loggingLibDependencies,
+//      excludeDependencies ++= excludedDependencies,
       resolvers += "com.teamdev" at "http://maven.teamdev.com/repository/products",
       resolvers += "jzy3d-snapshots" at "http://maven.jzy3d.org/releases",
       resolvers += "Local Maven Repository" at "file://"+ Path.userHome+"/.m2/repository",
@@ -124,7 +122,7 @@ object AutoMlBuild extends Build {
         val path = baseDirectory.value / "static"
         path
       },
-      libraryDependencies ++= testLibDependencies
+      libraryDependencies ++= libDependencies ++ loggingLibDependencies
     )
   ) dependsOn root
 
@@ -133,7 +131,7 @@ object AutoMlBuild extends Build {
     file("benchmark"),
     settings = Seq(
       scalaVersion in ThisBuild := "2.11.7",
-      libraryDependencies ++= testLibDependencies
+      libraryDependencies ++= libDependencies ++ loggingLibDependencies
 //      testOptions in Test ++= Seq(Tests.Argument(TestFrameworks.ScalaTest, "-o"), Tests.Argument(TestFrameworks.ScalaTest, "-h", "target/test-reports")),
 //      parallelExecution in Test := false,
 //      fork in Test:= true

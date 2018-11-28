@@ -29,6 +29,13 @@ class TemplateMutationStrategy(diversityStrategy: DiversityStrategy) extends Laz
 
       def getRandomBaseMember: TemplateMember = SimpleModelMember.poolOfSimpleModels.randElement
 
+      /**
+        * We can learn over time and datasets about which level to mutate. #metalearning
+        * @param probabilities
+        * @param drawnModel
+        * @param depth
+        * @return level of the template's tree to mutate
+        */
       def chooseLevelOfMutationBasedOnPopulationWideMutationProbabilities(probabilities: MutationProbabilities, drawnModel: TemplateMember, depth: Int): Int = {
 
         val levelOfMutation = if(probabilities.noveltySection.contains(drawnModel)) {
@@ -50,7 +57,8 @@ class TemplateMutationStrategy(diversityStrategy: DiversityStrategy) extends Laz
           if(decidedToMutateLeafIntoEnsemble)
               NodeTemplate(getRandomEnsemblingMember, Seq(lt) ++ (0 to ???).map(_ => LeafTemplate(getRandomBaseMember)))
           else {
-            LeafTemplate(getRandomBaseMember)
+            logger.info("Attempt to mutate leaf node. For now we are not doing this. We have chosen to increase depth of template's trees by adding ensemble node as a child to ensemble node being under mutation")
+            lt
           }
 
         case nt@NodeTemplate(ensemblingMember, subMembers) =>

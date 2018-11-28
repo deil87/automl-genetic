@@ -12,7 +12,7 @@ object AutoMLReporter {
       println("None of the evolutions were finished within given time constraint")
     } else {
 
-      val winner = bestIndividuals.dequeue() // TODO warning - could be empty
+      val winner = bestIndividuals.dequeue()
 
       println("\n##############################################################")
       println("Fitness value of the BEST template: " +  winner.fitness.fitnessError)

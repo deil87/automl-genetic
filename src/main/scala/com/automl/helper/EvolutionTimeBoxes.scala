@@ -17,7 +17,10 @@ case class EvolutionTimeBoxesBuilder(timeLimit: Long, numEvolutions: Int, splitt
 
 case class EvolutionTimeBoxes(timeBoxes: Seq[TimeBox])
 
-case class TimeBox(index: Int, duration: Long)
+//Consider renaming. It is actually a time limit for the corresponding evolution since the beginning of the automl. EvolutionTimeLimit?
+case class TimeBox(index: Int, limit: Long) {
+  override def toString: String = s"TimeBox( $index-th ${limit / 1000} sec )"
+}
 
 trait TimeBoxesStrategy {
   var timeLimit: Long

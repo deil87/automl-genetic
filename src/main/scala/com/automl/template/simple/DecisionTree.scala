@@ -22,7 +22,7 @@ case class DecisionTree() extends SimpleModelMember with SparkSessionProvider wi
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
   override def fitnessError(trainDF: DataFrame, testDF: DataFrame): FitnessResult = {
-    logger.info(s"\nEvaluating $name ...")
+    logger.info(s"Started evaluating $name ...")
     import  SparkMLUtils._
 
     import ss.implicits._
@@ -36,7 +36,7 @@ case class DecisionTree() extends SimpleModelMember with SparkSessionProvider wi
 
     val rmse: Double = evaluator.evaluate(predictions)
 
-    logger.info(s"$name : RMSE = " + rmse)
+    logger.info(s"Finished. $name : RMSE = " + rmse)
     FitnessResult(rmse, predictions)
   }
 }
