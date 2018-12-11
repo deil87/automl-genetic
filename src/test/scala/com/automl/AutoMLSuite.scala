@@ -3,7 +3,7 @@ package com.automl
 import akka.actor.ActorSystem
 import com.automl.evolution.dimension.{TemplateEvolutionDimension, TemplateHyperParametersEvolutionDimension}
 import com.automl.evolution.diversity.DistinctDiversityStrategy
-import com.automl.evolution.mutation.TemplateMutationStrategy
+import com.automl.evolution.mutation.DepthDependentTemplateMutationStrategy
 import com.automl.helper.{FitnessResult, PopulationHelper}
 import com.automl.spark.SparkSessionProvider
 import com.automl.template._
@@ -39,7 +39,7 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
 
       val distinctStrategy = new DistinctDiversityStrategy()
       
-      val mutationStrategy = new TemplateMutationStrategy(distinctStrategy)
+      val mutationStrategy = new DepthDependentTemplateMutationStrategy(distinctStrategy)
 
       val mutated = mutationStrategy.mutate(population)
 

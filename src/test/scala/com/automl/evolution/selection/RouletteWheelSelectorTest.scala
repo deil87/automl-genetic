@@ -8,7 +8,7 @@ import org.scalatest.{Matchers, WordSpec}
 
 import scala.util.Random
 
-class CumulativeProbabilitySelectorTest extends WordSpec with Matchers{
+class RouletteWheelSelectorTest extends WordSpec with Matchers{
 
   case class Item(name: String)
   "CumulativeProbabilitySelectorTest" should {
@@ -16,7 +16,7 @@ class CumulativeProbabilitySelectorTest extends WordSpec with Matchers{
     "get next element from the list based on the assigned probabilities" in {
 
       val items = List((Item("0.2"), 0.2), (Item("0.8"), 0.8))
-      val selector = new CumulativeProbabilitySelector(items)
+      val selector = new RouletteWheel(items)
 
       var counter2 = 0.0
       var counter8 = 0.0
@@ -38,5 +38,13 @@ class CumulativeProbabilitySelectorTest extends WordSpec with Matchers{
       actualProbabilityFor8 shouldBe 0.8 +- 0.01
     }
 
+    "check validation that requires probabilities to add up to unity (one)" in {
+
+      val items = List((Item("0.3"), 0.3), (Item("0.8"), 0.8))
+
+      assertThrows[IllegalArgumentException] {
+        val selector = new RouletteWheel(items)
+      }
+    }
   }
 }

@@ -2,7 +2,7 @@ package com.automl
 
 import com.automl.dataset._
 import com.automl.evolution.dimension.{EvolutionDimension, TemplateEvolutionDimension, TemplateHyperParametersEvolutionDimension}
-import com.automl.evolution.mutation.TemplateMutationStrategy
+import com.automl.evolution.mutation.DepthDependentTemplateMutationStrategy
 import com.automl.evolution.selection.RankSelectionStrategy
 import com.automl.helper._
 import com.automl.report.AutoMLReporter

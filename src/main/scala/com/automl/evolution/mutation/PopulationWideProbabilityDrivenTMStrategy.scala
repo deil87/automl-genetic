@@ -9,9 +9,19 @@ import com.typesafe.scalalogging.LazyLogging
 
 import scala.util.Random
 
-//Operate on a population-wide scale, so mutation function is somewhere inside in the dungeons
 
-class TemplateMutationStrategy(diversityStrategy: DiversityStrategy) extends LazyLogging {
+/**
+  *   Template Mutation Strategy.
+  *
+  *   Main idea of this strategy is to calculate probability for the node to be mutated during current mutation phase
+  *   based on the population wide probabilities.
+  *    There are some options also for how we increase complexity/add ensembling nodes. Probably we can add special strategy for
+  *         1) We can mutate only ensembling node by adding  children to it (base model nodes or another ensembling nodes).
+  *           In case the template is a single base model we can mutate it to another base model or to ensemble node.
+  *         2) Or we can mutate any node to anything.
+  * @param diversityStrategy
+  */
+class PopulationWideProbabilityDrivenTMStrategy(diversityStrategy: DiversityStrategy) extends LazyLogging {
 
   /**
     *

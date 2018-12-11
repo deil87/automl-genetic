@@ -11,6 +11,7 @@ import kamon.Kamon
 import kamon.metric.MeasurementUnit
 
 
+//TODO rename to TemplateTreeNode
 sealed trait TemplateTree[+A <: TemplateMember]{
 
   def member: A
@@ -35,6 +36,7 @@ case class LeafTemplate[+A <: TemplateMember](member: A) extends TemplateTree[A]
   override def height: Int = 1
 }
 
+//TODO rename node prefix because everything is node. Leaf/non-leaf nodes.
 //TODO make upper bound for E type EnsemblingMember
 case class NodeTemplate[+A <: TemplateMember](member: A, subMembers: Seq[TemplateTree[A]] = Nil) extends TemplateTree[A] {
   require(member.isInstanceOf[EnsemblingModelMember], "NodeTemplates's member shoud be of ensembling type")

@@ -61,7 +61,7 @@ class GenericStackingShowcaseSuite extends FunSuite with Matchers with SparkSess
     stacking.testModelsPredictionsDF.showAll()
 
     val finalPredictions = stacking.performStacking(predictor4)
-    logger.info("Final predictions:")
+    logger.info("Final predictions GenericStackingShowcaseSuite:")
     finalPredictions.showAll()
 
   }

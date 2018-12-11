@@ -1,6 +1,6 @@
 package com.automl.evolution.mutation
 
-import com.automl.evolution.selection.CumulativeProbabilitySelector
+import com.automl.evolution.selection.RouletteWheel
 import com.automl.helper.Probability
 import com.automl.template.TemplateMember
 import com.automl.template.ensemble.EnsemblingModelMember
@@ -114,7 +114,7 @@ case class MutationProbabilities(complexityFactor: Double = 0.8,
   def getNextMember = {
     val currentProbabilities = probabilities.map{case (member, probability) => (member, probability.value)}.toList
 
-    val selector = new CumulativeProbabilitySelector(currentProbabilities)
+    val selector = new RouletteWheel(currentProbabilities)
 
     selector.getNext
 

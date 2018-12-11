@@ -33,7 +33,7 @@ case class GenericStacking(metaLearner: PipelineStage = new LinearRegression()) 
 
     val finalPredictions = stacking.performStacking(metaLearner)
       .select("uniqueIdColumn", "features", "prediction") //TODO make sure that performStacking is returning predictions for testDF
-    logger.info("Final predictions:")
+    logger.info("Final predictions (top 10) from GenericStacking:")
     finalPredictions.showN_AndContinue(10)
 
     val evaluator = new RegressionEvaluator()
