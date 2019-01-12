@@ -8,7 +8,7 @@ import scala.util.Random
 
 class RankSelectionStrategy extends LazyLogging{
 
-  def parentSelection(selectionShare: Double, individuals: Seq[EvaluatedTemplateData]): Seq[EvaluatedTemplateData] = {
+  def parentSelectionByShare(selectionShare: Double, individuals: Seq[EvaluatedTemplateData]): Seq[EvaluatedTemplateData] = {
     require(selectionShare < 1 && selectionShare > 0, "Selection share parameter shoud be in range (0, 1)" )
     val numberOfCompetitors = individuals.length
     val numberOfParents = (numberOfCompetitors * selectionShare).toInt
@@ -16,7 +16,7 @@ class RankSelectionStrategy extends LazyLogging{
     parentSelectionBySize(numberOfParents, individuals)
   }
 
-  def parentSelectionBySize(numberOfParents: Int, individuals: Seq[EvaluatedTemplateData]): Seq[EvaluatedTemplateData] = {
+  def parentSelectionBySize(numberOfParentsToSelect: Int, individuals: Seq[EvaluatedTemplateData]): Seq[EvaluatedTemplateData] = {
     val orderedByFitness = individuals.sortWith(_.fitness.fitnessError > _.fitness.fitnessError)
 
     val numberOfCompetitors = individuals.length
@@ -32,8 +32,8 @@ class RankSelectionStrategy extends LazyLogging{
     logger.debug(rankedWithCumulativeProbs.map(r => (r.rank, r.probability)).mkString("\n"))
 
     var currentParentIndex = 0
-    val selectedParents = new Array[EvaluatedTemplateData](numberOfParents)
-    while (currentParentIndex < numberOfParents) {
+    val selectedParents = new Array[EvaluatedTemplateData](numberOfParentsToSelect)
+    while (currentParentIndex < numberOfParentsToSelect) {
       val r = Random.nextDouble()
       val rouletteWheel = rankedWithCumulativeProbs.dropWhile(individualData => individualData.probability < r)
       val selected = rouletteWheel.headOption.getOrElse(rankedWithCumulativeProbs.last)

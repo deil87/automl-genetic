@@ -35,21 +35,22 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1)(implicit val a
 
     evaluatedOriginalPopulation.printSortedByFitness()
 
-    val bestEvaluations = selectionStrategy.parentSelection(0.5, evaluatedOriginalPopulation)
+    val selectedParents = selectionStrategy.parentSelectionByShare(0.8, evaluatedOriginalPopulation)
     //Second phase: We are going to compute fitness functions and rank all the individuals.
     //Draw from these population with the probability distribution proportional to rank values.
-    val bestTemplatesSelectedForMutation = bestEvaluations.map(_.template)
+    val bestTemplatesSelectedForMutation = selectedParents.map(_.template)
 
     //Problem: initial duplication of individuals. Are we allowed repetitions at all? For now lets keep it 100% diverse.
     // Duplications could be both in parents and losers.
-    val losersEvaluations = evaluatedOriginalPopulation.diff(bestEvaluations)
+    val losersIndividuals = evaluatedOriginalPopulation.diff(selectedParents)
 
-    val duplicateTemplatesInLosersToMutate = if(losersEvaluations.distinct.size < losersEvaluations.size) {
-      val distinctsInLosersTemplates = losersEvaluations.distinct
-      losersEvaluations.diff(distinctsInLosersTemplates).map(_.template)
+    val duplicateTemplatesInLosersToMutate = if(losersIndividuals.distinct.size < losersIndividuals.size) {
+      val distinctsInLosersTemplates = losersIndividuals.distinct
+      losersIndividuals.diff(distinctsInLosersTemplates).map(_.template)
     } else Nil
 
     val populationForUpcomingMutation = new Population(bestTemplatesSelectedForMutation ++ duplicateTemplatesInLosersToMutate, population.mutationProbabilities)
+
     // If we made sure that mutation Strategy ensures diversity than we need to perform extra mutations for duplications only in the case of cold start in the first iteration.
     val offspring = mutationStrategy.mutate(populationForUpcomingMutation) // duplicates are kind of a winners as well and that is unfair but we will eliminate it int the first iteration
 

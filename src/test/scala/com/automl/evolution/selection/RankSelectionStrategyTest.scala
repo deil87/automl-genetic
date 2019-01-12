@@ -28,7 +28,7 @@ class RankSelectionStrategyTest extends WordSpec with Matchers{
         EvaluatedTemplateData(idx.toString, inds, null, FitnessResult(Random.nextDouble(), null))
       }
 
-      val selectedParents = selectionStrategy.parentSelection(selectionShare, evaluatedTemplateDatas)
+      val selectedParents = selectionStrategy.parentSelectionByShare(selectionShare, evaluatedTemplateDatas)
 
       // <editor-fold defaultstate="collapsed" desc="Uncomment if you need to visualise distribution">
       /*import breeze.plot._
