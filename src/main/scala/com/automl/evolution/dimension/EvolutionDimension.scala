@@ -4,9 +4,14 @@ import com.automl.{EvaluatedTemplateData, Population}
 import org.apache.spark.ml.param.Params
 import org.apache.spark.sql.DataFrame
 
-trait EvolutionDimension {
+trait EvolutionDimension[T] {
 
-  def evolve(population: Population, workingDF: DataFrame): (Population, Option[EvaluatedTemplateData])
+  //TODO we need generic class for Population.
+  def evolve(population: Population[T], workingDF: DataFrame): (Population[T], Option[EvaluatedTemplateData])
+
+  // We need to decompose evaluation as well.  That way we will be able not to return tuple.
+  def evaluateDimension()
+
   def applyMutation()
 
   def getBestPopulation(): Map[String, Seq[Params]] = Map.empty

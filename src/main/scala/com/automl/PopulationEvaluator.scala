@@ -29,7 +29,7 @@ class PopulationEvaluator(implicit as: ActorSystem) extends LazyLogging{
     case Failure(ex) => //
   }*/
 
-  def evaluateIndividuals(population: Population,
+  def evaluateIndividuals(population: TPopulation,
                           workingDataSet: DataFrame,
                           hyperParamsMap: Map[String, Seq[Params]] = Map.empty)
                          (implicit cache: mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]): Seq[EvaluatedTemplateData] = {

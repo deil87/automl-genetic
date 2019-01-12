@@ -32,7 +32,7 @@ class AutoML(data: DataFrame,
              maxDepthOfEnsemble: Int = 3,
              maxNumberOfChildrenPerEnsemblingNode: Int = 10,
              useMetaDB: Boolean,
-             seedPopulation: Population = Population.firstEverPopulation, // TODO make it optional because of useMetaDB
+             seedPopulation: TPopulation = TPopulation.firstEverPopulation, // TODO make it optional because of useMetaDB
              initialPopulationSize: Option[Int] = None,
              isBigSizeThreshold: Long = 500,
              isBigDimensionsThreshold: Long = 200,
@@ -88,7 +88,7 @@ class AutoML(data: DataFrame,
   // Except from statistical metrics we can use base model's performance metrics as a metrics to choose similar datasets.
   // SHould find Euclidian or Manhattan distance between vectors of of this metrics.
 
-  def generateInitialPopulation(size: Int): Population = Population.fromSeedPopulation(seedPopulation)
+  def generateInitialPopulation(size: Int): TPopulation = TPopulation.fromSeedPopulation(seedPopulation)
     .withSize(size)
     .withDefaultMutationProbs
     .build
@@ -110,8 +110,8 @@ class AutoML(data: DataFrame,
       samplingStrategy.sample(data, initialSampleSize) //TODO maybe we can start using EvolutionStrategy even here?
     } else data
 
-    var populationOfTemplates: Population = if(useMetaDB) {
-      new Population(metaDB.getPopulationOfTemplates)
+    var populationOfTemplates: TPopulation = if(useMetaDB) {
+      new TPopulation(metaDB.getPopulationOfTemplates)
     } else {
       generateInitialPopulation(initialPopulationSize.get)
     }
@@ -178,7 +178,7 @@ class AutoML(data: DataFrame,
             generationNumberKamon.increment(1)
           }
 
-          //How can we call next size level - evolution?
+          //We increase evolution number only when we change environment(i.e. datasize)
           if (currentDataSize < totalDataSize) {
             // data is doubled (both dimensionality and numerosity if possible).
             // we can increase range of hyperparameters to choose from.

@@ -29,9 +29,9 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
         LeafTemplate(DecisionTree())
       )
 
-      val seedPopulation = new Population(seed)
+      val seedPopulation = new TPopulation(seed)
 
-      val population = Population.fromSeedPopulation(seedPopulation).withSize(10).build
+      val population = TPopulation.fromSeedPopulation(seedPopulation).withSize(10).build
 
       val autoMl = new AutoML(null, 50000, useMetaDB = false, initialPopulationSize = Some(10))
 
@@ -66,9 +66,9 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
         LeafTemplate(DecisionTree())
       )
 
-      val seedPopulation = new Population(seed)
+      val seedPopulation = new TPopulation(seed)
 
-      val population = Population.fromSeedPopulation(seedPopulation).withSize(10).build
+      val population = TPopulation.fromSeedPopulation(seedPopulation).withSize(10).build
 
       val airlineDF = SparkMLUtils.loadParquet("src/test/resources/airline_allcolumns_sampled_100k_parquet")
         .select("DayOfWeek", "Distance", "DepTime", "CRSDepTime", "DepDelay")

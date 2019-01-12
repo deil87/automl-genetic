@@ -5,7 +5,7 @@ import com.automl.evolution.dimension.{TemplateEvolutionDimension, TemplateHyper
 import com.automl.spark.SparkSessionProvider
 import com.automl.template.LeafTemplate
 import com.automl.template.simple._
-import com.automl.{AutoML, Population}
+import com.automl.{AutoML, TPopulation}
 import org.apache.spark.ml.feature.VectorAssembler
 import utils.SparkMLUtils
 
@@ -23,9 +23,9 @@ class AirlineDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProv
       LeafTemplate(DecisionTree())
     )
 
-    val seedPopulation = new Population(seed)
+    val seedPopulation = new TPopulation(seed)
 
-    val population = Population.fromSeedPopulation(seedPopulation).withSize(10).build
+    val population = TPopulation.fromSeedPopulation(seedPopulation).withSize(10).build
 
     val airlineDF = SparkMLUtils.loadParquet("src/test/resources/airline_allcolumns_sampled_100k_parquet")
       .select("DayOfWeek", "Distance", "DepTime", "CRSDepTime", "DepDelay")

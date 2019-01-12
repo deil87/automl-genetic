@@ -1,6 +1,6 @@
 package com.automl.evolution.diversity
 
-import com.automl.Population
+import com.automl.TPopulation
 import com.automl.helper.PopulationHelper
 import com.automl.template.simple._
 import com.automl.template.{LeafTemplate, TemplateMember, TemplateTree}
@@ -22,9 +22,9 @@ class DistinctDiversityStrategyTest extends WordSpec with Matchers{
         Seq(DeepNeuralNetwork, NeuralNetwork, Bayesian, GLM, DT, KNN)
       }
 
-      val seedPopulation = new Population(seed)
+      val seedPopulation = new TPopulation(seed)
 
-      val population = Population.fromSeedPopulation(seedPopulation).withSize(6).build
+      val population = TPopulation.fromSeedPopulation(seedPopulation).withSize(6).build
 
       def getRandomEnsemblingMember(input: TemplateTree[TemplateMember]) = LeafTemplate(poolOfSimpleModels.randElement)
 

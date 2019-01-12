@@ -5,13 +5,18 @@ import com.automl.template.{TemplateMember, TemplateTree}
 
 import scala.util.Random
 
-class Population(val individuals: Seq[ TemplateTree[TemplateMember]], val mutationProbabilities: MutationProbabilities = null) {
+trait Population[T] {
+  def individuals: Seq[T]
+}
+
+class TPopulation(val individuals: Seq[ TemplateTree[TemplateMember]],
+                  val mutationProbabilities: MutationProbabilities = null) extends Population[TemplateTree[TemplateMember]]{
 
   def size: Int = individuals.length
 }
 
-object Population {
-  lazy val firstEverPopulation = new Population(TemplateTree.firstPopulation.toSeq)
+object TPopulation {
+  lazy val firstEverPopulation = new TPopulation(TemplateTree.firstPopulation.toSeq)
 
   case class PopulationBuilder(individuals: Seq[ TemplateTree[TemplateMember]], mutationProbabilities: MutationProbabilities) {
     def withSize(populationSize: Int): PopulationBuilder = {
@@ -24,10 +29,10 @@ object Population {
       this.copy(mutationProbabilities = MutationProbabilities())
     }
 
-    def build: Population = new Population(individuals, mutationProbabilities)
+    def build: TPopulation = new TPopulation(individuals, mutationProbabilities)
   }
 
-  def fromSeedPopulation(classifiersPopulation: Population): PopulationBuilder = {
+  def fromSeedPopulation(classifiersPopulation: TPopulation): PopulationBuilder = {
     PopulationBuilder(classifiersPopulation.individuals, null)
   }
 }

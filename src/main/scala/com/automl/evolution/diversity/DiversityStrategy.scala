@@ -1,14 +1,14 @@
 package com.automl.evolution.diversity
 
-import com.automl.Population
+import com.automl.TPopulation
 import com.automl.template.{TemplateMember, TemplateTree}
 
 trait DiversityStrategy {
-  def apply(input: Population, fun: TemplateTree[TemplateMember] => TemplateTree[TemplateMember]): Population
+  def apply(input: TPopulation, fun: TemplateTree[TemplateMember] => TemplateTree[TemplateMember]): TPopulation
 }
 
 class DistinctDiversityStrategy extends DiversityStrategy {
-  def apply(input: Population, fun: TemplateTree[TemplateMember] => TemplateTree[TemplateMember]): Population = {
+  def apply(input: TPopulation, fun: TemplateTree[TemplateMember] => TemplateTree[TemplateMember]): TPopulation = {
     val populationSize = input.individuals.length
     var distinctTemplates: Seq[TemplateTree[TemplateMember]] = input.individuals map fun distinct
 
@@ -24,6 +24,6 @@ class DistinctDiversityStrategy extends DiversityStrategy {
 
     mutate(populationSize - distinctTemplates.length)
 
-    new Population(distinctTemplates)
+    new TPopulation(distinctTemplates)
   }
 }

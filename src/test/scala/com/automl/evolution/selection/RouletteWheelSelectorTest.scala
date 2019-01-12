@@ -3,7 +3,7 @@ package com.automl.evolution.selection
 import com.automl.helper.{FitnessResult, PopulationHelper}
 import com.automl.template.LeafTemplate
 import com.automl.template.simple.{DecisionTree, LinearRegressionModel, SimpleModelMember}
-import com.automl.{EvaluatedTemplateData, Population}
+import com.automl.{EvaluatedTemplateData, TPopulation}
 import org.scalatest.{Matchers, WordSpec}
 
 import scala.util.Random

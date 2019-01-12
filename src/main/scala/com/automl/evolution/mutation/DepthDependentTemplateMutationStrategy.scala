@@ -1,6 +1,6 @@
 package com.automl.evolution.mutation
 
-import com.automl.Population
+import com.automl.TPopulation
 import com.automl.evolution.diversity.DiversityStrategy
 import com.automl.evolution.selection.{RankBasedSelectionProbabilityAssigner, RouletteWheel}
 import com.automl.template.ensemble.EnsemblingModelMember
@@ -28,7 +28,7 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
     * @param population Among other things it contains population-wide mutation probabilities
     * @return
     */
-  def mutate(population: Population): Population = {
+  def mutate(population: TPopulation): TPopulation = {
 
     logger.info(s"\n\nStarting new mutation phase for the population...")
 
@@ -40,7 +40,6 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
       def getRandomBaseMember: TemplateMember = SimpleModelMember.poolOfSimpleModels.randElement
 
       /**
-        * //TODO introduce level selector strategy? easier for testing at least
         * @param depth
         * @return level of the template's tree to mutate. Indexing from the top. Root level is 0 level.
         */
@@ -103,7 +102,7 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
     // If we restrinct duplicates or similar indeviduals than we are risking to not searching around the optimal ensemble.
     // We would have to compensate this restriction with more search-time for best individuals
     ////val res = diversityStrategy.apply(population, mutateIndividual)
-    new Population(population.individuals.map(mutateIndividual), population.mutationProbabilities)
+    new TPopulation(population.individuals.map(mutateIndividual), population.mutationProbabilities)
 
   }
 }

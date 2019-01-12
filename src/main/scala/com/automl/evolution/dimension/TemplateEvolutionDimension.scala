@@ -1,7 +1,7 @@
 package com.automl.evolution.dimension
 import akka.actor.{ActorRef, ActorSystem}
 import com.automl.evolution.diversity.DistinctDiversityStrategy
-import com.automl.{EvaluatedTemplateData, Population, PopulationEvaluator}
+import com.automl.{EvaluatedTemplateData, TPopulation, PopulationEvaluator}
 import com.automl.evolution.mutation.{MutationProbabilities, DepthDependentTemplateMutationStrategy}
 import com.automl.evolution.selection.RankSelectionStrategy
 import com.automl.helper.{FitnessResult, PopulationHelper}
@@ -12,7 +12,7 @@ import org.apache.spark.sql.DataFrame
 
 import scala.collection.mutable
 
-class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1)(implicit val as: ActorSystem) extends EvolutionDimension with LazyLogging{
+class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1)(implicit val as: ActorSystem) extends EvolutionDimension[TemplateTree[TemplateMember]] with LazyLogging{
 
   val distinctStrategy = new DistinctDiversityStrategy()
   val mutationStrategy = new DepthDependentTemplateMutationStrategy(distinctStrategy)
@@ -23,12 +23,12 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1)(implicit val a
 
   implicit val templatesEvaluationCache = mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]()  // TODO make it faster with reference to value
 
-  override def evolve(population: Population, workingDF: DataFrame): (Population, Option[EvaluatedTemplateData]) = {
+  override def evolve(population: TPopulation, workingDF: DataFrame): (TPopulation, Option[EvaluatedTemplateData]) = {
 
     //TODO implement Template pattern ( separate login into multiple functions and introduce them in EvolutionDimension)
     /* Template dimension depends on others dimensions and we need to get data from them first.
     This could be implemented in a custom hardcoded evaluator or with dependencies tree */
-    //TODO we need to add logic that decides how often we need to evolve subdimensions
+    //TODO  For how long we want to search for a hyperparameters? We can introduce HPSearchStepsPerGeneration parameter or we need to add logic that decides how often we need to evolve subdimensions
     val hyperParamsMap: Map[String, Seq[Params]] = hyperParamsEvDim.getBestPopulation() // During next generation's call of this.evolve we will be able to get new/better individuals
 
     val evaluatedOriginalPopulation = evaluate(population, workingDF, hyperParamsMap)
@@ -49,7 +49,7 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1)(implicit val a
       losersIndividuals.diff(distinctsInLosersTemplates).map(_.template)
     } else Nil
 
-    val populationForUpcomingMutation = new Population(bestTemplatesSelectedForMutation ++ duplicateTemplatesInLosersToMutate, population.mutationProbabilities)
+    val populationForUpcomingMutation = new TPopulation(bestTemplatesSelectedForMutation ++ duplicateTemplatesInLosersToMutate, population.mutationProbabilities)
 
     // If we made sure that mutation Strategy ensures diversity than we need to perform extra mutations for duplications only in the case of cold start in the first iteration.
     val offspring = mutationStrategy.mutate(populationForUpcomingMutation) // duplicates are kind of a winners as well and that is unfair but we will eliminate it int the first iteration
@@ -66,15 +66,15 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1)(implicit val a
     val survivedForNextGenerationEvaluatedTemplates = selectionStrategy.parentSelectionBySize(population.size, evaluationResultsForNewExpandedGeneration)
     val bestSurvivedEvaluatedTemplate: Option[EvaluatedTemplateData] = chooseBestIndividual(evaluationResultsForNewExpandedGeneration)
 
-    val evolvedPopulation = new Population(survivedForNextGenerationEvaluatedTemplates.map(_.template), offspring.mutationProbabilities)
+    val evolvedPopulation = new TPopulation(survivedForNextGenerationEvaluatedTemplates.map(_.template), offspring.mutationProbabilities)
 
     // Do backpropagation of fitness. Evolve other dimensions by using new evaluations/best templates
-    //hyperParamsEvDim.evolve()
+    hyperParamsEvDim.evolve()
 
     (evolvedPopulation, bestSurvivedEvaluatedTemplate)
   }
 
-  def evaluate(population: Population, workingDF: DataFrame, hyperParamsMap: Map[String, Seq[Params]]): Seq[EvaluatedTemplateData] =
+  def evaluate(population: TPopulation, workingDF: DataFrame, hyperParamsMap: Map[String, Seq[Params]]): Seq[EvaluatedTemplateData] =
     new PopulationEvaluator().evaluateIndividuals(population, workingDF, hyperParamsMap)
 
   def applyMutation() = {} //TODO can we isolate mutation into the implementation of the abstract method?
