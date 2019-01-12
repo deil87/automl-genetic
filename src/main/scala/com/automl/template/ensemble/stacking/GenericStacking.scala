@@ -21,7 +21,7 @@ case class GenericStacking(metaLearner: PipelineStage = new LinearRegression()) 
                                                            testDF: DataFrame,
                                                            subMembers: Seq[TemplateTree[A]])
                                                           (implicit tc: TreeContext = TreeContext()): FitnessResult = {
-    logger.info(s"\nEvaluating $name ...")
+    logger.debug(s"Evaluating $name ...")
     val stacking = new SparkGenericStacking(3)
 
     stacking.foldingStage(trainDF, testDF)
@@ -33,16 +33,16 @@ case class GenericStacking(metaLearner: PipelineStage = new LinearRegression()) 
 
     val finalPredictions = stacking.performStacking(metaLearner)
       .select("uniqueIdColumn", "features", "prediction") //TODO make sure that performStacking is returning predictions for testDF
-    logger.info("Final predictions (top 10) from GenericStacking:")
-    finalPredictions.showN_AndContinue(10)
+//    logger.info("Final predictions (top 10) from GenericStacking:")
+//    finalPredictions.showN_AndContinue(10)
 
     val evaluator = new RegressionEvaluator()
 
     val predictionsReunitedWithLabels = finalPredictions.join(testDF.select("label", "uniqueIdColumn"), "uniqueIdColumn")
-    predictionsReunitedWithLabels.showN_AndContinue(10)
+//    predictionsReunitedWithLabels.showN_AndContinue(10)
 
     val rmse = evaluator.evaluate(predictionsReunitedWithLabels)
-    println("RMSE Final:" + rmse)
+    logger.info("RMSE Final:" + rmse)
     FitnessResult(rmse, predictionsReunitedWithLabels)
   }
 

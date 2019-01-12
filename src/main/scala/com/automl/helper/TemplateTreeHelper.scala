@@ -62,11 +62,11 @@ object TemplateTreeHelper {
 
   }
 
-  def print(template: TemplateTree[TemplateMember]): String = {
+  def renderAsString(template: TemplateTree[TemplateMember]): String = {
     traverse(template).map(_.name).mkString(",")
   }
 
-  def print2(template: TemplateTree[TemplateMember]): String = {
+  def renderAsString_v2(template: TemplateTree[TemplateMember]): String = {
     traverse2(template).mkString("\n")
   }
 

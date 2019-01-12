@@ -54,7 +54,7 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1)(implicit val a
     val offspring = mutationStrategy.mutate(populationForUpcomingMutation) // duplicates are kind of a winners as well and that is unfair but we will eliminate it int the first iteration
 
     //TODO we can keep track on those who have already passed mutate function and see whether a new one is a duplicate or not.
-    logger.info("\nOffspring population:")
+    logger.info("Offspring population:")
     PopulationHelper.print(offspring)
 
     val mutantsEvaluationsForOffspringAndDuplicates = evaluate(offspring, workingDF, hyperParamsMap)

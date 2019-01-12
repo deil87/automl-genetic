@@ -42,7 +42,7 @@ class TemplateEvolutionDimensionSuite extends WordSpec with Matchers with SparkS
       .toDouble("label")
       .filterOutNull("label")
       .withColumn("uniqueIdColumn", monotonically_increasing_id)
-      .showN_AndContinue(10)
+//      .showN_AndContinue(10)
       .cache()
 
     val Array(trainingSplit, testSplit) = preparedAirlineDF.randomSplit(Array(0.8, 0.2))

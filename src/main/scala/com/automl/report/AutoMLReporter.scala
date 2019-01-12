@@ -16,7 +16,7 @@ object AutoMLReporter {
 
       println("\n##############################################################")
       println("Fitness value of the BEST template: " +  winner.fitness.fitnessError)
-      println("Best template: " + TemplateTreeHelper.print2(winner.template)) // TODO make print2 actually a printing method
+      println("Best template: " + TemplateTreeHelper.renderAsString_v2(winner.template)) // TODO make print2 actually a printing method
       println("Other best individuals results:\n" + bestIndividuals.dequeueAll.map(_.fitness.fitnessError).mkString(",\n"))
 
     }

@@ -24,7 +24,7 @@ case class Bagging() extends BaggingMember with LazyLogging{
                                                            testDF: DataFrame,
                                                            subMembers: Seq[TemplateTree[A]])
                                                           (implicit tc: TreeContext = TreeContext()): FitnessResult = {
-    logger.info(s"\nEvaluating $name ...")
+    logger.info(s"Evaluating $name ...")
     val sb = new SparkBagging(subMembers)
 
     val fitness = sb.fitnessError(trainDF, testDF)

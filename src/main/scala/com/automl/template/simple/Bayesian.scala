@@ -19,7 +19,7 @@ case class Bayesian() extends SimpleModelMember with SparkSessionProvider with L
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
   override def fitnessError(trainingDF: DataFrame, testDF: DataFrame): FitnessResult = {
-    logger.info(s"\nEvaluating $name ...")
+    logger.debug(s"Evaluating $name ...")
     val nb = new NaiveBayes()
 
 

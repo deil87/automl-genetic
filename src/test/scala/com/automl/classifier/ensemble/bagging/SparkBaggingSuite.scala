@@ -59,7 +59,7 @@ class SparkBaggingSuite extends FunSuite with Matchers with SparkSessionProvider
 
     val ensemb = NodeTemplate(Bagging(), models)
 
-    println(TemplateTreeHelper.print2(ensemb))
+    println(TemplateTreeHelper.renderAsString_v2(ensemb))
 
     val sb = new SparkBagging(models)
 

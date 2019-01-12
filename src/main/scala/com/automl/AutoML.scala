@@ -130,17 +130,16 @@ class AutoML(data: DataFrame,
 
     val startTime = System.currentTimeMillis()
 
-    println("TimeBoxes " + timeBoxes.timeBoxes.map(_.limit).mkString(","))
-    logger.info("timeboxing", "TimeBoxes schedule" + timeBoxes.timeBoxes.map(_.limit).mkString(","))
+    logger.info("TimeBoxes schedule " + timeBoxes.timeBoxes.map(_.upperBoundary).mkString(","))
 
     timeBoxes.timeBoxes foreach { timeBox =>
       // Following should be equal to current (timebox.limit - previousTimeBox.limit)
-      def restOfTheTimeBox = Math.max(timeBox.limit - (System.currentTimeMillis() - startTime), 1000)
+      def restOfTheTimeBox = Math.max(timeBox.upperBoundary - (System.currentTimeMillis() - startTime), 1000)
 
       val timeBoxCalculations = Future {
-        logger.info(s"T$timeBox launched:")
+        logger.info(s"$timeBox launched:")
 
-        def condition = System.currentTimeMillis() - startTime < timeBox.limit
+        def condition = System.currentTimeMillis() - startTime < timeBox.upperBoundary
 
         while (condition) {
 
@@ -148,7 +147,7 @@ class AutoML(data: DataFrame,
           //For subsequent evolutions, we use population from the last epoch of the previous evolution
           // TODO Also, ranges of explored parameters increase as templates get more precise and specific. ???
 
-          logger.info(s"LAUNCHING evolutionNumber=$evolutionNumber with datasize= $currentDataSize out of $totalDataSize ...")
+          logger.info(s"LAUNCHING evolution number $evolutionNumber with datasize = $currentDataSize (rows) out of $totalDataSize (rows) ...")
 
           var generationNumber = 0
           generationNumberKamon.set(0)
@@ -158,9 +157,9 @@ class AutoML(data: DataFrame,
           while (condition && generationNumber < maxGenerations && !doEscapeFlag) {
 
             logger.info(s"Time left: ${(maxTime - System.currentTimeMillis() + startTime) / 1000}")
-            logger.info(s"LAUNCHING evolutionNumber=$evolutionNumber generationNumber=$generationNumber...")
+            logger.info(s"LAUNCHING evolution number $evolutionNumber | generation number $generationNumber...")
 
-            logger.info("\nCurrent population:")
+            logger.info("Current population:")
             PopulationHelper.print(populationOfTemplates)
 
             val (evolvedPopulation , bestSurvivedEvaluatedTemplate) = templateEvDim.evolve(populationOfTemplates, workingDataSet)
@@ -172,7 +171,7 @@ class AutoML(data: DataFrame,
               generationNumber = maxGenerations*/
 
             //TODO we were putting into queue only best from evolution not from each generation before.
-            logger.info(s"Best candidate from  evolution #${evolutionNumber - 1} generation #$generationNumber added to priority queue: $bestSurvivedEvaluatedTemplate")
+            logger.info(s"Best candidate from  evolution #$evolutionNumber generation #$generationNumber added to priority queue: $bestSurvivedEvaluatedTemplate")
             bestSurvivedEvaluatedTemplate.foreach(template => bestEvaluatedTemplatesFromAllGenerationsQueue.enqueue(template))
 
             generationNumber += 1
@@ -202,7 +201,7 @@ class AutoML(data: DataFrame,
         Await.result(timeBoxCalculations, restOfTheTimeBox.milliseconds)
       } catch {
         case e: TimeoutException =>
-          val infoMessage = s"Timeout for $timeBox has happened. Current evolutionNumber = $evolutionNumber. "
+          val infoMessage = s"Timeout for $timeBox has happened."
           logger.info(infoMessage)
           logger.debug(infoMessage + e.getMessage)
       }

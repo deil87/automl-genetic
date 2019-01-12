@@ -1,10 +1,12 @@
 package com.automl.helper
 
 import com.automl.Population
-import com.automl.template.{TemplateMember, TemplateTree}
+import com.typesafe.scalalogging.LazyLogging
 
-object PopulationHelper {
+object PopulationHelper extends LazyLogging{
   def print(population: Population): Unit =
-    population.individuals.zipWithIndex.foreach{case (individual, idx) => println(idx + ") " + TemplateTreeHelper.print2(individual) + "\n")}
+    population.individuals.zipWithIndex.foreach{case (individual, idx) =>
+      logger.info(idx + ") " + TemplateTreeHelper.renderAsString_v2(individual) + "\n")
+    }
 
 }

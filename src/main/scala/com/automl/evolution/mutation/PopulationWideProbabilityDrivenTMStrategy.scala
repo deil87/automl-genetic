@@ -30,7 +30,7 @@ class PopulationWideProbabilityDrivenTMStrategy(diversityStrategy: DiversityStra
     */
   def mutate(population: Population): Population = {
 
-    logger.info(s"\n\nStarting new mutation phase for the population...")
+    logger.info(s"Starting new mutation phase for the population...")
 
     def mutateIndividual(individual: TemplateTree[TemplateMember]) = {
 

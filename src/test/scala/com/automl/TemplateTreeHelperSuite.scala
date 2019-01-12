@@ -31,13 +31,13 @@ class TemplateTreeHelperSuite extends FunSuite with Matchers{
     )
 
   test("TemplateTreeHelper should print tree") {
-    val stringRepr: String = TemplateTreeHelper.print2(individual)
+    val stringRepr: String = TemplateTreeHelper.renderAsString_v2(individual)
     println(stringRepr)
     assert(stringRepr.sliding("└──".length).count(_ == "└──") == 3)
   }
 
   ignore("TemplateMemberHelper should traverse tree") {
-    val stringRepr = TemplateTreeHelper.print(individual)
+    val stringRepr = TemplateTreeHelper.renderAsString(individual)
     val margin: String =
       """Bayesian baseModel member,
           |GenerilizedLinearModel baseModel member,
@@ -60,7 +60,7 @@ class TemplateTreeHelperSuite extends FunSuite with Matchers{
           )
         )
       )
-    val stringRepr: String = TemplateTreeHelper.print2(individualWithWildcard)
+    val stringRepr: String = TemplateTreeHelper.renderAsString_v2(individualWithWildcard)
     val margin: String =
       """Bayesian baseModel member{GenerilizedLinearModel baseModel member,Random forest bagging ensembling member{Wildcard[Random forest bagging ensembling member,Bayesian baseModel member]}}"""
         .stripMargin.replaceAll("\n","")
