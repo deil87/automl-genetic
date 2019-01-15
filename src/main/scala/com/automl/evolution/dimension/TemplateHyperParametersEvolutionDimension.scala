@@ -1,5 +1,5 @@
 package com.automl.evolution.dimension
-import com.automl.TPopulation
+import com.automl.{EvaluatedTemplateData, Population, TPopulation}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.spark.ml.param.Params
 import org.apache.spark.sql.DataFrame
@@ -9,11 +9,16 @@ class TemplateHyperParametersEvolutionDimension(evolveEveryGenerations: Int = 1)
 
   var hyperParametersMap: Map[String, Seq[Params]]  = Map.empty
 
-  override def evolve(population: TPopulation, workingDF: DataFrame) = {
-    val defaultConfig = ConfigFactory.load()
-    val numberOfHPEvolutionsPerGeneration = defaultConfig.getInt("evolution.hyperParameterDimension.numOfEvolutionsPerGen")
+//  override def evolve(population: TPopulation, workingDF: DataFrame) = {
+//    val defaultConfig = ConfigFactory.load()
+//    val numberOfHPEvolutionsPerGeneration = defaultConfig.getInt("evolution.hyperParameterDimension.numOfEvolutionsPerGen")
+//
+//  }
 
-  }
+
+  override def evolve(population: Population[HyperParametersField], workingDF: DataFrame): (Population[HyperParametersField], Option[EvaluatedTemplateData]) = ???
+
+  override def evaluateDimension(): Unit = ???
 
   override def applyMutation(): Unit = ???
 
