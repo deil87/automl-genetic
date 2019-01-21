@@ -15,9 +15,9 @@ class TemplateHyperParametersEvolutionDimension(evolveEveryGenerations: Int = 1)
     val initialPopulation = Seq(
       new HyperParametersField(
         Seq(
-          new ModelHyperParameters("DRF", new HyperParametersGroup())
+          new ModelHyperParameters("DRF", new HyperParametersGroup(???))
         )
-      ),
+      )
     )
     new HPPopulation(individuals = Nil)
   }

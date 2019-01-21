@@ -8,12 +8,11 @@ import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.ml.feature.VectorIndexer
 import org.apache.spark.ml.regression.RandomForestRegressor
 import org.apache.spark.sql._
-import utils.SparkMLUtils
 
 case class RandomForest() extends SimpleModelMember with SparkSessionProvider{
   override def name: String = "Random forest " + super.name
 
-  def modelKey: ModelKey = ModelKey("RandomForest")
+  override def modelKey: ModelKey = ModelKey("RandomForest")
 
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
@@ -21,7 +20,7 @@ case class RandomForest() extends SimpleModelMember with SparkSessionProvider{
 
     //We can iterate over HLIST and use
     // new RandomForestRegressor().set()
-    val rfr =  new RandomForestRegressor().set()
+    val rfr =  new RandomForestRegressor()
       .setLabelCol("label")
       .setFeaturesCol("indexedFeatures")
 
