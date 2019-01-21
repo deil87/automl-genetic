@@ -4,6 +4,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
+import com.automl.evolution.dimension.{EvaluatedHyperParametersField, HyperParametersField}
 import com.automl.helper.{FitnessResult, TemplateTreeHelper}
 import com.automl.route.UpdateWeb
 import com.automl.template.{TemplateMember, TemplateTree}
@@ -16,9 +17,16 @@ import org.apache.spark.sql.DataFrame
 import scala.collection.mutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import scala.util.{Failure, Success}
 
-class PopulationEvaluator(implicit as: ActorSystem) extends LazyLogging{
+trait PopulationEvaluator[PopulationType] {
+
+  def evaluateIndividuals(population: PopulationType,
+                          workingDataSet: DataFrame,
+                          hyperParamField: HyperParametersField)
+                            (implicit cache: mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]): Seq[EvaluatedTemplateData]
+}
+
+class TPopulationEvaluator(implicit as: ActorSystem) extends PopulationEvaluator[TPopulation] with LazyLogging{
 
   private val cacheHitsCounterKamon = Kamon.counter("kamon.automl.cache_hits")
 
@@ -29,13 +37,11 @@ class PopulationEvaluator(implicit as: ActorSystem) extends LazyLogging{
     case Failure(ex) => //
   }*/
 
-  def evaluateIndividuals(population: TPopulation,
-                          workingDataSet: DataFrame,
-                          hyperParamsMap: Map[String, Seq[Params]] = Map.empty)
-                         (implicit cache: mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]): Seq[EvaluatedTemplateData] = {
 
-
-
+  override def evaluateIndividuals(population: TPopulation,
+                                   workingDataSet: DataFrame,
+                                   hyperParamsMap: HyperParametersField)
+                                  (implicit cache: mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]): Seq[EvaluatedTemplateData] = {
 
     //TODO make use of hyperParamsMap for templated/nodes/classifiers
 

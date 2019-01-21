@@ -7,6 +7,8 @@ import org.apache.spark.sql._
 trait SimpleModelMember extends TemplateMember {
   override def name: String = "simpleModel member"
 
+  def modelKey: ModelKey
+
   def testStrategy: TestStrategy = ???
 
 }

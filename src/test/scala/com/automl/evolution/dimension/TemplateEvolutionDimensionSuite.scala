@@ -1,7 +1,7 @@
 package com.automl.evolution.dimension
 
 import akka.actor.ActorSystem
-import com.automl.{AutoML, TPopulation, PopulationEvaluator}
+import com.automl.{AutoML, TPopulation, TPopulationEvaluator}
 import com.automl.spark.SparkSessionProvider
 import com.automl.template.ensemble.bagging.Bagging
 import com.automl.template.{LeafTemplate, NodeTemplate}
@@ -67,8 +67,8 @@ class TemplateEvolutionDimensionSuite extends WordSpec with Matchers with SparkS
 
       val t = new TemplateEvolutionDimension()
 
-      t.evaluate(population, ds2, Map.empty)
-      t.evaluate(population, ds3, Map.empty)
+      t.evaluatePopulation(population, ds2)
+      t.evaluatePopulation(population, ds3)
 
       t.templatesEvaluationCache.size should be (6)  // (numbers of templates in population) * (# of different sizes of training datasets)
     }
@@ -91,7 +91,7 @@ class TemplateEvolutionDimensionSuite extends WordSpec with Matchers with SparkS
       val testPopulation = new TPopulation(template)
 
       val ds2 = trainingSplit.limit(20)
-      t.evaluate(testPopulation, ds2, Map.empty).nonEmpty shouldBe true
+      t.evaluatePopulation(testPopulation, ds2).nonEmpty shouldBe true
     }
 
   }

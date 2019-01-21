@@ -2,7 +2,7 @@ package com.automl.template.simple
 
 import com.automl.helper.FitnessResult
 import com.automl.spark.SparkSessionProvider
-import com.automl.template.EvaluationMagnet
+import com.automl.template.{EvaluationMagnet, ModelKey}
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.ml.feature.VectorIndexer
@@ -13,12 +13,15 @@ import utils.SparkMLUtils
 case class RandomForest() extends SimpleModelMember with SparkSessionProvider{
   override def name: String = "Random forest " + super.name
 
+  def modelKey: ModelKey = ModelKey("RandomForest")
 
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
   override def fitnessError(trainDF: DataFrame, testDF: DataFrame): FitnessResult = {
 
-    val rfr =  new RandomForestRegressor()
+    //We can iterate over HLIST and use
+    // new RandomForestRegressor().set()
+    val rfr =  new RandomForestRegressor().set()
       .setLabelCol("label")
       .setFeaturesCol("indexedFeatures")
 

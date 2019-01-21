@@ -162,17 +162,14 @@ class AutoML(data: DataFrame,
             logger.info("Current population:")
             PopulationHelper.print(populationOfTemplates)
 
-            val (evolvedPopulation , bestSurvivedEvaluatedTemplate) = templateEvDim.evolve(populationOfTemplates, workingDataSet)
+            val evolvedPopulation = templateEvDim.evolve(populationOfTemplates, workingDataSet)
             // TODO If we stuck here for too long then we are not updating `populationOfTemplates` and starting next generation from scratch.
-            populationOfTemplates = evolvedPopulation
+            populationOfTemplates = evolvedPopulation // TODO maybe we don't need to store it here since we store it in dimension itself
 
-            /*
-            if (stagnationDetected(evaluatedTemplatesData)) // we are breaking our while loop - early stopping?
-              generationNumber = maxGenerations*/
-
+            val bestSurvivedEvaluatedTemplate = templateEvDim.getBestFromPopulation(workingDataSet)
             //TODO we were putting into queue only best from evolution not from each generation before.
             logger.info(s"Best candidate from  evolution #$evolutionNumber generation #$generationNumber added to priority queue: $bestSurvivedEvaluatedTemplate")
-            bestSurvivedEvaluatedTemplate.foreach(template => bestEvaluatedTemplatesFromAllGenerationsQueue.enqueue(template))
+            bestEvaluatedTemplatesFromAllGenerationsQueue.enqueue(bestSurvivedEvaluatedTemplate)
 
             generationNumber += 1
             generationNumberKamon.increment(1)

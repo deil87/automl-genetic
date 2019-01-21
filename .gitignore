@@ -16,3 +16,4 @@ project/plugins/project/
 .worksheet
 /src/test/resources/airline2008.csv
 
+churn_data/

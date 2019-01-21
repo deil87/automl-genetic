@@ -1,32 +1,41 @@
 package com.automl.evolution.dimension
-import com.automl.{EvaluatedTemplateData, Population, TPopulation}
-import com.typesafe.config.{Config, ConfigFactory}
-import org.apache.spark.ml.param.Params
+import com.automl.Population
+import com.typesafe.config.ConfigFactory
+import org.apache.spark.ml.param.{ParamPair, Params}
 import org.apache.spark.sql.DataFrame
 
 // it should be a HYPER DIMENSION. We want to find the best FIELD of hyper parameters here.
-class TemplateHyperParametersEvolutionDimension(evolveEveryGenerations: Int = 1) extends EvolutionDimension[HyperParametersField] {
+class TemplateHyperParametersEvolutionDimension(evolveEveryGenerations: Int = 1) extends EvolutionDimension[HPPopulation, HyperParametersField, EvaluatedHyperParametersField] {
 
-  var hyperParametersMap: Map[String, Seq[Params]]  = Map.empty
+  override var _population: HPPopulation = ???
 
-//  override def evolve(population: TPopulation, workingDF: DataFrame) = {
-//    val defaultConfig = ConfigFactory.load()
-//    val numberOfHPEvolutionsPerGeneration = defaultConfig.getInt("evolution.hyperParameterDimension.numOfEvolutionsPerGen")
-//
-//  }
+  override def evolve(population: HPPopulation, workingDF: DataFrame): HPPopulation = {
+    val defaultConfig = ConfigFactory.load()
+    val numberOfHPEvolutionsPerGeneration = defaultConfig.getInt("evolution.hyperParameterDimension.numOfEvolutionsPerGen")
+    val initialPopulation = Seq(
+      new HyperParametersField(
+        Seq(
+          new ModelHyperParameters("DRF", new HyperParametersGroup())
+        )
+      ),
+    )
+    new HPPopulation(individuals = Nil)
+  }
 
+  override def mutateParentPopulation(population: HPPopulation): HPPopulation = ???
 
-  override def evolve(population: Population[HyperParametersField], workingDF: DataFrame): (Population[HyperParametersField], Option[EvaluatedTemplateData]) = ???
+  override def evaluatePopulation(population: HPPopulation, workingDF: DataFrame): Seq[EvaluatedHyperParametersField] = ???
 
-  override def evaluateDimension(): Unit = ???
+  override def getBestFromPopulation(workingDF: DataFrame): EvaluatedHyperParametersField = ???
 
-  override def applyMutation(): Unit = ???
-
-  override def getBestPopulation(): Map[String, Seq[Params]] = hyperParametersMap
 }
 
 //We need to evolve population of parameters for every model individually. So we will span multiple coevolutions per Model.
 
-class HyperParametersField()
+class HyperParametersField(modelParameters: Seq[ModelHyperParameters])
 class ModelHyperParameters(val modelKey: String,  val hpGroup: HyperParametersGroup)
-class HyperParametersGroup( params: Seq[Params])
+class HyperParametersGroup( params: Params)
+
+class HPPopulation(val individuals: Seq[ HyperParametersField]) extends Population[HyperParametersField]
+
+case class EvaluatedHyperParametersField(field: HyperParametersField)

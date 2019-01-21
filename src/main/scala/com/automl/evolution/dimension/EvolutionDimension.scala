@@ -4,17 +4,25 @@ import com.automl.{EvaluatedTemplateData, Population}
 import org.apache.spark.ml.param.Params
 import org.apache.spark.sql.DataFrame
 
-trait EvolutionDimension[T] {
 
-  //TODO we need generic class for Population.
-  def evolve(population: Population[T], workingDF: DataFrame): (Population[T], Option[EvaluatedTemplateData])
+/**
+  * For implementing idea of coevolutions
+  * @tparam T
+  */
+trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult] {
 
-  // We need to decompose evaluation as well.  That way we will be able not to return tuple.
-  def evaluateDimension()
+  var _population: PopulationType
 
-  def applyMutation()
+  def evolve(population: PopulationType, workingDF: DataFrame): PopulationType
 
-  def getBestPopulation(): Map[String, Seq[Params]] = Map.empty
+  def mutateParentPopulation(population: PopulationType): PopulationType
+
+  def evaluatePopulation(population: PopulationType, workingDF: DataFrame): Seq[EvaluatedResult]
+
+  def getPopulation: PopulationType = _population
+
+  def getBestFromPopulation(workingDF: DataFrame): EvaluatedResult
+
 }
 
 

@@ -1,6 +1,6 @@
 package com.automl.evolution.mutation
 
-import com.automl.TPopulation
+import com.automl.{Population, TPopulation}
 import com.automl.evolution.diversity.DiversityStrategy
 import com.automl.evolution.selection.{RankBasedSelectionProbabilityAssigner, RouletteWheel}
 import com.automl.template.ensemble.EnsemblingModelMember

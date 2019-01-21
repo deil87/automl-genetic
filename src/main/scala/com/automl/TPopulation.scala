@@ -7,12 +7,12 @@ import scala.util.Random
 
 trait Population[T] {
   def individuals: Seq[T]
+
+  def size: Int = individuals.length
 }
 
 class TPopulation(val individuals: Seq[ TemplateTree[TemplateMember]],
                   val mutationProbabilities: MutationProbabilities = null) extends Population[TemplateTree[TemplateMember]]{
-
-  def size: Int = individuals.length
 }
 
 object TPopulation {
