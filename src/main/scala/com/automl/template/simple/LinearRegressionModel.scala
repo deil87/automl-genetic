@@ -21,7 +21,7 @@ case class LinearRegressionModel() extends SimpleModelMember with LazyLogging{
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
   override def fitnessError(trainDF: DataFrame, testDF: DataFrame): FitnessResult = {
-    logger.info(s"Evaluating $name ...")
+    logger.debug(s"Evaluating $name ...")
     val linearRegression = new LinearRegression()
 
     val model = linearRegression.fit(trainDF)

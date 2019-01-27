@@ -2,13 +2,14 @@ package com.automl.template.simple
 
 import com.automl.helper.FitnessResult
 import com.automl.template.EvaluationMagnet
+import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.ml.classification.MultilayerPerceptronClassifier
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.ml.linalg.Vector
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions.col
 
-case class NeuralNetwork(layers: Array[Int]) extends SimpleModelMember {
+case class NeuralNetwork(layers: Array[Int]) extends SimpleModelMember with LazyLogging{
   override def name: String = "NeuralNetwork " + super.name
 
   lazy val predictor = new MultilayerPerceptronClassifier()
@@ -34,7 +35,7 @@ case class NeuralNetwork(layers: Array[Int]) extends SimpleModelMember {
 
     val rmse: Double = evaluator.evaluate(predictionAndLabels)
 
-    println(s"$name : RMSE = " + rmse)
+    logger.info(s"$name : RMSE = " + rmse)
     FitnessResult(rmse, predictionAndLabels.select("prediction"))
   }
 

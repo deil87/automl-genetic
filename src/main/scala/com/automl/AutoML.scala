@@ -40,16 +40,20 @@ class AutoML(data: DataFrame,
   require(!useMetaDB && initialPopulationSize.isDefined, "If there is no metaDB information then we should start from scratch with population of defined size")
 
   require(data.columns.contains(responseColumn), s"Response column with name $responseColumn is not presented in the dataset")
+
   // Choose problem type estimator based on input parameter or config file? How to separate what goes where -> config/parameters?
   val problemType: ProblemType = new ProblemTypeThresholdEstimator(10).estimate(data, responseColumn)
 
   lazy val totalDataSize: Long = getDataSize(data)
 
+  val isDataBig: Boolean = isDataBig(data)
+
   lazy val evolutionDataSizeFactor: Long = Math.max(totalDataSize / maxEvolutions, 500)
 
-  val timeBoxes: EvolutionTimeBoxes = {
-    val strategy: EqualEvolutionsStrategy = EqualEvolutionsStrategy(maxTime, maxEvolutions)
-    val builder = EvolutionTimeBoxesBuilder(maxTime, maxEvolutions).withSplittingStrategy(strategy)
+  def calculateTimeBoxes(isDataBig: Boolean): EvolutionTimeBoxes = {
+    val allowanceOfEvolutions = if(isDataBig) maxEvolutions else 1
+    val strategy: EqualEvolutionsStrategy = EqualEvolutionsStrategy(maxTime, allowanceOfEvolutions)
+    val builder = EvolutionTimeBoxesBuilder(maxTime, allowanceOfEvolutions).withSplittingStrategy(strategy)
     builder.build
   }
 
@@ -62,22 +66,10 @@ class AutoML(data: DataFrame,
 
   def isDataBig(df: DataFrame): Boolean = {
     def numberOfDimensions: Int = df.columns.length
-    numberOfDimensions >= 200 || getDataSize(data) >= isBigSizeThreshold
-
-    //import org.apache.spark.util.SizeEstimator
-    //println(SizeEstimator.estimate(distFile))
-
+    numberOfDimensions >= 200 || totalDataSize >= isBigSizeThreshold
   }
-
-  def categoricalOrContinuous(df: DataFrame): String = {
-    // TODO
-    ???
-  }
-
-  def isDataBig(size: Long): Boolean = size >= isBigSizeThreshold
 
   def getDataSize(df: DataFrame): Long = df.count()
-
 
   /*  Sampling  */
   def isDataSetBalanced = true // TODO add here concreate estimation of balancing
@@ -107,7 +99,7 @@ class AutoML(data: DataFrame,
                    hyperParamsEvDim: TemplateHyperParametersEvolutionDimension // TODO unused
                   ): Unit = {
 
-    var workingDataSet: DataFrame = if(isDataBig(data)) {
+    var workingDataSet: DataFrame = if(isDataBig) {
       samplingStrategy.sample(data, initialSampleSize) //TODO maybe we can start using EvolutionStrategy even here?
     } else data
 
@@ -131,6 +123,7 @@ class AutoML(data: DataFrame,
 
     val startTime = System.currentTimeMillis()
 
+    val timeBoxes = calculateTimeBoxes(isDataBig)
     logger.info("TimeBoxes schedule " + timeBoxes.timeBoxes.map(_.upperBoundary).mkString(","))
 
     //TODO Consider not creating timeboxes when dataset is not big. We can use generations only as we will not be increasing dataset size over evolutions.

@@ -41,7 +41,7 @@ case class RandomForest() extends SimpleModelMember with SparkSessionProvider{
     val evaluator = new RegressionEvaluator()
     val rmse: Double = evaluator.evaluate(predictions)
 
-    println(s"$name : RMSE = " + rmse)
+    logger.info(s"$name : RMSE = " + rmse)
     FitnessResult(rmse, predictions)
   }
 
