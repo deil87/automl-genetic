@@ -7,6 +7,7 @@ import com.automl.template.LeafTemplate
 import com.automl.template.simple._
 import com.automl.{AutoML, TPopulation}
 import org.apache.spark.ml.feature.VectorAssembler
+import org.apache.spark.sql.functions.rand
 import utils.SparkMLUtils
 
 class GlassDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvider{
@@ -29,8 +30,6 @@ class GlassDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvid
 
     val glassDF = SparkMLUtils.loadResourceDF("/glass/glass.csv")
 
-    glassDF.show(100)
-
     val features = Array("RI", "Na", "Mg", "Al", "Si", "K", "Ca", "Ba", "Fe")
 
     val featuresColName: String = "features"
@@ -42,6 +41,7 @@ class GlassDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvid
     }
 
     val preparedGlassDF = glassDF
+      .orderBy(rand())  // Shuffling
       .applyTransformation(featuresAssembler)
       .toLong("Id")
       .withColumnRenamed("Id", "uniqueIdColumn")
@@ -52,6 +52,7 @@ class GlassDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvid
     //Note we are passing whole dataset and inside it is being splitted as train/test. Maybe it is a good idea to hold test split for a final examination.
     val autoMl = new AutoML(
       data = preparedGlassDF,
+      responseColumn = "label",
       maxTime = 30000,
       useMetaDB = false,
       initialPopulationSize = Some(7),

@@ -3,6 +3,7 @@ package com.automl
 import com.automl.dataset._
 import com.automl.evolution.dimension.{TemplateEvolutionDimension, TemplateHyperParametersEvolutionDimension}
 import com.automl.helper._
+import com.automl.problemtype.{ProblemType, ProblemTypeThresholdEstimator}
 import com.automl.report.AutoMLReporter
 import com.typesafe.scalalogging.LazyLogging
 import kamon.Kamon
@@ -16,7 +17,9 @@ class MetaDB() {
   def getPopulationOfTemplates = ???  // Population of base models?
 }
 
-
+/**
+  * Consider using Builder pattern for setting all the parameters.
+  */
 class AutoML(data: DataFrame,
              idColumn: Option[String] = None,
              responseColumn: String = null, // TODO move logic for preparation of the DataSet inside AutoML
@@ -35,6 +38,10 @@ class AutoML(data: DataFrame,
             ) extends LazyLogging {
 
   require(!useMetaDB && initialPopulationSize.isDefined, "If there is no metaDB information then we should start from scratch with population of defined size")
+
+  require(data.columns.contains(responseColumn), s"Response column with name $responseColumn is not presented in the dataset")
+  // Choose problem type estimator based on input parameter or config file? How to separate what goes where -> config/parameters?
+  val problemType: ProblemType = new ProblemTypeThresholdEstimator(10).estimate(data, responseColumn)
 
   lazy val totalDataSize: Long = getDataSize(data)
 
