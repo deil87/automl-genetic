@@ -17,3 +17,9 @@ project/plugins/project/
 /src/test/resources/airline2008.csv
 
 churn_data/
+utils/
+
+# Maybe it is ok to push following files to server
+ShowmaxBenchmark.scala
+ShowmaxAutoMLSuite.scala
+ShowmaxETLSuite.scala

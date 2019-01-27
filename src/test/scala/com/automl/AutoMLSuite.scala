@@ -33,7 +33,7 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
 
       val population = TPopulation.fromSeedPopulation(seedPopulation).withSize(10).build
 
-      val autoMl = new AutoML(null, 50000, useMetaDB = false, initialPopulationSize = Some(10))
+      val autoMl = new AutoML(null, maxTime = 50000, useMetaDB = false, initialPopulationSize = Some(10))
 
       PopulationHelper.print(population)
 
@@ -101,7 +101,7 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
 
       trainingSplit.cache()
 
-      val autoMl = new AutoML(trainingSplit, 300000, useMetaDB = false, initialPopulationSize = Some(7), seedPopulation = seedPopulation, maxGenerations = 5)
+      val autoMl = new AutoML(trainingSplit, maxTime = 300000, useMetaDB = false, initialPopulationSize = Some(7), seedPopulation = seedPopulation, maxGenerations = 5)
 
       val templateEvDim = new TemplateEvolutionDimension
       val hyperParamsEvDim = new TemplateHyperParametersEvolutionDimension

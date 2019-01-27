@@ -1,24 +1,16 @@
 package com.automl
 
 import com.automl.dataset._
-import com.automl.evolution.dimension.{EvolutionDimension, TemplateEvolutionDimension, TemplateHyperParametersEvolutionDimension}
-import com.automl.evolution.mutation.DepthDependentTemplateMutationStrategy
-import com.automl.evolution.selection.RankSelectionStrategy
+import com.automl.evolution.dimension.{TemplateEvolutionDimension, TemplateHyperParametersEvolutionDimension}
 import com.automl.helper._
 import com.automl.report.AutoMLReporter
-import com.automl.template._
-import com.automl.template.ensemble.EnsemblingModelMember
-import com.automl.template.simple.SimpleModelMember
-import com.typesafe.scalalogging.{LazyLogging, Logger}
+import com.typesafe.scalalogging.LazyLogging
 import kamon.Kamon
 import org.apache.spark.sql.DataFrame
 
-import scala.collection.mutable
-import scala.concurrent.{Await, Future}
-import scala.util.Random
-import scala.concurrent._
-import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future, _}
 
 class MetaDB() {
   def getPopulationOfTemplates = ???  // Population of base models?
@@ -26,6 +18,8 @@ class MetaDB() {
 
 
 class AutoML(data: DataFrame,
+             idColumn: Option[String] = None,
+             responseColumn: String = null, // TODO move logic for preparation of the DataSet inside AutoML
              maxTime: Long,
              maxGenerations: Int = 10,
              maxEvolutions: Int = 5,

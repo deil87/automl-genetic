@@ -41,14 +41,29 @@ object SparkMLUtils {
   }
 
   def loadResourceDF(resourcePath: String)(implicit ss: SparkSession): DataFrame = {
-    loadAbsoluteDF(resource(resourcePath))
+    if(resourcePath.contains(".csv") )
+      loadAbsoluteDF(resource(resourcePath))
+    else if (resourcePath.contains(".json"))
+      loadAbsoluteJSONDF(resource(resourcePath))
+    else {
+      throw new IllegalArgumentException("We can load only .csv and .json files for now")
+    }
   }
+
+
   def loadAbsoluteDF(absolutePath: String)(implicit ss: SparkSession): DataFrame = {
     import ss.implicits._
     ss.read
       .option("header", "true")
       .option("inferSchema", "true")
       .csv(absolutePath)
+  }
+
+  def loadAbsoluteJSONDF(absolutePath: String)(implicit ss: SparkSession): DataFrame = {
+    import ss.implicits._
+    ss.read
+//      .option("multiline", "true")
+      .json(absolutePath)
   }
 
   def loadParquetFromResources(resourcePath: String)(implicit ss: SparkSession): DataFrame = {

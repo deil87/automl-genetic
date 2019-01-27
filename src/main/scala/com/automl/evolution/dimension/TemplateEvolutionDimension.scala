@@ -12,6 +12,11 @@ import org.apache.spark.sql.DataFrame
 
 import scala.collection.mutable
 
+/**
+  *
+  * @param evolveEveryGenerations is not used for now
+  * @param as
+  */
 class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1)(implicit val as: ActorSystem)
     extends EvolutionDimension[TPopulation, TemplateTree[TemplateMember], EvaluatedTemplateData]
     with LazyLogging{
@@ -79,9 +84,10 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1)(implicit val a
     /* Template dimension depends on others dimensions and we need to get data from them first.
     This could be implemented in a custom hardcoded evaluator or with dependencies tree */
     //TODO  For how long we want to search for a hyperparameters? We can introduce HPSearchStepsPerGeneration parameter or we need to add logic that decides how often we need to evolve subdimensions
-    val bestEvaluatedHyperParametersField = hyperParamsEvDim.getBestFromPopulation(workingDF)// During next generation's call of this.evolve we will be able to get new/better individuals
+    val bestEvaluatedHyperParametersField: HyperParametersField = null
+//    val bestEvaluatedHyperParametersField = hyperParamsEvDim.getBestFromPopulation(workingDF)// During next generation's call of this.evolve we will be able to get new/better individuals
 
-    new TPopulationEvaluator().evaluateIndividuals(population, workingDF, bestEvaluatedHyperParametersField.field)
+    new TPopulationEvaluator().evaluateIndividuals(population, workingDF, bestEvaluatedHyperParametersField)
   }
 
   override var _population: TPopulation = _

@@ -7,7 +7,7 @@ import org.apache.spark.sql.DataFrame
 // it should be a HYPER DIMENSION. We want to find the best FIELD of hyper parameters here.
 class TemplateHyperParametersEvolutionDimension(evolveEveryGenerations: Int = 1) extends EvolutionDimension[HPPopulation, HyperParametersField, EvaluatedHyperParametersField] {
 
-  override var _population: HPPopulation = ???
+  override var _population: HPPopulation = _
 
   override def evolve(population: HPPopulation, workingDF: DataFrame): HPPopulation = {
     val defaultConfig = ConfigFactory.load()
