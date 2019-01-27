@@ -117,7 +117,7 @@ class AutoML(data: DataFrame,
       generateInitialPopulation(initialPopulationSize.get)
     }
 
-    var currentDataSize = initialSampleSize
+    var currentDataSize = workingDataSet.count()
     currentDatasizeKamon.set(currentDataSize)
 
     val bestEvaluatedTemplatesFromAllGenerationsQueue = collection.mutable.PriorityQueue[EvaluatedTemplateData]()
@@ -133,6 +133,7 @@ class AutoML(data: DataFrame,
 
     logger.info("TimeBoxes schedule " + timeBoxes.timeBoxes.map(_.upperBoundary).mkString(","))
 
+    //TODO Consider not creating timeboxes when dataset is not big. We can use generations only as we will not be increasing dataset size over evolutions.
     timeBoxes.timeBoxes foreach { timeBox =>
       // Following should be equal to current (timebox.limit - previousTimeBox.limit)
       def restOfTheTimeBox = Math.max(timeBox.upperBoundary - (System.currentTimeMillis() - startTime), 1000)
@@ -148,7 +149,7 @@ class AutoML(data: DataFrame,
           //For subsequent evolutions, we use population from the last epoch of the previous evolution
           // TODO Also, ranges of explored parameters increase as templates get more precise and specific. ???
 
-          logger.info(s"LAUNCHING evolution number $evolutionNumber with datasize = $currentDataSize (rows) out of $totalDataSize (rows) ...")
+          logger.info(s"Evolution number $evolutionNumber is launched with datasize = $currentDataSize (rows) out of $totalDataSize (rows) ...")
 
           var generationNumber = 0
           generationNumberKamon.set(0)
@@ -158,7 +159,7 @@ class AutoML(data: DataFrame,
           while (condition && generationNumber < maxGenerations && !doEscapeFlag) {
 
             logger.info(s"Time left: ${(maxTime - System.currentTimeMillis() + startTime) / 1000}")
-            logger.info(s"LAUNCHING evolution number $evolutionNumber | generation number $generationNumber...")
+            logger.info(s"Generation number $generationNumber is launched ( evolution number $evolutionNumber)")
 
             logger.info("Current population:")
             PopulationHelper.print(populationOfTemplates)
