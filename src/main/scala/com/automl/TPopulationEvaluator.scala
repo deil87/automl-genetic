@@ -6,6 +6,7 @@ import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
 import com.automl.evolution.dimension.{EvaluatedHyperParametersField, HyperParametersField}
 import com.automl.helper.{FitnessResult, TemplateTreeHelper}
+import com.automl.problemtype.ProblemType
 import com.automl.route.UpdateWeb
 import com.automl.template.{TemplateMember, TemplateTree}
 import com.typesafe.scalalogging.LazyLogging
@@ -22,7 +23,8 @@ trait PopulationEvaluator[PopulationType] {
 
   def evaluateIndividuals(population: PopulationType,
                           workingDataSet: DataFrame,
-                          hyperParamField: HyperParametersField)
+                          hyperParamField: HyperParametersField,
+                          problemType: ProblemType)
                             (implicit cache: mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]): Seq[EvaluatedTemplateData]
 }
 
@@ -40,7 +42,8 @@ class TPopulationEvaluator(implicit as: ActorSystem) extends PopulationEvaluator
 
   override def evaluateIndividuals(population: TPopulation,
                                    workingDataSet: DataFrame,
-                                   hyperParamsMap: HyperParametersField)
+                                   hyperParamsMap: HyperParametersField,
+                                   problemType: ProblemType)
                                   (implicit cache: mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]): Seq[EvaluatedTemplateData] = {
 
     //TODO make use of hyperParamsMap for templated/nodes/classifiers
@@ -61,7 +64,7 @@ class TPopulationEvaluator(implicit as: ActorSystem) extends PopulationEvaluator
           // TODO can we split it randomly here???
 
           val Array(trainingSplit, testSplit) = workingDataSet.randomSplit(Array(0.67, 0.33), 11L)
-          materializedTemplate.evaluateFitness(trainingSplit, testSplit)
+          materializedTemplate.evaluateFitness(trainingSplit, testSplit, problemType)
         })
         webClientNotifier.map(wcn => wcn ! UpdateWeb(s"Evaluated ${TemplateTreeHelper.renderAsString_v2(materializedTemplate)} with fitness value: " + fr.fitnessError))
         val iad = EvaluatedTemplateData(idx.toString, individualTemplate, materializedTemplate, fr)

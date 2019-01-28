@@ -19,6 +19,5 @@ case class DeepNeuralNetwork() extends SimpleModelMember {
 
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
-  override def fitnessError(trainDF: DataFrame, testDF: DataFrame): FitnessResult = ???
-
+  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType): FitnessResult = ???
 }

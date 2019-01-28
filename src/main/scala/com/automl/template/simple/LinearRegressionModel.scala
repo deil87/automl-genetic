@@ -2,7 +2,7 @@ package com.automl.template.simple
 
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
-import com.automl.problemtype.ProblemType.{MultiClassClassificationProblem, RegressionProblem}
+import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
 import com.automl.template.EvaluationMagnet
 import com.automl.teststrategy.{TestStrategy, TrainingTestSplitStrategy}
 import com.typesafe.scalalogging.LazyLogging
@@ -15,6 +15,7 @@ case class LinearRegressionModel() extends LinearModelMember with LazyLogging{
   override def name: String = "LinearRegressionModel " + super.name
 
   override def canHandleProblemType: PartialFunction[ProblemType, Boolean] = {
+    case BinaryClassificationProblem => false
     case MultiClassClassificationProblem => false
     case RegressionProblem => true
   }
@@ -24,7 +25,9 @@ case class LinearRegressionModel() extends LinearModelMember with LazyLogging{
 
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
-  override def fitnessError(trainDF: DataFrame, testDF: DataFrame): FitnessResult = {
+
+  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType): FitnessResult = {
+
     logger.debug(s"Evaluating $name ...")
     val linearRegression = new LinearRegression() // It is a newer version of LinearRegressionWithSGD from mllib
 

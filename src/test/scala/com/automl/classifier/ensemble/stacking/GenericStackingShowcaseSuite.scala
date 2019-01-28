@@ -1,5 +1,6 @@
 package com.automl.classifier.ensemble.stacking
 
+import com.automl.problemtype.ProblemType
 import com.automl.spark.SparkSessionProvider
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.ml.feature.VectorAssembler
@@ -49,13 +50,14 @@ class GenericStackingShowcaseSuite extends FunSuite with Matchers with SparkSess
 
     stacking.foldingStage(trainingSplit, testSplit)
 
+    val problemType = ProblemType.RegressionProblem
     val predictor2 = new LinearRegression()
-    stacking.addModel(predictor2, trainingSplit, testSplit)
+    stacking.addModel(predictor2, trainingSplit, testSplit, problemType)
 
     val predictor3 = new LinearRegression().setFitIntercept(false).setRegParam(0.1)
-    stacking.addModel(predictor3, trainingSplit, testSplit)
+    stacking.addModel(predictor3, trainingSplit, testSplit, problemType)
     val predictor4 = new GBTRegressor()
-    stacking.addModel(predictor4, trainingSplit, testSplit)
+    stacking.addModel(predictor4, trainingSplit, testSplit, problemType)
 
     stacking.trainModelsPredictionsDF.showAll()
     stacking.testModelsPredictionsDF.showAll()

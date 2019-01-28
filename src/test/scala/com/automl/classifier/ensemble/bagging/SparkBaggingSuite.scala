@@ -1,6 +1,7 @@
 package com.automl.classifier.ensemble.bagging
 
 import com.automl.helper.TemplateTreeHelper
+import com.automl.problemtype.ProblemType
 import com.automl.spark.SparkSessionProvider
 import com.automl.template._
 import com.automl.template.ensemble.bagging.Bagging
@@ -61,11 +62,11 @@ class SparkBaggingSuite extends FunSuite with Matchers with SparkSessionProvider
 
     println(TemplateTreeHelper.renderAsString_v2(ensemb))
 
-    val sb = new SparkBagging(models)
+    val sb: SparkBagging[Nothing] = new SparkBagging()
 
     val Array(trainingSplit, testSplit) = prepairedAirlineDF.randomSplit(Array(0.8, 0.2))
 
-    ensemb.evaluateFitness(trainingSplit, testSplit)
+    ensemb.evaluateFitness(trainingSplit, testSplit, ProblemType.RegressionProblem)
   }
 
 

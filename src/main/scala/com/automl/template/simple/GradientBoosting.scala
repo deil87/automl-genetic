@@ -18,9 +18,9 @@ case class GradientBoosting() extends SimpleModelMember with LazyLogging{
     case RegressionProblem => true
   }
 
-  override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
+  override def fitnessError(magnet: EvaluationMagnet): FitnessResult = null
 
-  override def fitnessError(trainDF: DataFrame, testDF: DataFrame): FitnessResult = {
+  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType): FitnessResult = {
 
     val gBTRegressor = new GBTRegressor()
 

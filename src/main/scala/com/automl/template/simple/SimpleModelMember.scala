@@ -28,6 +28,7 @@ object SimpleModelMember {
   val SVM: SimpleModelMember = new SVMModel()
   val SupportVectorRegression: SimpleModelMember = new SupportVectorRegression()
   val LinearPerceptron: SimpleModelMember = new LinearPerceptron()
+  val GradientBoosting: SimpleModelMember = new GradientBoosting() // Can we consider this as a simple model? It is actually an ensemble of trees
 
-  val poolOfSimpleModels: Seq[SimpleModelMember] = Seq(/*DeepNeuralNetwork,*/ Bayesian, GLM, DT/*, KNN, LogisticRegression, SVM, SupportVectorRegression, LinearPerceptron*/)
+  val poolOfSimpleModels: Seq[SimpleModelMember] = Seq(/*DeepNeuralNetwork,*/ Bayesian, GLM, DT/*,GradientBoosting,  KNN, LogisticRegression, SVM, SupportVectorRegression, LinearPerceptron*/)
 }

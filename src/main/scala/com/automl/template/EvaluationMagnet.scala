@@ -1,6 +1,7 @@
 package com.automl.template
 
 import com.automl.helper.FitnessResult
+import com.automl.problemtype.ProblemType
 import org.apache.spark.sql.DataFrame
 
 
@@ -18,13 +19,13 @@ object EvaluationMagnet {
 
     }
 
-  implicit def fromEnsemblingModel[A <: TemplateMember](tuple: ( DataFrame, DataFrame, Seq[TemplateTree[A]])) =
+  implicit def fromEnsemblingModel[A <: TemplateMember](tuple: ( DataFrame, DataFrame, Seq[TemplateTree[A]], ProblemType)) =
     new EvaluationMagnet {
       type Result = FitnessResult
 
       def apply(): Result = {
-        val (trainDF, testDF, subMembers) = tuple
-        subMembers.map(_.evaluateFitness(trainDF, testDF))
+        val (trainDF, testDF, subMembers, problemType) = tuple
+        subMembers.map(_.evaluateFitness(trainDF, testDF, problemType))
         FitnessResult(42, ???)
       }
 

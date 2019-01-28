@@ -1,10 +1,11 @@
 package com.automl.evolution.dimension
 import akka.actor.{ActorRef, ActorSystem}
 import com.automl.evolution.diversity.DistinctDiversityStrategy
-import com.automl.{EvaluatedTemplateData, Population, TPopulationEvaluator, TPopulation}
+import com.automl.{EvaluatedTemplateData, Population, TPopulation, TPopulationEvaluator}
 import com.automl.evolution.mutation.{DepthDependentTemplateMutationStrategy, MutationProbabilities}
 import com.automl.evolution.selection.RankSelectionStrategy
 import com.automl.helper.{FitnessResult, PopulationHelper}
+import com.automl.problemtype.ProblemType
 import com.automl.template.{TemplateMember, TemplateTree}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.ml.param.Params
@@ -30,9 +31,9 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1)(implicit val a
 
   implicit val templatesEvaluationCache = mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]()  // TODO make it faster with reference to value
 
-  override def evolve(population: TPopulation, workingDF: DataFrame): TPopulation = {
+  override def evolve(population: TPopulation, workingDF: DataFrame, problemType: ProblemType): TPopulation = {
 
-    val evaluatedOriginalPopulation = evaluatePopulation(population, workingDF)
+    val evaluatedOriginalPopulation = evaluatePopulation(population, workingDF, problemType)
 
     evaluatedOriginalPopulation.printSortedByFitness()
 
@@ -53,7 +54,7 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1)(implicit val a
     val populationForUpcomingMutation = new TPopulation(bestTemplatesSelectedForMutation ++ duplicateTemplatesInLosersToMutate, population.mutationProbabilities)
     val offspring = mutateParentPopulation(populationForUpcomingMutation)
 
-    val mutantsEvaluationsForOffspringAndDuplicates = evaluatePopulation(offspring, workingDF)
+    val mutantsEvaluationsForOffspringAndDuplicates = evaluatePopulation(offspring, workingDF, problemType)
 
     val evaluationResultsForNewExpandedGeneration = mutantsEvaluationsForOffspringAndDuplicates ++ evaluatedOriginalPopulation.distinct //losersEvaluations.distinct ++ bestEvaluations.distinct
 
@@ -79,7 +80,7 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1)(implicit val a
     offspring
   }
 
-  override def evaluatePopulation(population: TPopulation, workingDF: DataFrame): Seq[EvaluatedTemplateData] = {
+  override def evaluatePopulation(population: TPopulation, workingDF: DataFrame, problemType: ProblemType): Seq[EvaluatedTemplateData] = {
     //TODO implement Template pattern ( separate login into multiple functions and introduce them in EvolutionDimension)
     /* Template dimension depends on others dimensions and we need to get data from them first.
     This could be implemented in a custom hardcoded evaluator or with dependencies tree */
@@ -87,13 +88,13 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1)(implicit val a
     val bestEvaluatedHyperParametersField: HyperParametersField = null
 //    val bestEvaluatedHyperParametersField = hyperParamsEvDim.getBestFromPopulation(workingDF)// During next generation's call of this.evolve we will be able to get new/better individuals
 
-    new TPopulationEvaluator().evaluateIndividuals(population, workingDF, bestEvaluatedHyperParametersField)
+    new TPopulationEvaluator().evaluateIndividuals(population, workingDF, bestEvaluatedHyperParametersField, problemType)
   }
 
   override var _population: TPopulation = _
 
-  override def getBestFromPopulation(workingDF: DataFrame): EvaluatedTemplateData = {
-    evaluatePopulation(getPopulation, workingDF).sortWith(_.fitness.fitnessError < _.fitness.fitnessError).head// TODO maybe keep them in sorted heap?
+  override def getBestFromPopulation(workingDF: DataFrame, problemType: ProblemType): EvaluatedTemplateData = {
+    evaluatePopulation(getPopulation, workingDF, problemType).sortWith(_.fitness.fitnessError < _.fitness.fitnessError).head// TODO maybe keep them in sorted heap?
   }
 
 }

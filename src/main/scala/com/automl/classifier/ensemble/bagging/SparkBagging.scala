@@ -1,22 +1,29 @@
 package com.automl.classifier.ensemble.bagging
 
 import com.automl.helper.FitnessResult
+import com.automl.problemtype.ProblemType
+import com.automl.regressor.EnsemblingRegressor
+import com.automl.template.ensemble.EnsemblingModelMember
 import com.automl.template.{TemplateMember, TemplateTree, TreeContext}
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.sql.{DataFrame, Dataset, Row}
 import utils.SparkMLUtils
 
 
-class SparkBagging[A <: TemplateMember](models: Seq[TemplateTree[A]]) {
+class SparkBagging[A <: TemplateMember]() extends EnsemblingModelMember{
 
   import utils.SparkMLUtils._
-  def fitnessError(trainingDF: DataFrame, testDF: DataFrame)(implicit tc: TreeContext = TreeContext()): FitnessResult = {
 
-    val results: Seq[(TemplateTree[A], FitnessResult)] = models.zipWithIndex.map{ case (model, modelIdx) =>
-      val trainingSample = trainingDF.sample(withReplacement = false, 0.6)
+  override def ensemblingRegressor: EnsemblingRegressor = ???
+
+  override def ensemblingFitnessError[A <: TemplateMember](trainDF: DataFrame, testDF: DataFrame, subMembers: Seq[TemplateTree[A]], problemType: ProblemType)
+                                                          (implicit tc: TreeContext): FitnessResult = {
+
+    val results: Seq[(TemplateTree[A], FitnessResult)] = subMembers.zipWithIndex.map{ case (model, modelIdx) =>
+      val trainingSample = trainDF.sample(withReplacement = false, 0.6)
 
       //TODO  Should we keep aside testDF? Maybe we are computing just training error. We need to split trainingSample into (train,test)
-      (model, model.evaluateFitness(trainingSample, testDF))
+      (model, model.evaluateFitness(trainingSample, testDF, problemType))
     }
     val dfWithPredictionsFromBaseModels: Seq[DataFrame] = results
       .map(_._2.dfWithPredictions)

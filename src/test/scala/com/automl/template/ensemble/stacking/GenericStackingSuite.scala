@@ -1,5 +1,6 @@
 package com.automl.template.ensemble.stacking
 
+import com.automl.problemtype.ProblemType
 import com.automl.spark.SparkSessionProvider
 import com.automl.template._
 import com.automl.template.ensemble.bagging.Bagging
@@ -82,7 +83,8 @@ class GenericStackingSuite extends FunSuite with Matchers with SparkSessionProvi
 
     val genericStacking = GenericStacking(metaLearner = new GBTRegressor())
 
-    val fitnessResult = genericStacking.ensemblingFitnessError(trainingSplit, testSplit, models)
+    val problemType = ProblemType.RegressionProblem
+    val fitnessResult = genericStacking.ensemblingFitnessError(trainingSplit, testSplit, models, problemType)
 
     val rmseFromLR = LinearRegressionModel().fitnessError(trainingSplit, testSplit).fitnessError
     println(s"RMSE computed for Linear regression model $rmseFromLR")
@@ -114,7 +116,8 @@ class GenericStackingSuite extends FunSuite with Matchers with SparkSessionProvi
 
       val genericStacking = GenericStacking(metaLearner = new GBTRegressor())
 
-      val fitnessResult = genericStacking.ensemblingFitnessError(trainingSplit, testSplit, models)
+      val problemType = ProblemType.RegressionProblem
+      val fitnessResult = genericStacking.ensemblingFitnessError(trainingSplit, testSplit, models, problemType)
 
       val rmseFromLR = LinearRegressionModel().fitnessError(trainingSplit, testSplit).fitnessError
       println(s"RMSE computed for Linear regression model $rmseFromLR")

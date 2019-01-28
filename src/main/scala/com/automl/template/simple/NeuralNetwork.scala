@@ -29,7 +29,8 @@ case class NeuralNetwork(layers: Array[Int]) extends SimpleModelMember with Lazy
 
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
-  override def fitnessError(trainDF: DataFrame, testDF: DataFrame): FitnessResult = {
+
+  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType): FitnessResult = {
 
     val numFeatures = trainDF.select(col("features")).first().getAs[Vector](0).size
 

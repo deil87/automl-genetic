@@ -3,6 +3,7 @@ package com.automl.classifier.ensemble.stacking
 import java.util.Random
 import java.util.concurrent.TimeUnit
 
+import com.automl.problemtype.ProblemType
 import com.automl.template.{TemplateMember, TemplateTree}
 import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.ml.linalg.{Vector => MLVector}
@@ -118,7 +119,7 @@ class SparkGenericStacking(numFold: Int) {
     this
   }
 
-  def addModel[A <: TemplateMember](member: TemplateTree[A], trainDataSet: DataFrame, testDataSet: DataFrame): SparkGenericStacking = {
+  def addModel[A <: TemplateMember](member: TemplateTree[A], trainDataSet: DataFrame, testDataSet: DataFrame, problemType: ProblemType): SparkGenericStacking = {
     trainDataSet.cache()
     testDataSet.cache()
 
@@ -133,7 +134,7 @@ class SparkGenericStacking(numFold: Int) {
       val trainingFold = trainingSplitDF.join(trainDataSet, "uniqueIdColumn").cache()
       val validationFold = validationSplitDF.join(trainDataSet, "uniqueIdColumn")
 
-      val fitnessResultWithPredictions = member.evaluateFitness(trainingFold, validationFold)
+      val fitnessResultWithPredictions = member.evaluateFitness(trainingFold, validationFold, problemType)
 
       fitnessResultWithPredictions.dfWithPredictions.withColumnRenamed("prediction", predictionCol)
     }
@@ -150,7 +151,7 @@ class SparkGenericStacking(numFold: Int) {
 
     val predictionsForTestSetDF: DataFrame =
       member
-        .evaluateFitness(trainDataSet, testDataSet)
+        .evaluateFitness(trainDataSet, testDataSet, problemType)
         .dfWithPredictions
         .withColumnRenamed("prediction", predictionCol)
         .select("uniqueIdColumn", predictionCol)
@@ -162,7 +163,7 @@ class SparkGenericStacking(numFold: Int) {
 
   }
 
-    def addModel(predictor: PipelineStage,  trainDataSet: DataFrame, testDataSet: DataFrame) = {
+    def addModel(predictor: PipelineStage,  trainDataSet: DataFrame, testDataSet: DataFrame, problemType: ProblemType) = {
 
     trainDataSet.cache()
     testDataSet.cache()

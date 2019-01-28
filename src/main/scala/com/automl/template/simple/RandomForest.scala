@@ -25,7 +25,8 @@ case class RandomForest() extends SimpleModelMember with SparkSessionProvider{
 
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
-  override def fitnessError(trainDF: DataFrame, testDF: DataFrame): FitnessResult = {
+
+  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType): FitnessResult = {
 
     //We can iterate over HLIST and use
     // new RandomForestRegressor().set()

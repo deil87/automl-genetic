@@ -1,6 +1,7 @@
 package com.automl
 
 import com.automl.helper.FitnessResult
+import com.automl.problemtype.ProblemType
 import com.automl.template.{EvaluationMagnet, TemplateMember}
 import com.automl.template.simple.SimpleModelMember
 import org.apache.spark.sql.DataFrame
@@ -14,9 +15,10 @@ case class Wildcard(members: Seq[TemplateMember] = SimpleModelMember.poolOfSimpl
 
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
-  override def fitnessError(trainDF: DataFrame, testDF: DataFrame): FitnessResult =
-    throw new IllegalStateException("We can't estimate fitnessError on wildcard for now")
 
+  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType): FitnessResult = {
+    throw new IllegalStateException("We can't estimate fitnessError on wildcard for now")
+  }
 
   override def name: String = "Wildcard" + members.map(_.name).mkString("[", ",", "]")
 

@@ -5,6 +5,7 @@ import com.automl.regressor.EnsemblingRegressor
 import com.automl.template.{EvaluationMagnet, TemplateMember, TemplateTree, TreeContext}
 import com.automl.template.ensemble.EnsemblingModelMember
 import com.automl.classifier.ensemble.stacking.SparkGenericStacking
+import com.automl.problemtype.ProblemType
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.ml.regression.LinearRegression
@@ -19,7 +20,8 @@ case class GenericStacking(metaLearner: PipelineStage = new LinearRegression()) 
 
   override def ensemblingFitnessError[A <: TemplateMember](trainDF: DataFrame,
                                                            testDF: DataFrame,
-                                                           subMembers: Seq[TemplateTree[A]])
+                                                           subMembers: Seq[TemplateTree[A]],
+                                                           problemType: ProblemType)
                                                           (implicit tc: TreeContext = TreeContext()): FitnessResult = {
     logger.debug(s"Evaluating $name ...")
     val stacking = new SparkGenericStacking(3)
@@ -28,7 +30,7 @@ case class GenericStacking(metaLearner: PipelineStage = new LinearRegression()) 
 
     subMembers.foldLeft(stacking)((stackingModel, nextMember) => {
 
-      stackingModel.addModel(nextMember, trainDF, testDF)
+      stackingModel.addModel(nextMember, trainDF, testDF, problemType: ProblemType)
     })
 
     val finalPredictions = stacking.performStacking(metaLearner)
@@ -47,8 +49,6 @@ case class GenericStacking(metaLearner: PipelineStage = new LinearRegression()) 
   }
 
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
-
-  override def fitnessError(trainDF: DataFrame, testDF: DataFrame): FitnessResult = ???
 
   override def ensemblingRegressor: EnsemblingRegressor = ??? //TODO Do we need it for all ensembling members?
 }

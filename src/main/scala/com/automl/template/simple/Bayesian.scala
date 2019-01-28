@@ -2,7 +2,7 @@ package com.automl.template.simple
 
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
-import com.automl.problemtype.ProblemType.{MultiClassClassificationProblem, RegressionProblem}
+import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
 import com.automl.spark.SparkSessionProvider
 import com.automl.template.EvaluationMagnet
 import com.automl.teststrategy.{TestStrategy, TrainingTestSplitStrategy}
@@ -17,6 +17,7 @@ case class Bayesian() extends SimpleModelMember with SparkSessionProvider with L
   override def name: String = "Bayesian " + super.name
 
   override def canHandleProblemType: PartialFunction[ProblemType, Boolean] = {
+    case BinaryClassificationProblem => true
     case MultiClassClassificationProblem => true
     case RegressionProblem => true
   }
@@ -25,12 +26,14 @@ case class Bayesian() extends SimpleModelMember with SparkSessionProvider with L
 
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
-  override def fitnessError(trainingDF: DataFrame, testDF: DataFrame): FitnessResult = {
+
+  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType): FitnessResult = {
+
     logger.debug(s"Evaluating $name ...")
     val nb = new NaiveBayes()
 
 
-    val model = nb.fit(trainingDF)
+    val model = nb.fit(trainDF)
 
     val predictions = model.transform(testDF)
 
@@ -38,13 +41,25 @@ case class Bayesian() extends SimpleModelMember with SparkSessionProvider with L
 
 // TODO we can use   model.numClasses
 
-    val evaluator = new RegressionEvaluator()
+    problemType match {
+      case RegressionProblem =>
+        val evaluator = new RegressionEvaluator()
 
-    import  SparkMLUtils._
-    import ss.implicits._
-    val rmse: Double = evaluator.evaluate(predictions.withColumnReplace("prediction", $"prediction".cast(DoubleType)))
+        import SparkMLUtils._
+        import ss.implicits._
+        val rmse: Double = evaluator.evaluate(predictions.withColumnReplace("prediction", $"prediction".cast(DoubleType)))
 
-    logger.info(s"$name : RMSE = " + rmse)
-    FitnessResult(rmse, predictions.drop("rawPrediction").drop("probability"))
+        logger.info(s"$name : RMSE = " + rmse)
+        FitnessResult(rmse, predictions.drop("rawPrediction").drop("probability"))
+
+      case MultiClassClassificationProblem | BinaryClassificationProblem => //TODO generalize to a common method of evaluation for this type of problem.
+        val evaluator = new MulticlassClassificationEvaluator() // What is binary?
+
+        val f1: Double = evaluator.setMetricName("f1").evaluate(predictions)
+
+        logger.info(s"Finished. $name : F1 metric = " + f1)
+        FitnessResult(f1, predictions)
+
+    }
   }
 }

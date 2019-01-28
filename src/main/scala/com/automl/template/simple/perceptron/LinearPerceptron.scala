@@ -21,9 +21,7 @@ case class LinearPerceptron() extends LinearModelMember {
 
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
-  override def fitnessError(trainDF: DataFrame, testDF: DataFrame): FitnessResult = {
 
-    ???
-  }
+  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType): FitnessResult = ???
 
 }

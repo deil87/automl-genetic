@@ -26,8 +26,11 @@ class SVMModel() extends LinearModelMember with LazyLogging{
 
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
-  override def fitnessError(trainDF: DataFrame, testDF: DataFrame): FitnessResult = {
+
+  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType): FitnessResult = {
+
     import utils.SparkMLUtils._
+    require(problemType == BinaryClassificationProblem) //TODO maybe this check is unnecessary
 
     logger.debug(s"Evaluating $name ...")
     val numIterations = 100
