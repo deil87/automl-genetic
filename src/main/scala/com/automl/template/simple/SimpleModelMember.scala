@@ -1,11 +1,15 @@
 package com.automl.template.simple
 
+import com.automl.problemtype.ProblemType
 import com.automl.template._
+import com.automl.template.simple.perceptron.LinearPerceptron
 import com.automl.teststrategy.TestStrategy
 import org.apache.spark.sql._
 
 trait SimpleModelMember extends TemplateMember {
   override def name: String = "simpleModel member"
+
+  def canHandleProblemType: PartialFunction[ProblemType, Boolean]
 
   def modelKey: ModelKey = ???
 
@@ -20,6 +24,10 @@ object SimpleModelMember {
   val GLM: SimpleModelMember = new LinearRegressionModel()
   val DT: SimpleModelMember = new DecisionTree()
   val KNN: SimpleModelMember = new KNearestNeighbours()
+  val LogisticRegression: SimpleModelMember = new LogisticRegressionModel()
+  val SVM: SimpleModelMember = new SVMModel()
+  val SupportVectorRegression: SimpleModelMember = new SupportVectorRegression()
+  val LinearPerceptron: SimpleModelMember = new LinearPerceptron()
 
-  val poolOfSimpleModels: Seq[SimpleModelMember] = Seq(/*DeepNeuralNetwork,*/ Bayesian, GLM, DT/*, KNN*/)
+  val poolOfSimpleModels: Seq[SimpleModelMember] = Seq(/*DeepNeuralNetwork,*/ Bayesian, GLM, DT/*, KNN, LogisticRegression, SVM, SupportVectorRegression, LinearPerceptron*/)
 }

@@ -1,6 +1,8 @@
 package com.automl.template.simple
 
 import com.automl.helper.FitnessResult
+import com.automl.problemtype.ProblemType
+import com.automl.problemtype.ProblemType.{MultiClassClassificationProblem, RegressionProblem}
 import com.automl.spark.SparkSessionProvider
 import com.automl.template.EvaluationMagnet
 import com.automl.teststrategy.{TestStrategy, TrainingTestSplitStrategy}
@@ -15,6 +17,10 @@ import utils.SparkMLUtils
 case class DecisionTree() extends SimpleModelMember with SparkSessionProvider with LazyLogging{
   override def name: String = "DecisionTree " + super.name
 
+  override def canHandleProblemType: PartialFunction[ProblemType, Boolean] = {
+    case MultiClassClassificationProblem => true
+    case RegressionProblem => true
+  }
 
   override def testStrategy: TestStrategy = new TrainingTestSplitStrategy()
 

@@ -1,6 +1,8 @@
 package com.automl.template.simple
 
 import com.automl.helper.FitnessResult
+import com.automl.problemtype.ProblemType
+import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
 import com.automl.spark.SparkSessionProvider
 import com.automl.template.{EvaluationMagnet, ModelKey}
 import org.apache.spark.ml.Pipeline
@@ -11,6 +13,13 @@ import org.apache.spark.sql._
 
 case class RandomForest() extends SimpleModelMember with SparkSessionProvider{
   override def name: String = "Random forest " + super.name
+
+
+  override def canHandleProblemType: PartialFunction[ProblemType, Boolean] = {
+    case BinaryClassificationProblem => true
+    case MultiClassClassificationProblem => true
+    case RegressionProblem => true
+  }
 
   override def modelKey: ModelKey = ModelKey("RandomForest")
 

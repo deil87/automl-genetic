@@ -1,6 +1,6 @@
 package com.automl.problemtype
 
-import com.automl.problemtype.ProblemType.{ClassificationProblem, RegressionProblem}
+import com.automl.problemtype.ProblemType.{MultiClassClassificationProblem, RegressionProblem}
 import com.automl.spark.SparkSessionProvider
 import org.apache.spark.sql.DataFrame
 import org.scalatest.{FunSuite, Matchers}
@@ -20,7 +20,7 @@ class ThresholdProblemTypeEstimatorTest extends FunSuite with Matchers with Spar
   test("estimate method should return Classification type of problem") {
 
     val estimatedProblemType: ProblemType = new ProblemTypeThresholdEstimator(5).estimate(testFrame, "label")
-    estimatedProblemType.isInstanceOf[ClassificationProblem.type] should be(true)
+    estimatedProblemType.isInstanceOf[MultiClassClassificationProblem.type] should be(true)
   }
 
   test("estimate method should return Regression type of problem") {

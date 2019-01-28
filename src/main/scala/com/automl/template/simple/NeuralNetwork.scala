@@ -1,6 +1,8 @@
 package com.automl.template.simple
 
 import com.automl.helper.FitnessResult
+import com.automl.problemtype.ProblemType
+import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
 import com.automl.template.EvaluationMagnet
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.ml.classification.MultilayerPerceptronClassifier
@@ -11,6 +13,13 @@ import org.apache.spark.sql.functions.col
 
 case class NeuralNetwork(layers: Array[Int]) extends SimpleModelMember with LazyLogging{
   override def name: String = "NeuralNetwork " + super.name
+
+
+  override def canHandleProblemType: PartialFunction[ProblemType, Boolean] = {
+    case BinaryClassificationProblem => true
+    case MultiClassClassificationProblem => true
+    case RegressionProblem => true
+  }
 
   lazy val predictor = new MultilayerPerceptronClassifier()
     .setLayers(layers)

@@ -12,7 +12,7 @@ class ProblemTypeThresholdEstimator(threshold: Int) extends ProblemTypeEstimator
     if(numberOfDistinctValues > threshold) {
       ProblemType.RegressionProblem
     } else {
-      ProblemType.ClassificationProblem
+      ProblemType.MultiClassClassificationProblem
     }
   }
 }

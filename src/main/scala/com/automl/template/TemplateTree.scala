@@ -78,6 +78,7 @@ case class TreeContext(level: Option[Int] = None)
 trait TemplateMember {
   def name: String
 
+  @Deprecated() //"Consider to remove if there is no way to improve flexibility of evaluation API"
   def fitnessError(magnet: EvaluationMagnet): FitnessResult
 
   //TODO could add TreeContext parameter as well
