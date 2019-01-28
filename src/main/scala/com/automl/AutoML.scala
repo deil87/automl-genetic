@@ -29,7 +29,8 @@ class AutoML(data: DataFrame,
              maxDepthOfEnsemble: Int = 3,
              maxNumberOfChildrenPerEnsemblingNode: Int = 10,
              useMetaDB: Boolean,
-             seedPopulation: TPopulation = TPopulation.firstEverPopulation, // TODO make it optional because of useMetaDB
+             // TODO make it optional because of useMetaDB. Maybe we don't need this parameter as we should select appropriate models for a given problem type
+             seedPopulation: TPopulation = null,
              initialPopulationSize: Option[Int] = None,
              isBigSizeThreshold: Long = 500,
              isBigDimensionsThreshold: Long = 200,

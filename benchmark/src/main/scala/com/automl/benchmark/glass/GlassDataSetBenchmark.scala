@@ -8,6 +8,7 @@ import com.automl.template.simple._
 import com.automl.{AutoML, TPopulation}
 import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.sql.functions.rand
+import org.bytedeco.javacpp.opencv_ml.LogisticRegression
 import utils.SparkMLUtils
 
 class GlassDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvider{
@@ -17,9 +18,9 @@ class GlassDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvid
   def run() = {
 
     val seed: Seq[LeafTemplate[SimpleModelMember]] = Seq(
-      LeafTemplate(LinearRegressionModel()),
+      LeafTemplate(new LogisticRegressionModel()),
       LeafTemplate(Bayesian()),
-      LeafTemplate(GradientBoosting()),
+//      LeafTemplate(GradientBoosting()), //TODO multiclass classification case is not supported
       //        LeafTemplate(NeuralNetwork(Array(5,10,5))), // TODO need to implement detection of features number and number of classes
       LeafTemplate(DecisionTree())
     )
@@ -53,7 +54,7 @@ class GlassDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvid
     val autoMl = new AutoML(
       data = preparedGlassDF,
       responseColumn = "label",
-      maxTime = 30000,
+      maxTime = 2 * 60000,
       useMetaDB = false,
       initialPopulationSize = Some(7),
       seedPopulation = seedPopulation,

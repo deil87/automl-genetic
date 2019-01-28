@@ -7,6 +7,7 @@ import com.automl.template.EvaluationMagnet
 import com.automl.teststrategy.{TestStrategy, TrainingTestSplitStrategy}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.ml.classification.LogisticRegression
+import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 import org.apache.spark.sql._
 
 class LogisticRegressionModel() extends LinearModelMember with LazyLogging{
@@ -40,11 +41,22 @@ class LogisticRegressionModel() extends LinearModelMember with LazyLogging{
         //    logger.info(s"Area under ROC = $auROC")
         //    import testDF.sparkSession.implicits._
         //    val predictionsAsDF = scoreAndLabels.toDF("score", "prediction") //TODO maybe we need to join scores and labels with original data here
+        FitnessResult(???, ???)
       case MultiClassClassificationProblem =>
-        //TODO Multiclass
+        val model = new LogisticRegression()
+          .setMaxIter(100)
+          .setRegParam(0.3)
+          .setElasticNetParam(0.8)
+
+        val lrModel = model.fit(trainDF)
+        val prediction = lrModel.transform(testDF)
+
+        val evaluator = new MulticlassClassificationEvaluator().setMetricName("f1")
+        val f1 = evaluator.evaluate(prediction)
+        logger.info(s"$name : F1 = " + f1)
+
+        FitnessResult(f1, prediction)
     }
 
-
-    FitnessResult(???, ???)
   }
 }

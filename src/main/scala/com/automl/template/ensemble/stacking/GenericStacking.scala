@@ -6,6 +6,7 @@ import com.automl.template.{EvaluationMagnet, TemplateMember, TemplateTree, Tree
 import com.automl.template.ensemble.EnsemblingModelMember
 import com.automl.classifier.ensemble.stacking.SparkGenericStacking
 import com.automl.problemtype.ProblemType
+import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.ml.regression.LinearRegression
@@ -35,17 +36,23 @@ case class GenericStacking(metaLearner: PipelineStage = new LinearRegression()) 
 
     val finalPredictions = stacking.performStacking(metaLearner)
       .select("uniqueIdColumn", "features", "prediction") //TODO make sure that performStacking is returning predictions for testDF
-//    logger.info("Final predictions (top 10) from GenericStacking:")
-//    finalPredictions.showN_AndContinue(10)
+    //    logger.info("Final predictions (top 10) from GenericStacking:")
+    //    finalPredictions.showN_AndContinue(10)
 
-    val evaluator = new RegressionEvaluator()
+    problemType match {
+      case RegressionProblem =>
+        val evaluator = new RegressionEvaluator()
 
-    val predictionsReunitedWithLabels = finalPredictions.join(testDF.select("label", "uniqueIdColumn"), "uniqueIdColumn")
-//    predictionsReunitedWithLabels.showN_AndContinue(10)
+        val predictionsReunitedWithLabels = finalPredictions.join(testDF.select("label", "uniqueIdColumn"), "uniqueIdColumn")
+        //    predictionsReunitedWithLabels.showN_AndContinue(10)
 
-    val rmse = evaluator.evaluate(predictionsReunitedWithLabels)
-    logger.info("RMSE Final:" + rmse)
-    FitnessResult(rmse, predictionsReunitedWithLabels)
+        val rmse = evaluator.evaluate(predictionsReunitedWithLabels)
+        logger.info("RMSE Final:" + rmse)
+        FitnessResult(rmse, predictionsReunitedWithLabels)
+      case MultiClassClassificationProblem | BinaryClassificationProblem =>
+        //TODO need to support classification case
+        FitnessResult(???, ???)
+    }
   }
 
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???

@@ -25,6 +25,7 @@ object SimpleModelMember {
   val DT: SimpleModelMember = new DecisionTree()
   val KNN: SimpleModelMember = new KNearestNeighbours()
   val LogisticRegression: SimpleModelMember = new LogisticRegressionModel()
+  val OneVsRestModel: SimpleModelMember = new OneVsRestModel()
   val SVM: SimpleModelMember = new SVMModel()
   val SupportVectorRegression: SimpleModelMember = new SupportVectorRegression()
   val LinearPerceptron: SimpleModelMember = new LinearPerceptron()

@@ -12,8 +12,8 @@ case class LinearPerceptron() extends LinearModelMember {
 
 
   override def canHandleProblemType: PartialFunction[ProblemType, Boolean] = {
-    case MultiClassClassificationProblem => ???
-    case BinaryClassificationProblem => ???
+    case MultiClassClassificationProblem => true
+    case BinaryClassificationProblem => true
     case RegressionProblem => ???
   }
 
