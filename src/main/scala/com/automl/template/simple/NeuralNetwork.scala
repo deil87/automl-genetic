@@ -46,7 +46,7 @@ case class NeuralNetwork(layers: Array[Int]) extends SimpleModelMember with Lazy
     val rmse: Double = evaluator.evaluate(predictionAndLabels)
 
     logger.info(s"$name : RMSE = " + rmse)
-    FitnessResult(rmse, predictionAndLabels.select("prediction"))
+    FitnessResult(Map("rmse" -> rmse), problemType,  predictionAndLabels.select("prediction"))
   }
 
 }

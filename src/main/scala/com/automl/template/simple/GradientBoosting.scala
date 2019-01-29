@@ -41,10 +41,10 @@ case class GradientBoosting() extends SimpleModelMember with LazyLogging{
 
         val rmse = evaluator.evaluate(predictions)
         logger.info(s"$name : RMSE = " + rmse)
-        FitnessResult(rmse, predictions)
+        FitnessResult(Map("rmse" -> rmse), problemType, predictions)
 
       case MultiClassClassificationProblem =>
-        FitnessResult(???, ???)
+        FitnessResult(???, ???, ???)
           // NOTE @note Multiclass labels are not currently supported by GBTClassifier
 
       case BinaryClassificationProblem =>
@@ -98,7 +98,7 @@ case class GradientBoosting() extends SimpleModelMember with LazyLogging{
 
         val f1 = evaluator.evaluate(predictions)
         logger.info(s"$name : F1 = " + f1)
-        FitnessResult(f1, predictions)
+        FitnessResult(Map("f1" -> f1), problemType, predictions)
     }
   }
 

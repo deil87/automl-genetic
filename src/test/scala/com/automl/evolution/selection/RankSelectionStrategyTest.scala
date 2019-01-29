@@ -1,6 +1,7 @@
 package com.automl.evolution.selection
 
 import com.automl.helper.{FitnessResult, PopulationHelper}
+import com.automl.problemtype.ProblemType.RegressionProblem
 import com.automl.template.LeafTemplate
 import com.automl.{AutoML, EvaluatedTemplateData, TPopulation}
 import com.automl.template.simple.{DecisionTree, LinearRegressionModel, SimpleModelMember}
@@ -25,7 +26,7 @@ class RankSelectionStrategyTest extends WordSpec with Matchers{
 
       val selectionStrategy = new RankSelectionStrategy
       val evaluatedTemplateDatas = individualsSpanned.zipWithIndex.map { case (inds, idx) =>
-        EvaluatedTemplateData(idx.toString, inds, null, FitnessResult(Random.nextDouble(), null))
+        EvaluatedTemplateData(idx.toString, inds, null, FitnessResult(Map("rmse" -> Random.nextDouble()), RegressionProblem, null))
       }
 
       val selectedParents = selectionStrategy.parentSelectionByShare(selectionShare, evaluatedTemplateDatas)

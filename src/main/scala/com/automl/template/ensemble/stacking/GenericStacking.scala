@@ -8,7 +8,7 @@ import com.automl.classifier.ensemble.stacking.SparkGenericStacking
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
 import com.typesafe.scalalogging.LazyLogging
-import org.apache.spark.ml.evaluation.RegressionEvaluator
+import org.apache.spark.ml.evaluation.{MulticlassClassificationEvaluator, RegressionEvaluator}
 import org.apache.spark.ml.regression.LinearRegression
 import org.apache.spark.ml.{Pipeline, PipelineStage}
 import org.apache.spark.sql.DataFrame
@@ -44,14 +44,19 @@ case class GenericStacking(metaLearner: PipelineStage = new LinearRegression()) 
         val evaluator = new RegressionEvaluator()
 
         val predictionsReunitedWithLabels = finalPredictions.join(testDF.select("label", "uniqueIdColumn"), "uniqueIdColumn")
-        //    predictionsReunitedWithLabels.showN_AndContinue(10)
 
         val rmse = evaluator.evaluate(predictionsReunitedWithLabels)
         logger.info("RMSE Final:" + rmse)
-        FitnessResult(rmse, predictionsReunitedWithLabels)
+        FitnessResult(Map("rmse" -> rmse), problemType, predictionsReunitedWithLabels)
       case MultiClassClassificationProblem | BinaryClassificationProblem =>
         //TODO need to support classification case
-        FitnessResult(???, ???)
+        val predictionsReunitedWithLabels = finalPredictions.join(testDF.select("label", "uniqueIdColumn"), "uniqueIdColumn")
+
+
+        val evaluator = new MulticlassClassificationEvaluator().setMetricName("f1")
+        val f1 = evaluator.evaluate(predictionsReunitedWithLabels)
+        logger.info(s"$name : F1 = " + f1)
+        FitnessResult(Map("f1" -> f1), problemType, predictionsReunitedWithLabels)
     }
   }
 

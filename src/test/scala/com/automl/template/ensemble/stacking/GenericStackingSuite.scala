@@ -86,15 +86,15 @@ class GenericStackingSuite extends FunSuite with Matchers with SparkSessionProvi
     val problemType = ProblemType.RegressionProblem
     val fitnessResult = genericStacking.ensemblingFitnessError(trainingSplit, testSplit, models, problemType)
 
-    val rmseFromLR = LinearRegressionModel().fitnessError(trainingSplit, testSplit).fitnessError
+    val rmseFromLR = LinearRegressionModel().fitnessError(trainingSplit, testSplit).getCorrespondingMetric
     println(s"RMSE computed for Linear regression model $rmseFromLR")
 
-    fitnessResult.fitnessError should be <= rmseFromLR
+    fitnessResult.getCorrespondingMetric should be <= rmseFromLR
 
-    val rmseFromGB = GradientBoosting().fitnessError(trainingSplit, testSplit).fitnessError
+    val rmseFromGB = GradientBoosting().fitnessError(trainingSplit, testSplit).getCorrespondingMetric
     println(s"RMSE computed for GradientBoosting model $rmseFromGB")
 
-    fitnessResult.fitnessError should be <= rmseFromGB
+    fitnessResult.getCorrespondingMetric should be <= rmseFromGB
 
   }
 
@@ -119,15 +119,15 @@ class GenericStackingSuite extends FunSuite with Matchers with SparkSessionProvi
       val problemType = ProblemType.RegressionProblem
       val fitnessResult = genericStacking.ensemblingFitnessError(trainingSplit, testSplit, models, problemType)
 
-      val rmseFromLR = LinearRegressionModel().fitnessError(trainingSplit, testSplit).fitnessError
+      val rmseFromLR = LinearRegressionModel().fitnessError(trainingSplit, testSplit).getCorrespondingMetric
       println(s"RMSE computed for Linear regression model $rmseFromLR")
 
-      fitnessResult.fitnessError should be <= rmseFromLR
+      fitnessResult.getCorrespondingMetric should be <= rmseFromLR
 
-      val rmseFromGB = GradientBoosting().fitnessError(trainingSplit, testSplit).fitnessError
+      val rmseFromGB = GradientBoosting().fitnessError(trainingSplit, testSplit).getCorrespondingMetric
       println(s"RMSE computed for GradientBoosting model $rmseFromGB")
 
-      fitnessResult.fitnessError should be <= rmseFromGB
+      fitnessResult.getCorrespondingMetric should be <= rmseFromGB
 
     }
   }

@@ -52,6 +52,6 @@ class SVMModel() extends LinearModelMember with LazyLogging{
     import testDF.sparkSession.implicits._
     val predictionsAsDF = scoreAndLabels.toDF("score", "prediction") //TODO maybe we need to join scores and labels with original data here
 
-    FitnessResult(auROC, predictionsAsDF)
+    FitnessResult(Map("auc" -> auROC), problemType, predictionsAsDF)
   }
 }

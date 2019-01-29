@@ -41,6 +41,6 @@ case class LinearRegressionModel() extends LinearModelMember with LazyLogging{
     val rmse: Double = evaluator.evaluate(predictions)
 
     logger.info(s"$name : RMSE = " + rmse)
-    FitnessResult(rmse, predictions)
+    FitnessResult(Map("rmse" -> rmse), problemType, predictions)
   }
 }

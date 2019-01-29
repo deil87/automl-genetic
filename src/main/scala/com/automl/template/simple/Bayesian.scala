@@ -50,7 +50,7 @@ case class Bayesian() extends SimpleModelMember with SparkSessionProvider with L
         val rmse: Double = evaluator.evaluate(predictions.withColumnReplace("prediction", $"prediction".cast(DoubleType)))
 
         logger.info(s"$name : RMSE = " + rmse)
-        FitnessResult(rmse, predictions.drop("rawPrediction").drop("probability"))
+        FitnessResult(Map("rmse" -> rmse), problemType, predictions.drop("rawPrediction").drop("probability"))
 
       case MultiClassClassificationProblem | BinaryClassificationProblem => //TODO generalize to a common method of evaluation for this type of problem.
         val evaluator = new MulticlassClassificationEvaluator() // What is binary?
@@ -58,7 +58,7 @@ case class Bayesian() extends SimpleModelMember with SparkSessionProvider with L
         val f1: Double = evaluator.setMetricName("f1").evaluate(predictions)
 
         logger.info(s"Finished. $name : F1 metric = " + f1)
-        FitnessResult(f1, predictions)
+        FitnessResult(Map("f1" -> f1), problemType, predictions)
 
     }
   }

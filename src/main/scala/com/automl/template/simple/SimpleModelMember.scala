@@ -32,4 +32,8 @@ object SimpleModelMember {
   val GradientBoosting: SimpleModelMember = new GradientBoosting() // Can we consider this as a simple model? It is actually an ensemble of trees
 
   val poolOfSimpleModels: Seq[SimpleModelMember] = Seq(/*DeepNeuralNetwork,*/ Bayesian, GLM, DT/*,GradientBoosting,  KNN, LogisticRegression, SVM, SupportVectorRegression, LinearPerceptron*/)
+
+  def poolOfSimpleModels(problemType: ProblemType): Seq[SimpleModelMember] = {
+    poolOfSimpleModels.filter(_.canHandleProblemType(problemType))
+  }
 }

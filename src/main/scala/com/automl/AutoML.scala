@@ -1,5 +1,6 @@
 package com.automl
 
+import akka.actor.ActorSystem
 import com.automl.dataset._
 import com.automl.evolution.dimension.{TemplateEvolutionDimension, TemplateHyperParametersEvolutionDimension}
 import com.automl.helper._
@@ -96,9 +97,9 @@ class AutoML(data: DataFrame,
   } // TODO No stagnation detected for now
 
   /*Probably we need a tree of dimensions in order to predefine dependencies*/
-  def runEvolution(templateEvDim: TemplateEvolutionDimension,
-                   hyperParamsEvDim: TemplateHyperParametersEvolutionDimension // TODO unused
-                  ): Unit = {
+  def runEvolution(implicit as: ActorSystem): Unit = {
+
+    val templateEvDim = new TemplateEvolutionDimension(problemType = problemType)
 
     var workingDataSet: DataFrame = if(isDataBig) {
       samplingStrategy.sample(data, initialSampleSize) //TODO maybe we can start using EvolutionStrategy even here?
@@ -158,11 +159,11 @@ class AutoML(data: DataFrame,
             logger.info("Current population:")
             PopulationHelper.print(populationOfTemplates)
 
-            val evolvedPopulation = templateEvDim.evolve(populationOfTemplates, workingDataSet, problemType)
+            val evolvedPopulation = templateEvDim.evolve(populationOfTemplates, workingDataSet)
             // TODO If we stuck here for too long then we are not updating `populationOfTemplates` and starting next generation from scratch.
             populationOfTemplates = evolvedPopulation // TODO maybe we don't need to store it here since we store it in dimension itself
 
-            val bestSurvivedEvaluatedTemplate = templateEvDim.getBestFromPopulation(workingDataSet, problemType)
+            val bestSurvivedEvaluatedTemplate = templateEvDim.getBestFromPopulation(workingDataSet)
             //TODO we were putting into queue only best from evolution not from each generation before.
             logger.info(s"Best candidate from  evolution #$evolutionNumber generation #$generationNumber added to priority queue: $bestSurvivedEvaluatedTemplate")
             bestEvaluatedTemplatesFromAllGenerationsQueue.enqueue(bestSurvivedEvaluatedTemplate)
@@ -200,7 +201,7 @@ class AutoML(data: DataFrame,
       }
     }
 
-    AutoMLReporter.show(bestEvaluatedTemplatesFromAllGenerationsQueue) // TODO we need to return best individual for validation on testSplit
+    AutoMLReporter.show(bestEvaluatedTemplatesFromAllGenerationsQueue, problemType) // TODO we need to return best individual for validation on testSplit
   }
 
 }

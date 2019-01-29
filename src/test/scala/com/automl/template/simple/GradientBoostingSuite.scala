@@ -44,7 +44,7 @@ class GradientBoostingSuite extends WordSpec with Matchers with SparkSessionProv
 
       fitnessResult.dfWithPredictions.show()
 
-      fitnessResult.fitnessError shouldBe 0.0
+      fitnessResult.metricsMap shouldBe 0.0
     }
   }
 }

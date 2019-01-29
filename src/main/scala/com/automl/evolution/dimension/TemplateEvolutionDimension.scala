@@ -6,6 +6,7 @@ import com.automl.evolution.mutation.{DepthDependentTemplateMutationStrategy, Mu
 import com.automl.evolution.selection.RankSelectionStrategy
 import com.automl.helper.{FitnessResult, PopulationHelper}
 import com.automl.problemtype.ProblemType
+import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
 import com.automl.template.{TemplateMember, TemplateTree}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.ml.param.Params
@@ -16,14 +17,14 @@ import scala.collection.mutable
 /**
   *
   * @param evolveEveryGenerations is not used for now
-  * @param as
+  * @param problemType We need to take into account which models we can mutate into filtered out by problemType
   */
-class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1)(implicit val as: ActorSystem)
+class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: ProblemType)(implicit val as: ActorSystem)
     extends EvolutionDimension[TPopulation, TemplateTree[TemplateMember], EvaluatedTemplateData]
     with LazyLogging{
 
   val distinctStrategy = new DistinctDiversityStrategy()
-  val mutationStrategy = new DepthDependentTemplateMutationStrategy(distinctStrategy)
+  val mutationStrategy = new DepthDependentTemplateMutationStrategy(distinctStrategy, problemType)
   val selectionStrategy = new RankSelectionStrategy
 
   // Dependencies on other dimensions. Hardcoded for now. Should come from AutoML.runEvolution method parameters.
@@ -31,9 +32,9 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1)(implicit val a
 
   implicit val templatesEvaluationCache = mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]()  // TODO make it faster with reference to value
 
-  override def evolve(population: TPopulation, workingDF: DataFrame, problemType: ProblemType): TPopulation = {
+  override def evolve(population: TPopulation, workingDF: DataFrame): TPopulation = {
 
-    val evaluatedOriginalPopulation = evaluatePopulation(population, workingDF, problemType)
+    val evaluatedOriginalPopulation = evaluatePopulation(population, workingDF)
 
     evaluatedOriginalPopulation.printSortedByFitness()
 
@@ -54,7 +55,7 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1)(implicit val a
     val populationForUpcomingMutation = new TPopulation(bestTemplatesSelectedForMutation ++ duplicateTemplatesInLosersToMutate, population.mutationProbabilities)
     val offspring = mutateParentPopulation(populationForUpcomingMutation)
 
-    val mutantsEvaluationsForOffspringAndDuplicates = evaluatePopulation(offspring, workingDF, problemType)
+    val mutantsEvaluationsForOffspringAndDuplicates = evaluatePopulation(offspring, workingDF)
 
     val evaluationResultsForNewExpandedGeneration = mutantsEvaluationsForOffspringAndDuplicates ++ evaluatedOriginalPopulation.distinct //losersEvaluations.distinct ++ bestEvaluations.distinct
 
@@ -80,7 +81,7 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1)(implicit val a
     offspring
   }
 
-  override def evaluatePopulation(population: TPopulation, workingDF: DataFrame, problemType: ProblemType): Seq[EvaluatedTemplateData] = {
+  override def evaluatePopulation(population: TPopulation, workingDF: DataFrame): Seq[EvaluatedTemplateData] = {
     //TODO implement Template pattern ( separate login into multiple functions and introduce them in EvolutionDimension)
     /* Template dimension depends on others dimensions and we need to get data from them first.
     This could be implemented in a custom hardcoded evaluator or with dependencies tree */
@@ -93,8 +94,17 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1)(implicit val a
 
   override var _population: TPopulation = _
 
-  override def getBestFromPopulation(workingDF: DataFrame, problemType: ProblemType): EvaluatedTemplateData = {
-    evaluatePopulation(getPopulation, workingDF, problemType).sortWith(_.fitness.fitnessError < _.fitness.fitnessError).head// TODO maybe keep them in sorted heap?
+  override def getBestFromPopulation(workingDF: DataFrame): EvaluatedTemplateData = {
+    problemType match {
+      case MultiClassClassificationProblem | BinaryClassificationProblem =>
+        val defaultRegressionMetric = "f1"
+        evaluatePopulation(getPopulation, workingDF).sortWith(_.fitness.metricsMap(defaultRegressionMetric) > _.fitness.metricsMap(defaultRegressionMetric)).head
+      case RegressionProblem =>
+        // TODO maybe keep them in sorted heap?
+        val defaultRegressionMetric = "rmse"
+        evaluatePopulation(getPopulation, workingDF).sortWith(_.fitness.metricsMap(defaultRegressionMetric) < _.fitness.metricsMap(defaultRegressionMetric)).head
+    }
+
   }
 
 }

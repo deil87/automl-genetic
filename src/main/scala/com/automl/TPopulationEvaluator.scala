@@ -66,7 +66,7 @@ class TPopulationEvaluator(implicit as: ActorSystem) extends PopulationEvaluator
           val Array(trainingSplit, testSplit) = workingDataSet.randomSplit(Array(0.67, 0.33), 11L)
           materializedTemplate.evaluateFitness(trainingSplit, testSplit, problemType)
         })
-        webClientNotifier.map(wcn => wcn ! UpdateWeb(s"Evaluated ${TemplateTreeHelper.renderAsString_v2(materializedTemplate)} with fitness value: " + fr.fitnessError))
+        webClientNotifier.map(wcn => wcn ! UpdateWeb(s"Evaluated ${TemplateTreeHelper.renderAsString_v2(materializedTemplate)} with fitness value: " + fr.metricsMap))
         val iad = EvaluatedTemplateData(idx.toString, individualTemplate, materializedTemplate, fr)
         iad.sendMetric()
         iad

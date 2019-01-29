@@ -41,10 +41,10 @@ class LogisticRegressionModel() extends LinearModelMember with LazyLogging{
         //    logger.info(s"Area under ROC = $auROC")
         //    import testDF.sparkSession.implicits._
         //    val predictionsAsDF = scoreAndLabels.toDF("score", "prediction") //TODO maybe we need to join scores and labels with original data here
-        FitnessResult(???, ???)
+        FitnessResult(???, ???, ???)
       case MultiClassClassificationProblem =>
         val model = new LogisticRegression()
-          .setMaxIter(100)
+          .setMaxIter(20)
           .setRegParam(0.3)
           .setElasticNetParam(0.8)
 
@@ -55,7 +55,7 @@ class LogisticRegressionModel() extends LinearModelMember with LazyLogging{
         val f1 = evaluator.evaluate(prediction)
         logger.info(s"$name : F1 = " + f1)
 
-        FitnessResult(f1, prediction)
+        FitnessResult(Map("f1" -> f1), problemType, prediction)
     }
 
   }

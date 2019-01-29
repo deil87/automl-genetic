@@ -26,7 +26,7 @@ class GradientBoostingTest extends FunSuite with SparkSessionProvider{
 
     val Array(trainingSplit, testSplit) = featuresAssembled.randomSplit(Array(0.67, 0.33), 11L)
     val res: FitnessResult = GradientBoosting().fitnessError(trainingSplit, testSplit, problemType = MultiClassClassificationProblem)
-    res.fitnessError
+    res.metricsMap
 
   }
 
@@ -45,7 +45,7 @@ class GradientBoostingTest extends FunSuite with SparkSessionProvider{
 
     val Array(trainingSplit, testSplit) = featuresAssembled.randomSplit(Array(0.67, 0.33), 11L)
     val res: FitnessResult = GradientBoosting().fitnessError(trainingSplit, testSplit, problemType = BinaryClassificationProblem)
-    res.fitnessError
+    res.metricsMap
 
     // TODO transform multiclass task to a binary one or choose another dataset for test.
 

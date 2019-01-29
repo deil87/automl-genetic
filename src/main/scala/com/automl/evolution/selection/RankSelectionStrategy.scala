@@ -17,7 +17,7 @@ class RankSelectionStrategy extends LazyLogging{
   }
 
   def parentSelectionBySize(numberOfParentsToSelect: Int, individuals: Seq[EvaluatedTemplateData]): Seq[EvaluatedTemplateData] = {
-    val orderedByFitness = individuals.sortWith(_.fitness.fitnessError > _.fitness.fitnessError)
+    val orderedByFitness = individuals.sortWith((l,r) => l.fitness.orderTo(r.fitness))
 
     val numberOfCompetitors = individuals.length
     val linearRankingProbabilityStrategy = new LinearRankingProbabilityStrategy(numberOfCompetitors, parameter_S = 1.5)

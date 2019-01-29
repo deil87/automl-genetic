@@ -5,6 +5,7 @@ import com.automl.evolution.dimension.{TemplateEvolutionDimension, TemplateHyper
 import com.automl.evolution.diversity.DistinctDiversityStrategy
 import com.automl.evolution.mutation.DepthDependentTemplateMutationStrategy
 import com.automl.helper.{FitnessResult, PopulationHelper}
+import com.automl.problemtype.ProblemType.RegressionProblem
 import com.automl.spark.SparkSessionProvider
 import com.automl.template._
 import com.automl.template.simple._
@@ -38,8 +39,10 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
       PopulationHelper.print(population)
 
       val distinctStrategy = new DistinctDiversityStrategy()
+
+      val problemType = RegressionProblem
       
-      val mutationStrategy = new DepthDependentTemplateMutationStrategy(distinctStrategy)
+      val mutationStrategy = new DepthDependentTemplateMutationStrategy(distinctStrategy, problemType)
 
       val mutated = mutationStrategy.mutate(population)
 
@@ -103,10 +106,7 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
 
       val autoMl = new AutoML(trainingSplit, maxTime = 300000, useMetaDB = false, initialPopulationSize = Some(7), seedPopulation = seedPopulation, maxGenerations = 5)
 
-      val templateEvDim = new TemplateEvolutionDimension
-      val hyperParamsEvDim = new TemplateHyperParametersEvolutionDimension
-
-      autoMl.runEvolution(templateEvDim, hyperParamsEvDim)
+      autoMl.runEvolution(system)
 
     }
 

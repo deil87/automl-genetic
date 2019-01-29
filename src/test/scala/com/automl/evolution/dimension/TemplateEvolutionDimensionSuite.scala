@@ -2,6 +2,7 @@ package com.automl.evolution.dimension
 
 import akka.actor.ActorSystem
 import com.automl.problemtype.ProblemType
+import com.automl.problemtype.ProblemType.RegressionProblem
 import com.automl.{AutoML, TPopulation, TPopulationEvaluator}
 import com.automl.spark.SparkSessionProvider
 import com.automl.template.ensemble.bagging.Bagging
@@ -66,11 +67,11 @@ class TemplateEvolutionDimensionSuite extends WordSpec with Matchers with SparkS
       val ds2 = trainingSplit.limit(20)
       val ds3 = trainingSplit.limit(300)
 
-      val t = new TemplateEvolutionDimension()
+      val problemType = RegressionProblem
+      val t = new TemplateEvolutionDimension(problemType= problemType)
 
-      val problemType = ProblemType.RegressionProblem
-      t.evaluatePopulation(population, ds2, problemType)
-      t.evaluatePopulation(population, ds3, problemType)
+      t.evaluatePopulation(population, ds2)
+      t.evaluatePopulation(population, ds3)
 
       t.templatesEvaluationCache.size should be (6)  // (numbers of templates in population) * (# of different sizes of training datasets)
     }
@@ -87,14 +88,14 @@ class TemplateEvolutionDimensionSuite extends WordSpec with Matchers with SparkS
         )
         )
       )
+      val problemType = ProblemType.RegressionProblem
 
-      val t = new TemplateEvolutionDimension()
+      val t = new TemplateEvolutionDimension(problemType = problemType)
 
       val testPopulation = new TPopulation(template)
 
       val ds2 = trainingSplit.limit(20)
-      val problemType = ProblemType.RegressionProblem
-      t.evaluatePopulation(testPopulation, ds2, problemType).nonEmpty shouldBe true
+      t.evaluatePopulation(testPopulation, ds2).nonEmpty shouldBe true
     }
 
   }

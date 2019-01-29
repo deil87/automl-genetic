@@ -46,14 +46,14 @@ case class DecisionTree() extends SimpleModelMember with SparkSessionProvider wi
          val rmse: Double = evaluator.evaluate(predictions)
 
          logger.info(s"Finished. $name : RMSE = " + rmse)
-         FitnessResult(rmse, predictions)
+         FitnessResult(Map("rmse" -> rmse), problemType, predictions)
        case MultiClassClassificationProblem | BinaryClassificationProblem =>
          val evaluator = new MulticlassClassificationEvaluator() // What is binary?
 
          val f1: Double = evaluator.setMetricName("f1").evaluate(predictions)
 
          logger.info(s"Finished. $name : F1 metric = " + f1)
-         FitnessResult(f1, predictions)
+         FitnessResult(Map("f1" -> f1), problemType, predictions)
      }
 
   }
