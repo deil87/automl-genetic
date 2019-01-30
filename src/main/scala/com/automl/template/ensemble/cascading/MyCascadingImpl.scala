@@ -17,5 +17,4 @@ case class MyCascadingImpl() extends CascadingMember {
 
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
-  override def ensemblingRegressor: EnsemblingRegressor = ???
 }

@@ -24,7 +24,6 @@ trait EnsemblingModelMember extends TemplateMember {
                                                   problemType: ProblemType)
                                                  (implicit tc: TreeContext = TreeContext()): FitnessResult
 
-  def ensemblingRegressor: EnsemblingRegressor
 }
 
 

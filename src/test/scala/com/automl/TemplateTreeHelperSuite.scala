@@ -1,8 +1,8 @@
 package com.automl
 
+import com.automl.classifier.ensemble.bagging.SparkBagging
 import com.automl.helper.TemplateTreeHelper
 import com.automl.template._
-import com.automl.template.ensemble.bagging.Bagging
 import com.automl.template.ensemble.stacking.GenericStacking
 import com.automl.template.simple.{Bayesian, GradientBoosting, LinearRegressionModel, RandomForest}
 import org.scalatest.{FunSuite, Matchers}
@@ -11,7 +11,7 @@ import org.scalatest.{FunSuite, Matchers}
 class TemplateTreeHelperSuite extends FunSuite with Matchers{
 
   val individual =
-    NodeTemplate(Bagging(),
+    NodeTemplate(SparkBagging(),
       Seq(
         LeafTemplate(new LinearRegressionModel()),
         LeafTemplate(new Bayesian()),
@@ -49,11 +49,11 @@ class TemplateTreeHelperSuite extends FunSuite with Matchers{
 
   ignore("TemplateMemberHelper should print tree with wildcards") {
     val individualWithWildcard =
-      NodeTemplate(Bagging(),
+      NodeTemplate(SparkBagging(),
         Seq(
           LeafTemplate(LinearRegressionModel()),
           LeafTemplate(Bayesian()),
-          NodeTemplate(Bagging(),
+          NodeTemplate(SparkBagging(),
             Seq(
               LeafTemplate(Wildcard(List(RandomForest(), Bayesian())))
             )

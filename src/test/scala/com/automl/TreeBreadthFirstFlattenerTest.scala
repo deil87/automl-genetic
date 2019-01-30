@@ -1,8 +1,8 @@
 package com.automl
 
+import com.automl.classifier.ensemble.bagging.SparkBagging
 import com.automl.helper.{TemplateTreeHelper, TreeBreadthFirstFlattener}
 import com.automl.template._
-import com.automl.template.ensemble.bagging.Bagging
 import com.automl.template.ensemble.stacking.GenericStacking
 import com.automl.template.simple.{Bayesian, GradientBoosting, LinearRegressionModel, RandomForest}
 import org.scalatest.{FunSuite, Matchers}
@@ -11,7 +11,7 @@ import org.scalatest.{FunSuite, Matchers}
 class TreeBreadthFirstFlattenerTest extends FunSuite with Matchers{
 
   val individualTemplateTree =
-    NodeTemplate(Bagging(),
+    NodeTemplate(SparkBagging(),
       Seq(
         LeafTemplate(new LinearRegressionModel()),
         LeafTemplate(new Bayesian()),

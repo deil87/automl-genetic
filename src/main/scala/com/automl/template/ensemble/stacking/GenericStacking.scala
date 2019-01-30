@@ -62,6 +62,5 @@ case class GenericStacking(metaLearner: PipelineStage = new LinearRegression()) 
 
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
-  override def ensemblingRegressor: EnsemblingRegressor = ??? //TODO Do we need it for all ensembling members?
 }
 

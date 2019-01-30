@@ -1,5 +1,5 @@
 package com.automl.regressor
 
-trait EnsemblingRegressor {
-  def evaluate(errors: Seq[Double]): Double
+trait EnsemblingRegressor[T] {
+  def evaluate(errors: Seq[T]): T
 }

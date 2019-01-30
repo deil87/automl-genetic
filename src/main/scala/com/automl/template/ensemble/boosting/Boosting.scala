@@ -18,6 +18,5 @@ case class Boosting() extends BoostingMember {
 
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
-  override def ensemblingRegressor: EnsemblingRegressor = ???
 }
 

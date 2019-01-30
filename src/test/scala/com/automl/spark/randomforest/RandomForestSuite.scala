@@ -1,9 +1,6 @@
 package com.automl.spark.randomforest
 
 import com.automl.spark.SparkSessionProvider
-import com.automl.template._
-import com.automl.template.ensemble.bagging.Bagging
-import com.automl.template.simple._
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.ml.feature.{VectorAssembler, VectorIndexer}

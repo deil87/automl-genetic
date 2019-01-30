@@ -14,6 +14,8 @@ case class FitnessResult(metricsMap: Map[String, Double], problemType: ProblemTy
       metricsMap("rmse")
   }
 
+  def getMetricByName(name: String) = metricsMap.getOrElse(name, throw new IllegalArgumentException(s"Metric with name $name was not found"))
+
   def orderTo(other: FitnessResult): Boolean = problemType match {
     case MultiClassClassificationProblem | BinaryClassificationProblem =>
       getCorrespondingMetric > other.getCorrespondingMetric
