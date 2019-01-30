@@ -32,7 +32,6 @@ case class Bayesian() extends SimpleModelMember with SparkSessionProvider with L
     logger.debug(s"Evaluating $name ...")
     val nb = new NaiveBayes()
 
-
     val model = nb.fit(trainDF)
 
     val predictions = model.transform(testDF)

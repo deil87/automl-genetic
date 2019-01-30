@@ -25,7 +25,7 @@ object AutoMlBuild extends Build {
 
   object Version {
     val deeplearning4jVersion = "0.9.1"
-    val sparkVersion = "2.1.0"
+    val sparkVersion = "2.4.0"
   }
 
   lazy val akkaDependencies = List(

@@ -1,8 +1,5 @@
 package com.automl.qd
 
-import org.apache.commons.lang3.StringUtils
-
-import scala.tools.scalap.scalax.util.StringUtil
 import scala.util.Random
 
 // one of the version of the Quality Diversity search

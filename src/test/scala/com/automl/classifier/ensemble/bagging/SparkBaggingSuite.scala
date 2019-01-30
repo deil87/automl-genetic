@@ -6,6 +6,8 @@ import com.automl.spark.SparkSessionProvider
 import com.automl.template._
 import com.automl.template.simple._
 import org.apache.spark.ml.feature.VectorAssembler
+import org.apache.spark.sql.{DataFrame, Dataset, Row}
+import org.bytedeco.javacpp.opencv_ml.LogisticRegression
 import org.scalatest.{FunSuite, Matchers}
 import utils.SparkMLUtils
 
@@ -14,7 +16,7 @@ class SparkBaggingSuite extends FunSuite with Matchers with SparkSessionProvider
 
   import utils.SparkMLUtils._
 
-  val airlineDF = SparkMLUtils.loadParquet("src/test/resources/airline_allcolumns_sampled_100k_parquet")
+  lazy val airlineDF = SparkMLUtils.loadParquet("src/test/resources/airline_allcolumns_sampled_100k_parquet")
     .select("DayOfWeek", "Distance", "DepTime", "CRSDepTime", "DepDelay")
   //TODO FlightNum+year_date_day for unique identifier of test examples
 
@@ -32,7 +34,7 @@ class SparkBaggingSuite extends FunSuite with Matchers with SparkSessionProvider
   }
   import org.apache.spark.sql.functions.monotonically_increasing_id
 
-  val prepairedAirlineDF = airlineDF
+  lazy val prepairedAirlineDF = airlineDF
     .limit(3000)
     .applyTransformation(featuresAssembler)
     .withColumnRenamed("DepDelay", "label")
@@ -66,10 +68,38 @@ class SparkBaggingSuite extends FunSuite with Matchers with SparkSessionProvider
     ensemb.evaluateFitness(trainingSplit, testSplit, ProblemType.RegressionProblem)
   }
 
-  test("Spark Bagging should calculate over complex tree algorithm( Classification problem )") {
+  test("Spark Bagging should sample training dataset for submembers in appropriate way )") {
+    import ss.implicits._
+    val threeDistinctLevelsDF = ss.sparkContext.parallelize(
+      Seq(
+        (1, "level1"),
+        (2, "level2"),
+        (3, "level3")
+      )
+    ).toDF("a", "label")
+    val onlyDistinctLevelsDF: DataFrame = ss.sparkContext.parallelize(
+      Seq(
+        (1, "level1"),
+        (2, "level2"),
+        (3, "level2")
+      )
+    ).toDF("a", "label")
+
+    val samples: Seq[(TemplateTree[TemplateMember], DataFrame)] = Seq(
+      (LeafTemplate(DecisionTree()), threeDistinctLevelsDF),
+      (LeafTemplate(DecisionTree()), onlyDistinctLevelsDF)
+    )
+
+    assertThrows[IllegalArgumentException] {
+      SparkBagging().checkThatWeHaveSameSetsOfCategoricalLevelsForAllSubmembers(samples)(ss)
+    }
+  }
+
+  test("Spark Bagging should calculate over multiple decision trees( Classification problem )") {
 
     val models = Seq(
-      LeafTemplate(DecisionTree()), //TODO We need n-classes +1 base models to be able to find majority
+      LeafTemplate(DecisionTree()), //TODO We need n-classes +2 base models to be able to find majority
+      LeafTemplate(DecisionTree()),
       LeafTemplate(DecisionTree()),
       LeafTemplate(DecisionTree()),
       LeafTemplate(DecisionTree())
@@ -97,12 +127,50 @@ class SparkBaggingSuite extends FunSuite with Matchers with SparkSessionProvider
 
     val baggingF1 = ensemb.evaluateFitness(trainingSplit, testSplit, problemType).getCorrespondingMetric
 
-    val dtF1 = DecisionTree().fitnessError(trainingSplit, testSplit, problemType).getMetricByName("accuracy")
+    val dtF1 = DecisionTree().fitnessError(trainingSplit, testSplit, problemType).getMetricByName("f1")
 
     println("Bagging's F1:" + baggingF1)
     println("DT's F1:" + dtF1)
 
-    baggingF1 >= dtF1 should be(true)
+    baggingF1 >= dtF1 should be(true) // This might not be the true all the time
+  }
+
+  test("Spark Bagging should calculate over complex tree algorithm( Classification problem )") {
+
+    val models = Seq(
+      LeafTemplate(DecisionTree()), //TODO We need n-classes +2 base models to be able to find majority
+      LeafTemplate(Bayesian()),
+      LeafTemplate(new LogisticRegressionModel())
+    )
+
+    val ensemb = NodeTemplate(SparkBagging(), models)
+
+    println(TemplateTreeHelper.renderAsString_v2(ensemb))
+
+    val data = SparkMLUtils.loadResourceDF("/iris.csv")
+
+    val preparedData = data
+      .withColumnRenamed("fl_class", "label")
+      .withColumn("uniqueIdColumn", monotonically_increasing_id)
+
+    def basePredictorsFeaturesAssembler = new VectorAssembler()
+      .setInputCols(Array("s_length", "s_width", "p_length", "p_width"))
+      .setOutputCol("features")
+
+    val featuresAssembled = basePredictorsFeaturesAssembler.transform(preparedData)
+
+    val Array(trainingSplit, testSplit) = featuresAssembled.randomSplit(Array(0.67, 0.33), 11L)
+
+    val problemType = ProblemType.MultiClassClassificationProblem
+
+    val baggingF1 = ensemb.evaluateFitness(trainingSplit, testSplit, problemType).getCorrespondingMetric
+
+    val dtF1 = DecisionTree().fitnessError(trainingSplit, testSplit, problemType).getMetricByName("f1")
+
+    println("Bagging's F1:" + baggingF1)
+    println("DT's F1:" + dtF1)
+
+    baggingF1 >= dtF1 should be(true) // This might not be the true all the time
   }
 
 

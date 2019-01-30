@@ -46,7 +46,7 @@ case class OneVsRestModel() extends SimpleModelMember with LazyLogging{
 
         // compute the classification error on test data.
         val accuracy = evaluator.evaluate(predictions)
-        FitnessResult(???, ???)
+        FitnessResult(???, ???, ???)
     }
   }
 

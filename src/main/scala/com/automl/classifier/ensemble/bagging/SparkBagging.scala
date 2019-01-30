@@ -9,13 +9,15 @@ import com.automl.template.ensemble.bagging.BaggingMember
 import com.automl.template.{TemplateMember, TemplateTree, TreeContext}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.ml.evaluation.{MulticlassClassificationEvaluator, RegressionEvaluator}
-import org.apache.spark.sql.{Column, DataFrame, Dataset, Row}
+import org.apache.spark.ml.feature.VectorAssembler
+import org.apache.spark.sql._
 import utils.SparkMLUtils
+import org.apache.spark.ml.linalg.{Vector => MLVector}
 
 import scala.collection.mutable
 
 //TODO consider moving closer to BaggingMember
-case class SparkBagging[A <: TemplateMember]() extends BaggingMember with LazyLogging{
+case class SparkBagging() extends BaggingMember with LazyLogging{
 
   import utils.SparkMLUtils._
 
@@ -36,19 +38,6 @@ case class SparkBagging[A <: TemplateMember]() extends BaggingMember with LazyLo
       (model, trainDF.sample(withReplacement = false, 0.8)) // How to sample?
     }
 
-    def checkThatWeHaveSameSetsOfCatigoricalLevelsForAllSubmembers = {
-      //Just to check
-      val subsetsOfLevelsForAllSamples = trainingSamplesForSubmembers
-        .map(_._2.select("label").distinct().map(_.get(0).asInstanceOf[String]).collect().toSet)
-
-      val head = subsetsOfLevelsForAllSamples.head
-      require(subsetsOfLevelsForAllSamples.tail.forall(set => head == set), "All samples for submembers should have the same level values")
-    }
-
-    checkThatWeHaveSameSetsOfCatigoricalLevelsForAllSubmembers
-
-    //TODO !!!!!!!!!!!!!  support variable number of submembers in udf function. Check that indexes are the same in all submembers
-
     val results: Seq[(TemplateTree[A], FitnessResult)] = trainingSamplesForSubmembers.zipWithIndex.map{ case ((model, trainingSample), modelIdx) =>
 
       //TODO  Should we keep aside testDF? Maybe we are computing just training error. We need to split trainingSample into (train,test)
@@ -64,7 +53,7 @@ case class SparkBagging[A <: TemplateMember]() extends BaggingMember with LazyLo
 
     val joinedPredictions: Dataset[Row] =
       dfWithPredictionsFromBaseModels
-        .map(_.showN_AndContinue(10))
+        .map(_.showN_AndContinue(20))
         .zipWithIndex
         .map{case (df, idx) =>
           df.select($"uniqueIdColumn", $"prediction")
@@ -72,56 +61,57 @@ case class SparkBagging[A <: TemplateMember]() extends BaggingMember with LazyLo
         }
         .reduce((a, b) => {
           a.join(b, "uniqueIdColumn")
-        }).cache().showN_AndContinue(10)
+        }).cache()
+        .showN_AndContinue(10, "After joining predictions")
+
+    def generateMajorityVoteUDF = {
+      import org.apache.spark.sql.functions.udf
+      udf { v: MLVector =>
+        val occurrences = mutable.Map.empty[Double, Int]
+        v.toArray.foreach { x =>
+          occurrences.update(x, occurrences.getOrElse(x, 0) + 1)
+        }
+        occurrences.toArray.sortWith(_._2 > _._2).head._1
+      }
+    }
 
     problemType match {
       case MultiClassClassificationProblem | BinaryClassificationProblem =>
 
-        import org.apache.spark.sql.functions.{col, lit}
+        checkThatWeHaveSameSetsOfCategoricalLevelsForAllSubmembers(trainingSamplesForSubmembers)(trainDF.sparkSession)
 
-        import org.apache.spark.sql.functions.udf
+        import org.apache.spark.sql.functions.col
         val predictionColumns: Array[Column] = dfWithPredictionsFromBaseModels.indices.toArray.map{ idx => col(s"prediction$idx")}
 
-        val majorityFunc2 = udf { (s1: Double, s2: Double, s3: Double, s4: Double)  =>
-
-          val occurances = mutable.Map.empty[Double, Int]
-          Seq(s1,s2,s3,s4).foreach { x =>
-            occurances.update(x, occurances.getOrElse(x, 0) + 1)
-          }
-          occurances.toArray.sortWith(_._2 > _._2).head._1
-        }
-
-        val majorityFunc = {
-          val occurances = mutable.Map.empty[Column, Int]
-          predictionColumns.foreach { x =>
-            occurances.update(x, occurances.getOrElse(x, 0) + 1)
-          }
-          occurances.toArray.sortWith(_._2 > _._2).head._1
-        }
+        def predictionsAssembler = new VectorAssembler()
+          .setInputCols(predictionColumns.map(_.toString))
+          .setOutputCol("base_models_predictions")
 
         val mergedAndRegressedDF =
-          joinedPredictions
-            .showN_AndContinue(100)
-            .withColumn("majority_prediction", majorityFunc2(predictionColumns: _*))
-            .withColumnRenamed("majority_prediction", "prediction")
-//            .drop(predictionColumns.map(_.toString): _*)
-            .join(dfWithPredictionsFromBaseModels.head.drop("prediction"), Seq("uniqueIdColumn"), joinType = "left_outer")
-            .cache()
-            .showAllAndContinue
+            joinedPredictions
+              .applyTransformation(predictionsAssembler)
+              .showN_AndContinue(10)
+              .withColumn("majority_prediction", generateMajorityVoteUDF($"base_models_predictions"))
+              .withColumnRenamed("majority_prediction", "prediction")
+              //            .drop(predictionColumns.map(_.toString): _*)
+              .join(dfWithPredictionsFromBaseModels.head.drop("prediction"), Seq("uniqueIdColumn"), joinType = "left_outer")
+              .cache()
+              .showN_AndContinue(10)
 
         results.foreach(_._2.dfWithPredictions.unpersist()) //TODO doubling see below
 
         val evaluator = new MulticlassClassificationEvaluator()
-          .setLabelCol("indexedLabel")
+          .setLabelCol("label")
           .setPredictionCol("prediction")
-          .setMetricName("accuracy")
+          .setMetricName("f1")
 
         val f1 = evaluator.evaluate(mergedAndRegressedDF)
-        logger.info(s"$name : F1 = " + f1)
+        logger.info(s"$name : f1 = " + f1)
         FitnessResult(Map("f1" -> f1), problemType, mergedAndRegressedDF)
 
       case RegressionProblem =>
 
+        //TODO see how it is done in MultiClassClassificationProblem case. Maybe we need to combine vector of predictions.
         //TODO we need to use here `ensemblingRegressor` - maybe overload multiple averaging methods. Maybe put this 3 lines into there?
         import org.apache.spark.sql.functions.{col, lit}
 
@@ -147,6 +137,21 @@ case class SparkBagging[A <: TemplateMember]() extends BaggingMember with LazyLo
         FitnessResult(Map("rmse" -> rmse), problemType, mergedAndRegressedDF)
 
     }
+
+  }
+
+  private[bagging] def checkThatWeHaveSameSetsOfCategoricalLevelsForAllSubmembers[A <: TemplateMember](trainingSamplesForSubmembers: Seq[(TemplateTree[A], DataFrame)])
+                                                                                                      (ss: SparkSession):Unit = {
+    import ss.implicits._
+    val subsetsOfLevelsForAllSamples = trainingSamplesForSubmembers
+      .map{sample =>
+        val originalSample = sample._2.showN_AndContinue(20, "Original sample from `checkThatWeHaveSameSetsOfCategoricalLevelsForAllSubmembers` method")
+        val distinctLevels = originalSample.select("label").distinct().showN_AndContinue(20, "Labels from sample from `checkThatWeHaveSameSetsOfCategoricalLevelsForAllSubmembers` method")
+        distinctLevels.map(_.get(0).asInstanceOf[Int]).collect().toSet
+      }
+
+    val head = subsetsOfLevelsForAllSamples.head
+    require(subsetsOfLevelsForAllSamples.tail.forall(set => head == set), "All samples for submembers should have the same level values")
   }
 
 }

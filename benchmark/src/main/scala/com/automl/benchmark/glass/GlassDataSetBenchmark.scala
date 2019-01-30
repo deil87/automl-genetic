@@ -54,7 +54,7 @@ class GlassDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvid
     val autoMl = new AutoML(
       data = preparedGlassDF,
       responseColumn = "label",
-      maxTime = 5 * 60000,
+      maxTime = 3 * 60000,
       useMetaDB = false,
       initialPopulationSize = Some(7),
       seedPopulation = seedPopulation,

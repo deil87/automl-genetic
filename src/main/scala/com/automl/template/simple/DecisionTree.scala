@@ -8,6 +8,7 @@ import com.automl.template.EvaluationMagnet
 import com.automl.teststrategy.{TestStrategy, TrainingTestSplitStrategy}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.attribute.Attribute
 import org.apache.spark.ml.classification.{DecisionTreeClassificationModel, DecisionTreeClassifier, NaiveBayes}
 import org.apache.spark.ml.evaluation.{MulticlassClassificationEvaluator, RegressionEvaluator}
 import org.apache.spark.ml.feature.{IndexToString, StringIndexer}
@@ -40,8 +41,6 @@ case class DecisionTree() extends SimpleModelMember with SparkSessionProvider wi
 
     import ss.implicits._
 
-
-
      problemType match {
        case RegressionProblem =>
          val dtr = new DecisionTreeRegressor()
@@ -59,12 +58,15 @@ case class DecisionTree() extends SimpleModelMember with SparkSessionProvider wi
          val labelIndexer = new StringIndexer()
            .setInputCol("label")
            .setOutputCol("indexedLabel")
-           .fit(trainDF.union(testDF).sort("label")) //TODO important to sort it in the same way in all sibling submembers so that we can aggregate properly indexed levels.
+           .setStringOrderType("alphabetAsc") // NOTE: Ordering is important to preserve consistent indexing
+           .fit(trainDF.union(testDF)) //TODO important to sort it in the same way in all sibling submembers so that we can aggregate properly indexed levels.
 
          val labelConverter = new IndexToString()
            .setInputCol("prediction")
            .setOutputCol("predictedLabel")
            .setLabels(labelIndexer.labels)
+
+         logger.debug("DecisionTree StringIndexer: " + labelIndexer.labels.mkString(" | "))
 
          val maxDepth = Random.nextInt(7) + 3
          val dtr = new DecisionTreeClassifier()
@@ -87,7 +89,7 @@ case class DecisionTree() extends SimpleModelMember with SparkSessionProvider wi
 
          val indexOfStageForModelInPipeline = 1
          val treeModel = model.stages(indexOfStageForModelInPipeline).asInstanceOf[DecisionTreeClassificationModel]
-         println("Learned classification tree model:\n" + treeModel.toDebugString)
+         logger.info("Learned classification tree model:\n" + treeModel.toDebugString)
 
          logger.info(s"Finished. $name : F1 metric = " + f1)
          FitnessResult(Map("f1" -> f1, "accuracy" -> accuracy), problemType, predictions)

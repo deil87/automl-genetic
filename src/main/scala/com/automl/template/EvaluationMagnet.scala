@@ -15,7 +15,7 @@ object EvaluationMagnet {
     new EvaluationMagnet {
       type Result = FitnessResult
 
-      def apply(): Result = FitnessResult(42, ???)
+      def apply(): Result = FitnessResult(???, ???, ???)
 
     }
 
@@ -26,7 +26,7 @@ object EvaluationMagnet {
       def apply(): Result = {
         val (trainDF, testDF, subMembers, problemType) = tuple
         subMembers.map(_.evaluateFitness(trainDF, testDF, problemType))
-        FitnessResult(42, ???)
+        FitnessResult(???, ???, ???)
       }
 
     }

@@ -296,7 +296,8 @@ object SparkMLUtils {
       df.select(field).show(df.count().toInt, false)
       df
     }
-    def showN_AndContinue(n: Int) = {
+    def showN_AndContinue(n: Int, label: String = "") = {
+      println(s"Show $n rows (label:" + label + ")")
       df.show(n, false)
       df
     }
