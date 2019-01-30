@@ -36,7 +36,7 @@ object DeepLearningHelper {
   }
 
 
-  def printLearingProcessInfo(trainingResult: EarlyStoppingResult[MultiLayerNetwork]): Unit = {
+  def printLearningProcessInfo(trainingResult: EarlyStoppingResult[MultiLayerNetwork]): Unit = {
     println("Termination reason: " + trainingResult.getTerminationReason)
     println("Termination details: " + trainingResult.getTerminationDetails)
     println("Total epochs: " + trainingResult.getTotalEpochs)

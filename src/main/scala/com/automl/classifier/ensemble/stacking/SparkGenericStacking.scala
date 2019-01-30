@@ -5,6 +5,7 @@ import java.util.concurrent.TimeUnit
 
 import com.automl.problemtype.ProblemType
 import com.automl.template.{TemplateMember, TemplateTree}
+import org.apache.spark.ml.classification.Classifier
 import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.ml.linalg.{Vector => MLVector}
 import org.apache.spark.ml.{PipelineStage, Predictor}
@@ -25,7 +26,7 @@ import scala.collection.JavaConverters._
 
 
 //TODO implement Blending https://mlwave.com/kaggle-ensembling-guide/
-class SparkGenericStacking(numFold: Int) {
+class SparkGenericStacking(numFold: Int, responseColumn: String = "indexedLabel") {
 
   val seed = 1234
 
@@ -38,7 +39,7 @@ class SparkGenericStacking(numFold: Int) {
   * */
   def foldingStage(trainDF: DataFrame, testDF: DataFrame) = {
 
-    val projection = trainDF.select("uniqueIdColumn", "label")
+    val projection = trainDF.select("uniqueIdColumn", responseColumn)
     val ss = trainDF.sparkSession
 
     /*
@@ -87,13 +88,13 @@ class SparkGenericStacking(numFold: Int) {
 
       val trainingResult = trainer.fit()
 
-      printLearingProcessInfo(trainingResult)
+      printLearningProcessInfo(trainingResult)
 
       val bestModel: MultiLayerNetwork = trainingResult.getBestModel
 
       bestModel.transform(validationFold, iteratorParams, s"prediction$modelsCount")
     }
-    val reunitedSplits: DataFrame = splitsWithPredictions.reduceLeft((acc, next) => acc.union(next)).drop("label")
+    val reunitedSplits: DataFrame = splitsWithPredictions.reduceLeft((acc, next) => acc.union(next)).drop(responseColumn)
     trainModelsPredictionsDF = trainModelsPredictionsDF.join(reunitedSplits, "uniqueIdColumn").cache()
 
     /*
@@ -107,7 +108,7 @@ class SparkGenericStacking(numFold: Int) {
       else new EarlyStoppingWrapper(net, trainDataSet, testDataSet, iteratorParams, withoutScoreTermination = true).getTrainer
 
     val trainingResult = trainer.fit()
-    printLearingProcessInfo(trainingResult)
+    printLearningProcessInfo(trainingResult)
     val bestModel: MultiLayerNetwork = trainingResult.getBestModel
 
 

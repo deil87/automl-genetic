@@ -101,11 +101,13 @@ case class SparkBagging() extends BaggingMember with LazyLogging{
         results.foreach(_._2.dfWithPredictions.unpersist()) //TODO doubling see below
 
         val evaluator = new MulticlassClassificationEvaluator()
-          .setLabelCol("label")
+          .setLabelCol("indexedLabel")
           .setPredictionCol("prediction")
           .setMetricName("f1")
 
-        val f1 = evaluator.evaluate(mergedAndRegressedDF)
+        val f1 = evaluator
+          .evaluate(mergedAndRegressedDF)
+
         logger.info(s"$name : f1 = " + f1)
         FitnessResult(Map("f1" -> f1), problemType, mergedAndRegressedDF)
 
@@ -145,9 +147,9 @@ case class SparkBagging() extends BaggingMember with LazyLogging{
     import ss.implicits._
     val subsetsOfLevelsForAllSamples = trainingSamplesForSubmembers
       .map{sample =>
-        val originalSample = sample._2.showN_AndContinue(20, "Original sample from `checkThatWeHaveSameSetsOfCategoricalLevelsForAllSubmembers` method")
-        val distinctLevels = originalSample.select("label").distinct().showN_AndContinue(20, "Labels from sample from `checkThatWeHaveSameSetsOfCategoricalLevelsForAllSubmembers` method")
-        distinctLevels.map(_.get(0).asInstanceOf[Int]).collect().toSet
+        val originalSample = sample._2
+        val distinctLevels = originalSample.select("indexedLabel").distinct()
+        distinctLevels.map(_.get(0).asInstanceOf[Double]).collect().toSet
       }
 
     val head = subsetsOfLevelsForAllSamples.head

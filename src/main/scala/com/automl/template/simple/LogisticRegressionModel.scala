@@ -44,6 +44,7 @@ class LogisticRegressionModel() extends LinearModelMember with LazyLogging{
         FitnessResult(???, ???, ???)
       case MultiClassClassificationProblem =>
         val model = new LogisticRegression()
+          .setLabelCol("indexedLabel")
           .setMaxIter(20)
           .setRegParam(0.3)
           .setElasticNetParam(0.8)
@@ -51,7 +52,10 @@ class LogisticRegressionModel() extends LinearModelMember with LazyLogging{
         val lrModel = model.fit(trainDF)
         val prediction = lrModel.transform(testDF)
 
-        val evaluator = new MulticlassClassificationEvaluator().setMetricName("f1")
+        val evaluator = new MulticlassClassificationEvaluator()
+          .setLabelCol("indexedLabel")
+          .setMetricName("f1")
+
         val f1 = evaluator.evaluate(prediction)
         logger.info(s"$name : F1 = " + f1)
 

@@ -46,14 +46,15 @@ class GlassDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvid
       .applyTransformation(featuresAssembler)
       .toLong("Id")
       .withColumnRenamed("Id", "uniqueIdColumn")
-      .withColumnRenamed("TypeOfGlass", "label")
+      .withColumnRenamed("TypeOfGlass", "indexedLabel")
+      .toDouble("indexedLabel")
       .showN_AndContinue(10)
       .cache()
 
     //Note we are passing whole dataset and inside it is being splitted as train/test. Maybe it is a good idea to hold test split for a final examination.
     val autoMl = new AutoML(
       data = preparedGlassDF,
-      responseColumn = "label",
+      responseColumn = "indexedLabel",
       maxTime = 3 * 60000,
       useMetaDB = false,
       initialPopulationSize = Some(7),

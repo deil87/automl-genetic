@@ -10,12 +10,12 @@ import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiCla
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.ml.evaluation.{MulticlassClassificationEvaluator, RegressionEvaluator}
 import org.apache.spark.ml.regression.LinearRegression
-import org.apache.spark.ml.{Pipeline, PipelineStage}
+import org.apache.spark.ml.{Pipeline, PipelineStage, Predictor}
 import org.apache.spark.sql.DataFrame
 import utils.SparkMLUtils._
 
 
-case class GenericStacking(metaLearner: PipelineStage = new LinearRegression()) extends StackingMember with LazyLogging {
+case class GenericStacking(unusedMetaLearner: PipelineStage = new LinearRegression()) extends StackingMember with LazyLogging {
   override def name: String = "SparkStacking " + super.name
 
 
@@ -34,13 +34,11 @@ case class GenericStacking(metaLearner: PipelineStage = new LinearRegression()) 
       stackingModel.addModel(nextMember, trainDF, testDF, problemType: ProblemType)
     })
 
-    val finalPredictions = stacking.performStacking(metaLearner)
-      .select("uniqueIdColumn", "features", "prediction") //TODO make sure that performStacking is returning predictions for testDF
-    //    logger.info("Final predictions (top 10) from GenericStacking:")
-    //    finalPredictions.showN_AndContinue(10)
-
     problemType match {
       case RegressionProblem =>
+        val finalPredictions = stacking.performStacking(unusedMetaLearner)
+          .select("uniqueIdColumn", "features", "prediction") //TODO make sure that performStacking is returning predictions for testDF
+
         val evaluator = new RegressionEvaluator()
 
         val predictionsReunitedWithLabels = finalPredictions.join(testDF.select("label", "uniqueIdColumn"), "uniqueIdColumn")
@@ -49,11 +47,20 @@ case class GenericStacking(metaLearner: PipelineStage = new LinearRegression()) 
         logger.info("RMSE Final:" + rmse)
         FitnessResult(Map("rmse" -> rmse), problemType, predictionsReunitedWithLabels)
       case MultiClassClassificationProblem | BinaryClassificationProblem =>
+
+        val metaLearner = new LinearRegression().setLabelCol("indexedLabel")
+
+        val finalPredictions = stacking.performStacking(metaLearner)
+          .select("uniqueIdColumn", "features", "prediction") //TODO make sure that performStacking is returning predictions for testDF
+
         //TODO need to support classification case
-        val predictionsReunitedWithLabels = finalPredictions.join(testDF.select("label", "uniqueIdColumn"), "uniqueIdColumn")
+        val predictionsReunitedWithLabels = finalPredictions.join(testDF.select("indexedLabel", "uniqueIdColumn"), "uniqueIdColumn")
 
 
-        val evaluator = new MulticlassClassificationEvaluator().setMetricName("f1")
+        val evaluator = new MulticlassClassificationEvaluator()
+          .setLabelCol("indexedLabel")
+          .setMetricName("f1")
+
         val f1 = evaluator.evaluate(predictionsReunitedWithLabels)
         logger.info(s"$name : F1 = " + f1)
         FitnessResult(Map("f1" -> f1), problemType, predictionsReunitedWithLabels)

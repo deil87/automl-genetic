@@ -55,26 +55,13 @@ case class DecisionTree() extends SimpleModelMember with SparkSessionProvider wi
          FitnessResult(Map("rmse" -> rmse), problemType, predictions)
        case MultiClassClassificationProblem | BinaryClassificationProblem =>
 
-         val labelIndexer = new StringIndexer()
-           .setInputCol("label")
-           .setOutputCol("indexedLabel")
-           .setStringOrderType("alphabetAsc") // NOTE: Ordering is important to preserve consistent indexing
-           .fit(trainDF.union(testDF)) //TODO important to sort it in the same way in all sibling submembers so that we can aggregate properly indexed levels.
-
-         val labelConverter = new IndexToString()
-           .setInputCol("prediction")
-           .setOutputCol("predictedLabel")
-           .setLabels(labelIndexer.labels)
-
-         logger.debug("DecisionTree StringIndexer: " + labelIndexer.labels.mkString(" | "))
-
          val maxDepth = Random.nextInt(7) + 3
          val dtr = new DecisionTreeClassifier()
            .setMaxDepth(maxDepth)
            .setLabelCol("indexedLabel")
 
          val pipeline = new Pipeline()
-           .setStages(Array(labelIndexer, dtr, labelConverter))
+           .setStages(Array(dtr))
 
          val model = pipeline.fit(trainDF)
 
@@ -87,7 +74,7 @@ case class DecisionTree() extends SimpleModelMember with SparkSessionProvider wi
          val f1: Double = evaluator.setMetricName("f1").evaluate(predictions)
          val accuracy: Double = evaluator.setMetricName("accuracy").evaluate(predictions)
 
-         val indexOfStageForModelInPipeline = 1
+         val indexOfStageForModelInPipeline = 0
          val treeModel = model.stages(indexOfStageForModelInPipeline).asInstanceOf[DecisionTreeClassificationModel]
          logger.info("Learned classification tree model:\n" + treeModel.toDebugString)
 
