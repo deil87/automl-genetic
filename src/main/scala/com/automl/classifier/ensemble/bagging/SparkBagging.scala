@@ -90,13 +90,14 @@ case class SparkBagging() extends BaggingMember with LazyLogging{
         val mergedAndRegressedDF =
             joinedPredictions
               .applyTransformation(predictionsAssembler)
-              .showN_AndContinue(10)
+//              .showN_AndContinue(10)
               .withColumn("majority_prediction", generateMajorityVoteUDF($"base_models_predictions"))
               .withColumnRenamed("majority_prediction", "prediction")
               //            .drop(predictionColumns.map(_.toString): _*)
               .join(dfWithPredictionsFromBaseModels.head.drop("prediction"), Seq("uniqueIdColumn"), joinType = "left_outer")
               .cache()
-              .showN_AndContinue(10)
+
+//        mergedAndRegressedDF.select(predictionColumns :+ $"indexedLabel" :+ $"prediction" :_*).showN_AndContinue(100)
 
         results.foreach(_._2.dfWithPredictions.unpersist()) //TODO doubling see below
 

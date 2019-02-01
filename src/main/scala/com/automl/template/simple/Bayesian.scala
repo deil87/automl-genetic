@@ -11,7 +11,6 @@ import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.attribute.Attribute
 import org.apache.spark.ml.classification.NaiveBayes
 import org.apache.spark.ml.evaluation.{MulticlassClassificationEvaluator, RegressionEvaluator}
-import org.apache.spark.ml.feature.{IndexToString, StringIndexer}
 import org.apache.spark.sql._
 import org.apache.spark.sql.types.{DoubleType, StringType}
 import utils.SparkMLUtils

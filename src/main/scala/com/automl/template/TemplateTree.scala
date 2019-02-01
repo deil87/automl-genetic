@@ -83,6 +83,7 @@ trait TemplateMember {
   def fitnessError(magnet: EvaluationMagnet): FitnessResult = null
 
   //TODO could add TreeContext parameter as well
+  //TODO rename to  just fitness
   def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType): FitnessResult
 
   override def toString: String = name

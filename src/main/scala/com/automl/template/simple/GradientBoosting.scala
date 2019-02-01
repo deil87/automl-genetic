@@ -57,6 +57,7 @@ case class GradientBoosting() extends SimpleModelMember with LazyLogging{
         val labelIndexer = new StringIndexer()
           .setInputCol("label")
           .setOutputCol("indexedLabel")
+          .setStringOrderType("alphabetAsc")
           .fit(wholeData)
 
         // Automatically identify categorical features, and index them.
