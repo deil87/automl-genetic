@@ -12,7 +12,7 @@ import org.scalatest.{FunSuite, Matchers}
 import utils.{BenchmarkHelper, SparkMLUtils}
 
 
-class GenericStackingSuite extends FunSuite with Matchers with SparkSessionProvider{
+class GenericStackingRegressionSuite extends FunSuite with Matchers with SparkSessionProvider{
 
   import utils.SparkMLUtils._
 
@@ -44,15 +44,15 @@ class GenericStackingSuite extends FunSuite with Matchers with SparkSessionProvi
     .limit(3000)
     .applyTransformation(featuresAssembler)
     .applyTransformation(scaler)
-    .showN_AndContinue(10)
+//    .showN_AndContinue(10)
     .withColumnReplace("features", "scaledFeatures")
-    .showN_AndContinue(10)
+//    .showN_AndContinue(10)
     .withColumnRenamed("DepDelay", "label")
     .toDouble("label")
     .filterOutNull("label")
     .withColumn("uniqueIdColumn", monotonically_increasing_id)
-    .printSchema_AndContinue
-    .showN_AndContinue(100)
+//    .printSchema_AndContinue
+    .showN_AndContinue(30)
 
   val Array(trainingSplit, testSplit) = prepairedAirlineDF.randomSplit(Array(0.8, 0.2))
 
@@ -81,7 +81,7 @@ class GenericStackingSuite extends FunSuite with Matchers with SparkSessionProvi
       ))
     )
 
-    val genericStacking = GenericStacking(metaLearner = new GBTRegressor())
+    val genericStacking = GenericStacking(unusedMetaLearner = new GBTRegressor())
 
     val problemType = ProblemType.RegressionProblem
     val fitnessResult = genericStacking.ensemblingFitnessError(trainingSplit, testSplit, models, problemType)
@@ -98,7 +98,7 @@ class GenericStackingSuite extends FunSuite with Matchers with SparkSessionProvi
 
   }
 
-  ignore("Generic stacking member should calculate fitness over tree of height 3 and with better performance than each particular member") {
+  test("Generic stacking member should calculate fitness over tree of height 3 and with better performance than each particular member") {
 
     val models = Seq(
       LeafTemplate(DecisionTree()),
@@ -112,19 +112,19 @@ class GenericStackingSuite extends FunSuite with Matchers with SparkSessionProvi
       ))
     )
 
-    BenchmarkHelper.time("stacking") {
+    BenchmarkHelper.time("GenericStackingSuite.scala ") {
 
-      val genericStacking = GenericStacking(metaLearner = new GBTRegressor())
+      val genericStacking = GenericStacking(unusedMetaLearner = new GBTRegressor())
 
       val problemType = ProblemType.RegressionProblem
       val fitnessResult = genericStacking.ensemblingFitnessError(trainingSplit, testSplit, models, problemType)
 
-      val rmseFromLR = LinearRegressionModel().fitnessError(trainingSplit, testSplit).getCorrespondingMetric
+      val rmseFromLR = LinearRegressionModel().fitnessError(trainingSplit, testSplit, problemType).getCorrespondingMetric
       println(s"RMSE computed for Linear regression model $rmseFromLR")
 
       fitnessResult.getCorrespondingMetric should be <= rmseFromLR
 
-      val rmseFromGB = GradientBoosting().fitnessError(trainingSplit, testSplit).getCorrespondingMetric
+      val rmseFromGB = GradientBoosting().fitnessError(trainingSplit, testSplit, problemType).getCorrespondingMetric
       println(s"RMSE computed for GradientBoosting model $rmseFromGB")
 
       fitnessResult.getCorrespondingMetric should be <= rmseFromGB

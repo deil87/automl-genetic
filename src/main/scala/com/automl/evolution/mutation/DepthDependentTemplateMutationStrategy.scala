@@ -36,9 +36,9 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
     def mutateIndividual(individual: TemplateTree[TemplateMember]) = {
 
 
-      def getRandomEnsemblingMember = EnsemblingModelMember.poolOfEnsemblingModels.toSeq.randElement
+      def getRandomEnsemblingMember = EnsemblingModelMember.randomMember
 
-      def getRandomBaseMemberBasedOnProblemType: TemplateMember = SimpleModelMember.poolOfSimpleModels(problemType).randElement
+      def getRandomBaseMemberBasedOnProblemType: TemplateMember = SimpleModelMember.randomMember(problemType)
 
       /**
         * @param depth

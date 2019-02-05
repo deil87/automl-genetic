@@ -2,6 +2,7 @@ package com.automl.evolution.selection
 
 /**
   *   Linear version page 82
+  *   Assign probabilities based on rank. Rank starts with 0 so the last element in the list will have highest probability assigned.
   * @tparam T
   */
 class RankBasedSelectionProbabilityAssigner[T] extends SelectionProbabilityAssigner[T] {

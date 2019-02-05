@@ -15,6 +15,9 @@ trait Distributed {
 
 class StochasticUniversalSampling[T](items: List[( T, Double)]) extends Selector[T] {
 
+  override def sample(sizeOfSample: Int): Stream[(T, Double)] = ???
+
   def getNext: (T, Double) = { ??? //TODO
+
   }
 }

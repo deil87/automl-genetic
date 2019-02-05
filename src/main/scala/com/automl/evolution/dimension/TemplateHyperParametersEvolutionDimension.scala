@@ -25,6 +25,9 @@ class TemplateHyperParametersEvolutionDimension(evolveEveryGenerations: Int = 1)
     new HPPopulation(individuals = Nil)
   }
 
+
+  override def selectParents(evaluatedIndividuals: Seq[EvaluatedHyperParametersField]): Seq[EvaluatedHyperParametersField] = ???
+
   override def mutateParentPopulation(population: HPPopulation): HPPopulation = ???
 
   override def evaluatePopulation(population: HPPopulation, workingDF: DataFrame): Seq[EvaluatedHyperParametersField] = ???

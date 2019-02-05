@@ -1,34 +1,24 @@
-package com.automl
+package com.automl.evolution.evaluation
 
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
-import com.automl.evolution.dimension.{EvaluatedHyperParametersField, HyperParametersField}
+import com.automl.evolution.dimension.HyperParametersField
 import com.automl.helper.{FitnessResult, TemplateTreeHelper}
 import com.automl.problemtype.ProblemType
 import com.automl.route.UpdateWeb
 import com.automl.template.{TemplateMember, TemplateTree}
+import com.automl.{EvaluatedTemplateData, TPopulation}
 import com.typesafe.scalalogging.LazyLogging
 import kamon.Kamon
-import kamon.metric.CounterMetric
-import org.apache.spark.ml.param.Params
 import org.apache.spark.sql.DataFrame
 
 import scala.collection.mutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
-trait PopulationEvaluator[PopulationType] {
-
-  def evaluateIndividuals(population: PopulationType,
-                          workingDataSet: DataFrame,
-                          hyperParamField: HyperParametersField,
-                          problemType: ProblemType)
-                            (implicit cache: mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]): Seq[EvaluatedTemplateData]
-}
-
-class TPopulationEvaluator(implicit as: ActorSystem) extends PopulationEvaluator[TPopulation] with LazyLogging{
+class TemplateSimpleEvaluator(implicit as: ActorSystem) extends PopulationEvaluator[TPopulation] with LazyLogging{
 
   private val cacheHitsCounterKamon = Kamon.counter("kamon.automl.cache_hits")
 

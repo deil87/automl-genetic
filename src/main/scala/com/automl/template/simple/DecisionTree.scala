@@ -77,7 +77,7 @@ case class DecisionTree() extends SimpleModelMember with SparkSessionProvider wi
          val treeModel = model.stages(indexOfStageForModelInPipeline).asInstanceOf[DecisionTreeClassificationModel]
          logger.debug("Learned classification tree model:\n" + treeModel.toDebugString)
 
-         logger.info(s"Finished. $name : F1 metric = " + f1)
+         logger.info(s"Finished. $name : F1 metric = " + f1 + s". Number of rows = ${trainDF.count()} / ${testDF.count()}")
          FitnessResult(Map("f1" -> f1, "accuracy" -> accuracy), problemType, predictions)
      }
 

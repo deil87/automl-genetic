@@ -1,7 +1,7 @@
 package com.automl.evolution.selection
 
 import com.automl.helper.{FitnessResult, PopulationHelper}
-import com.automl.problemtype.ProblemType.RegressionProblem
+import com.automl.problemtype.ProblemType.{MultiClassClassificationProblem, RegressionProblem}
 import com.automl.template.LeafTemplate
 import com.automl.{AutoML, EvaluatedTemplateData, TPopulation}
 import com.automl.template.simple.{DecisionTree, LinearRegressionModel, SimpleModelMember}
@@ -45,6 +45,70 @@ class RankSelectionStrategyTest extends WordSpec with Matchers{
       PopulationHelper.print(new TPopulation(selectedParents.map(_.template)))
 
       selectedParents.length shouldBe (populationSize * selectionShare)
+    }
+
+    "parentSelection with local competitions" in {
+      val individuals: Seq[LeafTemplate[SimpleModelMember]] = Seq(
+        LeafTemplate(LinearRegressionModel()),
+        LeafTemplate(LinearRegressionModel()),
+        LeafTemplate(DecisionTree())
+      )
+
+      val populationSize = 10
+      val selectionShare = 0.5
+
+      val individualsSpanned = TPopulation.fromSeedPopulation(new TPopulation(individuals)).withSize(populationSize).build.individuals
+
+      val selectionStrategy = new RankSelectionStrategy
+      val evaluatedTemplateData = individualsSpanned.zipWithIndex.map { case (individual, idx) =>
+        EvaluatedTemplateData(idx.toString, individual, null,
+          FitnessResult(Map("f1" -> idx * 100), MultiClassClassificationProblem, null)
+          )
+      }
+
+      val evaluatedTemplateDataWithNeighbours = evaluatedTemplateData.map(etd => etd.copy(neighbours = evaluatedTemplateData.diff(Seq(etd))))
+
+      val selectedParents = selectionStrategy.parentSelectionByShareWithLocalCompetitions(selectionShare, evaluatedTemplateDataWithNeighbours)
+
+      PopulationHelper.print(new TPopulation(selectedParents.map(_.template)))
+
+      selectedParents.length shouldBe (populationSize * selectionShare)
+      selectedParents.map(_.fitness.getCorrespondingMetric) should contain theSameElementsAs Seq(900, 800, 700, 600, 500)
+    }
+
+    "parentSelection with local competitions with sampling is working" in {
+      val individuals: Seq[LeafTemplate[SimpleModelMember]] = Seq(
+        LeafTemplate(LinearRegressionModel()),
+        LeafTemplate(LinearRegressionModel()),
+        LeafTemplate(DecisionTree())
+      )
+
+      val populationSize = 10
+
+      val individualsSpanned = TPopulation.fromSeedPopulation(new TPopulation(individuals)).withSize(populationSize).build.individuals
+
+      val selectionStrategy = new RankSelectionStrategy
+      val evaluatedTemplateData = individualsSpanned.zipWithIndex.map { case (individual, idx) =>
+        EvaluatedTemplateData(idx.toString, individual, null,
+          FitnessResult(Map("f1" -> idx * 100), MultiClassClassificationProblem, null)
+        )
+      }
+
+      val evaluatedTemplateDataWithNeighbours = evaluatedTemplateData.map(etd => etd.copy(neighbours = evaluatedTemplateData.diff(Seq(etd))))
+
+      val sizeOfSample = 1500
+      val selectedParents = selectionStrategy.parentSelectionBySizeWithLocalCompetitions(sizeOfSample, evaluatedTemplateDataWithNeighbours)
+
+      PopulationHelper.print(new TPopulation(selectedParents.map(_.template)))
+
+      selectedParents.length shouldBe sizeOfSample
+
+      //Check sampling ratio
+      val withAssignedProbs = new RankBasedSelectionProbabilityAssigner[EvaluatedTemplateData].assign(selectedParents.toList)
+
+      val assignedAndExpectedProbability = withAssignedProbs.count(_._1.fitness.getCorrespondingMetric == 900).toDouble / sizeOfSample
+      assignedAndExpectedProbability shouldBe assignedAndExpectedProbability +- 0.01
+
     }
 
   }

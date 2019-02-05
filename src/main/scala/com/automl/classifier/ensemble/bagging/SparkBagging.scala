@@ -53,7 +53,7 @@ case class SparkBagging() extends BaggingMember with LazyLogging{
 
     val joinedPredictions: Dataset[Row] =
       dfWithPredictionsFromBaseModels
-        .map(_.showN_AndContinue(20))
+//        .map(_.showN_AndContinue(20))
         .zipWithIndex
         .map{case (df, idx) =>
           df.select($"uniqueIdColumn", $"prediction")
@@ -62,7 +62,7 @@ case class SparkBagging() extends BaggingMember with LazyLogging{
         .reduce((a, b) => {
           a.join(b, "uniqueIdColumn")
         }).cache()
-        .showN_AndContinue(10, "After joining predictions")
+//        .showN_AndContinue(10, "After joining predictions")
 
     def generateMajorityVoteUDF = {
       import org.apache.spark.sql.functions.udf

@@ -14,6 +14,8 @@ case class FitnessResult(metricsMap: Map[String, Double], problemType: ProblemTy
       metricsMap("rmse")
   }
 
+  def dfWithPredictionsOnly: DataFrame = dfWithPredictions.select("uniqueIdColumn", "indexedLabel", "prediction")
+
   def getMetricByName(name: String) = metricsMap.getOrElse(name, throw new IllegalArgumentException(s"Metric with name $name was not found"))
 
   def orderTo(other: FitnessResult): Boolean = problemType match {
@@ -22,6 +24,8 @@ case class FitnessResult(metricsMap: Map[String, Double], problemType: ProblemTy
     case RegressionProblem =>
       getCorrespondingMetric < other.getCorrespondingMetric
   }
+
+  def filterFun(other: FitnessResult): Boolean = ! orderTo(other)
 
   def compareTo(other: FitnessResult): Int = problemType match {
     case MultiClassClassificationProblem | BinaryClassificationProblem =>

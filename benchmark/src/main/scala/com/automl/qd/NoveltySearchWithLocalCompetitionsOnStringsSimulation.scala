@@ -75,7 +75,7 @@ class NoveltySearchWithLocalCompetitionsOnStringsSimulation(val neighbourhoodSiz
     val evaluatedPopulation = evaluatePopulation(population)
 
     //We can find neighbourhood in parallel and we don't need evaluated population. We probably need to store all our individuals in the MAP for development convenience.
-    val populationWithNeighbouthood = findNeighbours(evaluatedPopulation)
+    val populationWithNeighbourhoods = findNeighbours(evaluatedPopulation)
 
 //    println(populationWithNeighbouthood.map(ind => ind.individual + "_" + ind.neighbours.map(_.score.toString).mkString(",")).mkString("\n"))
 
@@ -83,7 +83,7 @@ class NoveltySearchWithLocalCompetitionsOnStringsSimulation(val neighbourhoodSiz
 //      EvaluatedStrWithAccommodation(evaluatedInd.individual, evaluatedInd.score, determineMNicheIndexBasedOnMorphologicalCriteria(evaluatedInd.individual))
 //    )
 
-    val evaluatedBasedOnNiches = evaluateLocalPerformances(populationWithNeighbouthood)
+    val evaluatedBasedOnNiches = evaluateLocalPerformances(populationWithNeighbourhoods)
 
     println(evaluatedBasedOnNiches.map(ind => ind.individual + "_" + ind.localScore).mkString("\n"))
     println("\n\n ============================================ \n")
@@ -115,7 +115,7 @@ class NoveltySearchWithLocalCompetitionsOnStringsSimulation(val neighbourhoodSiz
   def findNeighbours(population: Seq[EvaluatedStr]):Seq[EvaluatedStrWithNeighbours] = {
     population.map{ind =>
       val distanceToNeighbours = mutable.Buffer[DistanceToNeighbour]()
-      for(another <- population.diff(ind.individual)) {
+      for(another <- population.diff(Seq(ind))) {
         distanceToNeighbours.append(distance(ind, another))
       }
       val neighbours = distanceToNeighbours.sortWith(_.distance < _.distance).take(neighbourhoodSize).map(_.neighbour)

@@ -26,7 +26,7 @@ import scala.collection.JavaConverters._
 
 
 //TODO implement Blending https://mlwave.com/kaggle-ensembling-guide/
-class SparkGenericStacking(numFold: Int, responseColumn: String = "indexedLabel") {
+class SparkGenericStacking(numFold: Int, responseColumn: String) {
 
   val seed = 1234
 
@@ -213,6 +213,7 @@ class SparkGenericStacking(numFold: Int, responseColumn: String = "indexedLabel"
 
 
   def performStacking(metaPredictor: PipelineStage) = {
+    import utils.SparkMLUtils._
     val metaFeatures = (0 until modelsCount).toArray.map(idx => s"prediction$idx")
     def featuresAssembler = new VectorAssembler()
       .setInputCols(metaFeatures)

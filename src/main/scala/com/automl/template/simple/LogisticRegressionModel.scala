@@ -11,7 +11,7 @@ import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 import org.apache.spark.ml.feature.StandardScaler
 import org.apache.spark.sql._
 
-class LogisticRegressionModel() extends LinearModelMember with LazyLogging{
+case class LogisticRegressionModel() extends LinearModelMember with LazyLogging{
 
   override def name: String = "LogisticRegressionModel " + super.name
 
@@ -54,7 +54,7 @@ class LogisticRegressionModel() extends LinearModelMember with LazyLogging{
 
         val model = new LogisticRegression()
           .setLabelCol("indexedLabel")
-          .setMaxIter(200)
+          .setMaxIter(20)
           .setRegParam(0.3)
           .setElasticNetParam(0.8)
 
@@ -72,7 +72,7 @@ class LogisticRegressionModel() extends LinearModelMember with LazyLogging{
           .setMetricName("f1")
 
         val f1 = evaluator.evaluate(prediction)
-        logger.info(s"$name : F1 = " + f1)
+        logger.info(s"Finished. $name : F1 = " + f1)
 
         FitnessResult(Map("f1" -> f1), problemType, prediction)
     }

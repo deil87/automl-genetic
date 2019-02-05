@@ -1,7 +1,8 @@
 package com.automl.evolution.dimension
 import akka.actor.{ActorRef, ActorSystem}
-import com.automl.evolution.diversity.DistinctDiversityStrategy
-import com.automl.{EvaluatedTemplateData, Population, TPopulation, TPopulationEvaluator}
+import com.automl.evolution.diversity.{DistinctDiversityStrategy, MisclassificationDistance}
+import com.automl.evolution.evaluation.{TemplateNSLCEvaluator, TemplateSimpleEvaluator}
+import com.automl.{EvaluatedTemplateData, Population, TPopulation}
 import com.automl.evolution.mutation.{DepthDependentTemplateMutationStrategy, MutationProbabilities}
 import com.automl.evolution.selection.RankSelectionStrategy
 import com.automl.helper.{FitnessResult, PopulationHelper}
@@ -25,7 +26,7 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: P
 
   val distinctStrategy = new DistinctDiversityStrategy()
   val mutationStrategy = new DepthDependentTemplateMutationStrategy(distinctStrategy, problemType)
-  val selectionStrategy = new RankSelectionStrategy
+  val rankSelectionStrategy = new RankSelectionStrategy
 
   // Dependencies on other dimensions. Hardcoded for now. Should come from AutoML.runEvolution method parameters.
   val hyperParamsEvDim = new TemplateHyperParametersEvolutionDimension
@@ -38,7 +39,9 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: P
 
     evaluatedOriginalPopulation.printSortedByFitness()
 
-    val selectedParents = selectionStrategy.parentSelectionByShare(0.8, evaluatedOriginalPopulation)
+    val selectedParents = selectParents(evaluatedOriginalPopulation)
+
+    //    val selectedParents = rankSelectionStrategy.parentSelectionByShare(0.8, evaluatedOriginalPopulation)
     //Second phase: We are going to compute fitness functions and rank all the individuals.
     //Draw from these population with the probability distribution proportional to rank values.
     val bestTemplatesSelectedForMutation = selectedParents.map(_.template)
@@ -59,8 +62,7 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: P
 
     val evaluationResultsForNewExpandedGeneration = mutantsEvaluationsForOffspringAndDuplicates ++ evaluatedOriginalPopulation.distinct //losersEvaluations.distinct ++ bestEvaluations.distinct
 
-    //For now number of individuals is bigger the original size of population. Need to shrink by selection.
-    val survivedForNextGenerationEvaluatedTemplates = selectionStrategy.parentSelectionBySize(population.size, evaluationResultsForNewExpandedGeneration)
+    val survivedForNextGenerationEvaluatedTemplates = selectSurvived(population, evaluationResultsForNewExpandedGeneration)
 
     val evolvedPopulation = new TPopulation(survivedForNextGenerationEvaluatedTemplates.map(_.template), offspring.mutationProbabilities)
 
@@ -71,6 +73,14 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: P
     evolvedPopulation
   }
 
+  private def selectSurvived(population: TPopulation, evaluationResultsForNewExpandedGeneration: Seq[EvaluatedTemplateData]) = {
+    rankSelectionStrategy.parentSelectionBySizeWithLocalCompetitions(population.size, evaluationResultsForNewExpandedGeneration)
+  }
+
+  override def selectParents(evaluated: Seq[EvaluatedTemplateData]): Seq[EvaluatedTemplateData] = {
+    val selectedParents = rankSelectionStrategy.parentSelectionByShareWithLocalCompetitions(0.5, evaluated)
+    selectedParents
+  }
 
   override def mutateParentPopulation(population: TPopulation): TPopulation = {
     // If we made sure that mutation Strategy ensures diversity than we need to perform extra mutations for duplications only in the case of cold start in the first iteration.
@@ -89,7 +99,14 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: P
     val bestEvaluatedHyperParametersField: HyperParametersField = null
 //    val bestEvaluatedHyperParametersField = hyperParamsEvDim.getBestFromPopulation(workingDF)// During next generation's call of this.evolve we will be able to get new/better individuals
 
-    new TPopulationEvaluator().evaluateIndividuals(population, workingDF, bestEvaluatedHyperParametersField, problemType)
+    //TODO it is not generic to use MisclassificationDistance as we can be solving regression here as well
+    if(problemType == MultiClassClassificationProblem)
+      new TemplateNSLCEvaluator(new MisclassificationDistance)
+        .evaluateIndividuals(population, workingDF, bestEvaluatedHyperParametersField, problemType)
+    else {
+      ???
+    }
+//    new TemplateSimpleEvaluator().evaluateIndividuals(population, workingDF, bestEvaluatedHyperParametersField, problemType)
   }
 
   override var _population: TPopulation = _

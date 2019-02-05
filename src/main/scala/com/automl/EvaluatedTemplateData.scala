@@ -11,7 +11,8 @@ case class EvaluatedTemplateData(id: String,
                                  algorithm: TemplateTree[TemplateMember],
                                  fitness: FitnessResult,
                                  rank: Long = -1,
-                                 probability: Double = -1) {
+                                 probability: Double = -1,
+                                 neighbours: Seq[EvaluatedTemplateData] = Nil) {
 
   def withRank(value: Long): EvaluatedTemplateData = copy(rank = value)
   def withProbability(value: Double): EvaluatedTemplateData = copy(probability = value)

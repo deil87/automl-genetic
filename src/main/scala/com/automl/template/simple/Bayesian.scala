@@ -59,7 +59,8 @@ case class Bayesian() extends SimpleModelMember with SparkSessionProvider with L
       case MultiClassClassificationProblem | BinaryClassificationProblem => //TODO generalize to a common method of evaluation for this type of problem.
 //        val isStringResponse = trainDF.schema.apply("label").dataType.isInstanceOf[StringType]
 
-        val nb = new NaiveBayes()
+        val nb = new NaiveBayes().setModelType("multinomial")
+          .setSmoothing(1) //TODO run Crossvalidation with smoothing
           .setLabelCol("indexedLabel")
 
         val pipeline = new Pipeline()
@@ -77,7 +78,9 @@ case class Bayesian() extends SimpleModelMember with SparkSessionProvider with L
           .setMetricName("f1")
           .evaluate(predictions)
 
-        logger.info(s"Finished. $name : F1 metric = " + f1)
+//        if(f1 <= 0.2 )
+          predictions.showN_AndContinue(100, "Bayesian predictions: ")
+        logger.info(s"Finished. $name : F1 metric = " + f1 + s". Number of rows = ${trainDF.count()} / ${testDF.count()}")
         FitnessResult(Map("f1" -> f1), problemType, predictions)
 
     }

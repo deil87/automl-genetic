@@ -18,6 +18,8 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult] {
 
   def evolve(population: PopulationType, workingDF: DataFrame): PopulationType
 
+  def selectParents(evaluatedIndividuals: Seq[EvaluatedResult]):  Seq[EvaluatedResult]
+
   def mutateParentPopulation(population: PopulationType): PopulationType
 
   def evaluatePopulation(population: PopulationType, workingDF: DataFrame): Seq[EvaluatedResult]

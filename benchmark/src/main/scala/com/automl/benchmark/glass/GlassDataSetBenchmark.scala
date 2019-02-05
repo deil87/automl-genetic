@@ -6,7 +6,7 @@ import com.automl.spark.SparkSessionProvider
 import com.automl.template.LeafTemplate
 import com.automl.template.simple._
 import com.automl.{AutoML, TPopulation}
-import org.apache.spark.ml.feature.VectorAssembler
+import org.apache.spark.ml.feature.{StandardScaler, VectorAssembler}
 import org.apache.spark.sql.functions.rand
 import org.bytedeco.javacpp.opencv_ml.LogisticRegression
 import utils.SparkMLUtils
@@ -17,8 +17,8 @@ class GlassDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvid
 
   def run() = {
 
-    val seed: Seq[LeafTemplate[SimpleModelMember]] = Seq(
-      LeafTemplate(new LogisticRegressionModel()),
+    val seed = Seq(
+      LeafTemplate(LogisticRegressionModel()),
       LeafTemplate(Bayesian()),
 //      LeafTemplate(GradientBoosting()), //TODO multiclass classification case is not supported
       //        LeafTemplate(NeuralNetwork(Array(5,10,5))), // TODO need to implement detection of features number and number of classes
@@ -41,9 +41,18 @@ class GlassDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvid
         .setOutputCol(featuresColName)
     }
 
+    val scaler = new StandardScaler()
+      .setInputCol("features")
+      .setOutputCol("scaledFeatures")
+      .setWithStd(true)
+      .setWithMean(false)
+
     val preparedGlassDF = glassDF
       .orderBy(rand())  // Shuffling
       .applyTransformation(featuresAssembler)
+      .applyTransformation(scaler)
+      .drop("features")
+      .withColumnRenamed("scaledFeatures", "features")
       .toLong("Id")
       .withColumnRenamed("Id", "uniqueIdColumn")
       .withColumnRenamed("TypeOfGlass", "indexedLabel")

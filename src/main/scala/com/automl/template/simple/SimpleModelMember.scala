@@ -2,6 +2,8 @@ package com.automl.template.simple
 
 import com.automl.problemtype.ProblemType
 import com.automl.template._
+import com.automl.template.ensemble.EnsemblingModelMember
+import com.automl.template.ensemble.EnsemblingModelMember.poolOfEnsemblingModels
 import com.automl.template.simple.perceptron.LinearPerceptron
 import com.automl.teststrategy.TestStrategy
 import org.apache.spark.sql._
@@ -36,4 +38,7 @@ object SimpleModelMember {
   def poolOfSimpleModels(problemType: ProblemType): Seq[SimpleModelMember] = {
     poolOfSimpleModels.filter(_.canHandleProblemType(problemType))
   }
+
+  def randomMember(problemType: ProblemType): SimpleModelMember = poolOfSimpleModels(problemType).randElement
+
 }

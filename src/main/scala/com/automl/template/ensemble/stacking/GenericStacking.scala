@@ -25,7 +25,8 @@ case class GenericStacking(unusedMetaLearner: PipelineStage = new LinearRegressi
                                                            problemType: ProblemType)
                                                           (implicit tc: TreeContext = TreeContext()): FitnessResult = {
     logger.debug(s"Evaluating $name ...")
-    val stacking = new SparkGenericStacking(3)
+    val responseColumnName = if(problemType.isClassification) "indexedLabel" else "label"
+    val stacking = new SparkGenericStacking(4, responseColumnName)
 
     stacking.foldingStage(trainDF, testDF)
 
@@ -44,25 +45,31 @@ case class GenericStacking(unusedMetaLearner: PipelineStage = new LinearRegressi
         val predictionsReunitedWithLabels = finalPredictions.join(testDF.select("label", "uniqueIdColumn"), "uniqueIdColumn")
 
         val rmse = evaluator.evaluate(predictionsReunitedWithLabels)
-        logger.info("RMSE Final:" + rmse)
+        logger.info(s"Finished. $name RMSE Final:" + rmse)
         FitnessResult(Map("rmse" -> rmse), problemType, predictionsReunitedWithLabels)
+
       case MultiClassClassificationProblem | BinaryClassificationProblem =>
+        import testDF.sparkSession.implicits._
+        import org.apache.spark.sql.functions.rint
 
         val metaLearner = new LinearRegression().setLabelCol("indexedLabel")
 
         val finalPredictions = stacking.performStacking(metaLearner)
+          .showN_AndContinue(100, "Before selecting prediction column")
+          .withColumnReplace("prediction", rint($"prediction")) //NOTE we need to round because LinearRegression metalearner returns raw predictions
           .select("uniqueIdColumn", "features", "prediction") //TODO make sure that performStacking is returning predictions for testDF
+          .cache()
 
-        //TODO need to support classification case
         val predictionsReunitedWithLabels = finalPredictions.join(testDF.select("indexedLabel", "uniqueIdColumn"), "uniqueIdColumn")
-
+          .showN_AndContinue(100, "GenericStacking predictions")
+          .cache()
 
         val evaluator = new MulticlassClassificationEvaluator()
           .setLabelCol("indexedLabel")
           .setMetricName("f1")
 
         val f1 = evaluator.evaluate(predictionsReunitedWithLabels)
-        logger.info(s"$name : F1 = " + f1)
+        logger.info(s"Finished. $name : F1 = " + f1)
         FitnessResult(Map("f1" -> f1), problemType, predictionsReunitedWithLabels)
     }
   }

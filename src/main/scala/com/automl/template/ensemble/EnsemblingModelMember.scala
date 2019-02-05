@@ -30,4 +30,6 @@ trait EnsemblingModelMember extends TemplateMember {
 object EnsemblingModelMember {
   val poolOfEnsemblingModels: Set[EnsemblingModelMember] =
     BaggingMember.poolOfBaggingModels + StackingMember.MyStackingImpl /*++ BoostingMember.poolOfBoostingModels + StackingMember.MyStackingImpl + CascadingMember.MyCascadingImpl*/
+
+  def randomMember: EnsemblingModelMember = poolOfEnsemblingModels.toSeq.randElement
 }
