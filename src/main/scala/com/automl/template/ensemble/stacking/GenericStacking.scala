@@ -32,7 +32,7 @@ case class GenericStacking(unusedMetaLearner: PipelineStage = new LinearRegressi
 
     subMembers.foldLeft(stacking)((stackingModel, nextMember) => {
 
-      stackingModel.addModel(nextMember, trainDF, testDF, problemType: ProblemType)
+      stackingModel.addModel(nextMember, trainDF, testDF, problemType)
     })
 
     problemType match {
@@ -52,10 +52,10 @@ case class GenericStacking(unusedMetaLearner: PipelineStage = new LinearRegressi
         import testDF.sparkSession.implicits._
         import org.apache.spark.sql.functions.rint
 
-        val metaLearner = new LinearRegression().setLabelCol("indexedLabel")
+        val metaLearner = new LinearRegression().setFeaturesCol("features").setLabelCol("indexedLabel")
 
         val finalPredictions = stacking.performStacking(metaLearner)
-          .showN_AndContinue(100, "Before selecting prediction column")
+          .showN_AndContinue(100, "Before rounding predictions from GenericStacking")
           .withColumnReplace("prediction", rint($"prediction")) //NOTE we need to round because LinearRegression metalearner returns raw predictions
           .select("uniqueIdColumn", "features", "prediction") //TODO make sure that performStacking is returning predictions for testDF
           .cache()
@@ -65,7 +65,8 @@ case class GenericStacking(unusedMetaLearner: PipelineStage = new LinearRegressi
           .cache()
 
         val evaluator = new MulticlassClassificationEvaluator()
-          .setLabelCol("indexedLabel")
+          .setPredictionCol("prediction") //Prediction from Stacking
+          .setLabelCol("indexedLabel") // True labels from testDF
           .setMetricName("f1")
 
         val f1 = evaluator.evaluate(predictionsReunitedWithLabels)

@@ -79,7 +79,7 @@ case class Bayesian() extends SimpleModelMember with SparkSessionProvider with L
           .evaluate(predictions)
 
 //        if(f1 <= 0.2 )
-          predictions.showN_AndContinue(100, "Bayesian predictions: ")
+//          predictions.showN_AndContinue(100, "Bayesian predictions are too low: ")
         logger.info(s"Finished. $name : F1 metric = " + f1 + s". Number of rows = ${trainDF.count()} / ${testDF.count()}")
         FitnessResult(Map("f1" -> f1), problemType, predictions)
 

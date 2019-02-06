@@ -16,7 +16,6 @@
             <onMismatch>DENY</onMismatch>
     </filter>-->
         <encoder>
-            <!--<pattern>%d{HH:mm:ss.SSS} %-5level %msg%n</pattern>-->
             <!--<pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} %msg%n</pattern>-->
             <pattern>%d{HH:mm:ss.SSS} %-5level %msg%n</pattern>
         </encoder>
@@ -45,6 +44,7 @@
     <!--<logger name="com.automl.evolution.selection" level="DEBUG"/>-->
     <!--<logger name="com.automl.spark" level="DEBUG"/>-->
     <logger name="org.apache.spark" level="ERROR"/>
+    <logger name="com.github.fommil.jni.JniLoader" level="ERROR"/>
 
     <root level="INFO">
         <appender-ref ref="STDOUT" />

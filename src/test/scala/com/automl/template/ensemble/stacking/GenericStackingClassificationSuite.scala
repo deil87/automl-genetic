@@ -1,5 +1,6 @@
 package com.automl.template.ensemble.stacking
 
+import com.automl.dataset.Datasets
 import com.automl.problemtype.ProblemType
 import com.automl.spark.SparkSessionProvider
 import com.automl.template.LeafTemplate
@@ -16,43 +17,7 @@ class GenericStackingClassificationSuite extends FunSuite with Matchers with Bef
   import ss.implicits._
   import utils.SparkMLUtils._
 
-  println(ss.sparkContext.getConf.getAll.map(t => t._1 + ":" + t._2).mkString("\n"))
-
-  val wineDF = SparkMLUtils.loadResourceDF("/dataset/wine.csv") // Exploratory data analysis https://rpubs.com/alicew1800/edwine_eda3
-    .showN_AndContinue(5)
-    .withColumnRenamed("Nonflavanoid.phenols", "nf_flavonoid")
-    .withColumnRenamed("Color.int", "color_int")
-
-  val features = Array("Mg", "Flavanoids", "nf_flavonoid", "Proanth", "color_int", "Hue", "OD", "Proline")
-
-  val featuresColName: String = "features"
-
-  def featuresAssembler = {
-    new VectorAssembler()
-      .setInputCols(features)
-      .setOutputCol(featuresColName)
-  }
-
-  val scaler = new StandardScaler()
-    .setInputCol("features")
-    .setOutputCol("scaledFeatures")
-    .setWithStd(true)
-    .setWithMean(false)
-
-  // We are selecting only 1 and 3 classes to make it binary classification problem
-  val preparedWineDF = wineDF
-    .orderBy(rand())
-    .applyTransformation(featuresAssembler)
-    .applyTransformation(scaler)
-    .drop("features")
-    .withColumnRenamed("scaledFeatures", "features")
-    .withColumnRenamed("Wine", "indexedLabel")
-    .withColumnReplace("indexedLabel", $"indexedLabel" - 1.0 ) // TODO we need to make it automatically
-    .withColumn("uniqueIdColumn", monotonically_increasing_id)
-    .toDouble("indexedLabel")
-    .showAllAndContinue
-
-  val Array(trainDF, testDF) = preparedWineDF.randomSplit(Array(0.8, 0.2))
+  val Array(trainDF, testDF) = Datasets.getWineDataframe.randomSplit(Array(0.8, 0.2))
   trainDF.cache()
   testDF.cache()
 

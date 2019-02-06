@@ -5,12 +5,14 @@ import java.util.concurrent.TimeUnit
 
 import com.automl.problemtype.ProblemType
 import com.automl.template.{TemplateMember, TemplateTree}
+import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.ml.classification.Classifier
 import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.ml.linalg.{Vector => MLVector}
 import org.apache.spark.ml.{PipelineStage, Predictor}
 import org.apache.spark.mllib.util.MLUtils
 import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.functions.lit
 import org.apache.spark.sql.types.{IntegerType, LongType, StructField, StructType}
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration
 import org.deeplearning4j.earlystopping.saver.LocalFileModelSaver
@@ -26,7 +28,7 @@ import scala.collection.JavaConverters._
 
 
 //TODO implement Blending https://mlwave.com/kaggle-ensembling-guide/
-class SparkGenericStacking(numFold: Int, responseColumn: String) {
+class SparkGenericStacking(numFold: Int, responseColumn: String) extends LazyLogging{
 
   val seed = 1234
 
@@ -38,6 +40,7 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) {
   * @df training set which wil be folded
   * */
   def foldingStage(trainDF: DataFrame, testDF: DataFrame) = {
+    logger.info(s"Folding stage of SparkGenericStacking is started. Preparing $numFold train/valid pair from training frame.")
 
     val projection = trainDF.select("uniqueIdColumn", responseColumn)
     val ss = trainDF.sparkSession
@@ -53,12 +56,16 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) {
     splits = splitsRdd.map { case (training, validation) =>
       val trainingSplitDF = ss.createDataFrame(training, schema).cache()
       val validationSplitDF = ss.createDataFrame(validation, schema).cache()
+      logger.info(f"Created ${training.count()}%10s train / ${validation.count()}%-10s validation pair.")
       (trainingSplitDF, validationSplitDF)
     }
   }
 
-  private var modelsCount = 0
+  private var numberOfModels = 0
 
+  /**
+    * Adding MultiLayerNetwork to the ensemble.
+    */
   def addModel(net: MultiLayerNetwork, trainDataSet: DataFrame, testDataSet: DataFrame, withEarlyStoppingByScore:Boolean) = {
 
     trainDataSet.cache()
@@ -92,7 +99,7 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) {
 
       val bestModel: MultiLayerNetwork = trainingResult.getBestModel
 
-      bestModel.transform(validationFold, iteratorParams, s"prediction$modelsCount")
+      bestModel.transform(validationFold, iteratorParams, s"prediction$numberOfModels")
     }
     val reunitedSplits: DataFrame = splitsWithPredictions.reduceLeft((acc, next) => acc.union(next)).drop(responseColumn)
     trainModelsPredictionsDF = trainModelsPredictionsDF.join(reunitedSplits, "uniqueIdColumn").cache()
@@ -112,37 +119,52 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) {
     val bestModel: MultiLayerNetwork = trainingResult.getBestModel
 
 
-    val testPredictions = bestModel.transform(testDataSet, iteratorParams, s"prediction$modelsCount")
+    val testPredictions = bestModel.transform(testDataSet, iteratorParams, s"prediction$numberOfModels")
     testModelsPredictionsDF = testModelsPredictionsDF.join(testPredictions, "uniqueIdColumn").cache()
 
-    modelsCount += 1
+    numberOfModels += 1
 
     this
   }
 
+  /**
+    * Adding TemplateMember to the ensemble
+    */
   def addModel[A <: TemplateMember](member: TemplateTree[A], trainDataSet: DataFrame, testDataSet: DataFrame, problemType: ProblemType): SparkGenericStacking = {
     trainDataSet.cache()
     testDataSet.cache()
+    import utils.SparkMLUtils._
+    import trainDataSet.sparkSession.implicits._
 
-    val predictionCol: String = s"prediction$modelsCount"
+    val predictionCol: String = s"prediction$numberOfModels"
 
     /*
     * First stage
     * */
 
-    val splitsWithPredictions = splits.zipWithIndex.map { case ((trainingSplitDF, validationSplitDF), splitIndex) =>
+    val splitsWithPredictions = splits.zipWithIndex.map { case ((trainingFoldIds, holdoutFoldIds), splitIndex) =>
 
-      val trainingFold = trainingSplitDF.join(trainDataSet, "uniqueIdColumn").cache()
-      val validationFold = validationSplitDF.join(trainDataSet, "uniqueIdColumn")
+      val trainingFold = trainingFoldIds.join(trainDataSet, "uniqueIdColumn").cache()
+      val holdoutFold = holdoutFoldIds.join(trainDataSet, "uniqueIdColumn").cache()
 
-      val fitnessResultWithPredictions = member.evaluateFitness(trainingFold, validationFold, problemType)
+      val fitnessResultWithPredictions = member.evaluateFitness(trainingFold, holdoutFold, problemType)
 
-      fitnessResultWithPredictions.dfWithPredictions.withColumnRenamed("prediction", predictionCol)
+      val holdoutFoldPredictions = fitnessResultWithPredictions.dfWithPredictions
+        .withColumnRenamed("prediction", predictionCol)
+        .cache()
+//      if(splitIndex == 1)
+//        holdoutFoldPredictions.withColumnReplace(predictionCol, $"$predictionCol" + new Random().nextDouble()*100)
+//      else
+      holdoutFoldPredictions
     }
 
     val reunitedSplits: DataFrame = splitsWithPredictions
       .reduceLeft((reunitedDataFrame, next) => reunitedDataFrame.union(next))
       .select("uniqueIdColumn", predictionCol)
+
+    require(trainDataSet.count() == reunitedSplits.count(), "Reunited splits do not sum up to the original training dataset's size.")
+
+    logger.info(s"CrossValidated predictions from ${member.member.name} were added to the `trainModelsPredictionsDF`")
 
     trainModelsPredictionsDF = trainModelsPredictionsDF.join(reunitedSplits, "uniqueIdColumn").cache()
 
@@ -150,16 +172,29 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) {
     * Second stage
     * */
 
+    logger.info(s"Predictions based on the whole training dataset are going to be calculated by ${member.member.name}")
+
     val predictionsForTestSetDF: DataFrame =
       member
         .evaluateFitness(trainDataSet, testDataSet, problemType)
         .dfWithPredictions
         .withColumnRenamed("prediction", predictionCol)
+//      .showN_AndContinue(100, "Raw predictions")
         .select("uniqueIdColumn", predictionCol)
+
+    logger.info(s"Predictions based on the whole training dataset were calculated by ${member.member.name} and added to `testModelsPredictionsDF`")
 
     testModelsPredictionsDF = testModelsPredictionsDF.join(predictionsForTestSetDF, "uniqueIdColumn").cache()
 
-    modelsCount += 1
+    import testDataSet.sparkSession.implicits._
+    import org.apache.spark.sql.functions._
+
+//    trainModelsPredictionsDF.select("uniqueIdColumn", predictionCol).join(trainDataSet.select("uniqueIdColumn", "indexedLabel").withColumnRenamed("indexedLabel", "indexedLabel_train"), "uniqueIdColumn")
+//        .withColumn("diff", when($"$predictionCol" === $"indexedLabel_train", 1).otherwise(0))
+//        .showN_AndContinue(100, "Diff show")
+
+
+    numberOfModels += 1
     this
 
   }
@@ -169,7 +204,7 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) {
     trainDataSet.cache()
     testDataSet.cache()
 
-    val predictionCol: String = s"prediction$modelsCount"
+    val predictionCol: String = s"prediction$numberOfModels"
 
     /*
     * First stage
@@ -207,23 +242,25 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) {
 
     testModelsPredictionsDF = testModelsPredictionsDF.join(predictionsForTestSetDF, "uniqueIdColumn").cache()
 
-    modelsCount += 1
+    numberOfModels += 1
     this
   }
 
 
   def performStacking(metaPredictor: PipelineStage) = {
     import utils.SparkMLUtils._
-    val metaFeatures = (0 until modelsCount).toArray.map(idx => s"prediction$idx")
+    val metaFeatures = (0 until numberOfModels).toArray.map(idx => s"prediction$idx")
     def featuresAssembler = new VectorAssembler()
       .setInputCols(metaFeatures)
       .setOutputCol("features")
 
-    val trainAssembled = featuresAssembler.transform(trainModelsPredictionsDF)
-    val testAssembled = featuresAssembler.transform(testModelsPredictionsDF)
+    val trainAssembled = featuresAssembler.transform(trainModelsPredictionsDF).drop(metaFeatures:_*)
+    val testAssembled = featuresAssembler.transform(testModelsPredictionsDF).drop(metaFeatures:_*)
+
+//    trainAssembled.showN_AndContinue(trainAssembled.count().toInt, "Perform fitting of the metalearner")
 
     val metaModel = metaPredictor match {
-      case pr: Predictor[_, _, _] => pr.fit(trainAssembled)
+      case pr: Predictor[_, _, _] => pr.fit(trainAssembled) // .setLabelCol("indexedLabel") is done on the caller's side
     }
     metaModel.transform(testAssembled)
   }
