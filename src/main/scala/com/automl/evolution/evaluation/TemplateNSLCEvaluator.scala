@@ -28,8 +28,6 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric]( dista
                                    problemType: ProblemType)
                                   (implicit cache: mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]): Seq[EvaluatedTemplateData] = {
 
-    val numberOfRous = workingDataSet.count()
-    val sizeOfTheNeighbourhood = Math.min(numberOfRous / 10, 20)
     //TODO make use of hyperParamsMap for templated/nodes/classifiers
 
     val evaluatedTemplateData = population.individuals.zipWithIndex
@@ -54,34 +52,48 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric]( dista
           testSplit.cache()
           materializedTemplate.evaluateFitness(trainingSplit, testSplit, problemType)
         })
-        EvaluatedTemplateData(idx.toString, individualTemplate, materializedTemplate, fitness)
+        EvaluatedTemplateData(idx.toString + ":" + individualTemplate.id, individualTemplate, materializedTemplate, fitness)
       }
-    //First we need to get predictions for all individuals and only then we can calculate phenotypic distances between them
+    evaluatedTemplateData
+  }
 
-    BenchmarkHelper.time("Calculation of neighbours :") {
-      logger.debug(s"Starting to calculate neighbours for population in TemplateNSLCEvaluator:")
-      val withNeighbours = evaluatedTemplateData.map { currentEvaluatedTemplate =>
-        val distanceToNeighbours = mutable.Buffer[(EvaluatedTemplateData, DistMetric)]()
-        for (possibleNeighbour <- evaluatedTemplateData.diff(Seq(currentEvaluatedTemplate))) {
+  def findNeighbours(forWhomWeWantToFindNeighbours: Seq[EvaluatedTemplateData], neighbourhood: Seq[EvaluatedTemplateData], populationSize: Int) = {
+    // QUESTION original  and withOffspring populations will have different neighbourhood sizes. Should we pass different `populationSize` or only size of original population
+      val sizeOfTheNeighbourhood = if(populationSize <= 30) 3 else populationSize / 10
+    BenchmarkHelper.time("Calculation of neighbours") {
+      logger.debug(s"Starting to calculate neighbours (size = $sizeOfTheNeighbourhood) for population (TemplateNSLCEvaluator):")
+      val withNeighbours = forWhomWeWantToFindNeighbours.map { currentEvaluatedTemplate =>
+
+      val distanceToNeighbours = mutable.Buffer[(EvaluatedTemplateData, DistMetric)]() //TODO we can sort on the way by putting into sorted heap
+        for (possibleNeighbour <- neighbourhood.diff(Seq(currentEvaluatedTemplate))) {
+          //First we need to get predictions for all individuals and only then we can calculate phenotypic distances between them
+
           val distanceToTheNeighbour = distanceStrategy.getDistance(currentEvaluatedTemplate.fitness.dfWithPredictionsOnly, possibleNeighbour.fitness.dfWithPredictionsOnly)
+
           distanceToNeighbours.append((possibleNeighbour, distanceToTheNeighbour))
         }
+        logger.debug(f"Distances from ${currentEvaluatedTemplate.idShort} (fitness = ${currentEvaluatedTemplate.fitness.getCorrespondingMetric}) to: " +
+          f" \n  ${distanceToNeighbours.map(neigh => f"\t\t\t\t\t${neigh._1.idShort}  is  ${neigh._2.getDistanceMetrics(0)}%-20s (fitness = ${neigh._1.fitness.getCorrespondingMetric}%-20s)").mkString("  \n  ")}")
 
-//        val similarityEtalon = Array(0, numberOfRous.toDouble) // 1-st element is for minimal distance, second one is for max number of rows where errors/matches on the same positions were done.
-        val similarityEtalon = Array(0.0) //TODO or just replace with sorting
+        //TODO try to not calculate distances if we have duplicates.
 
-        val neighbours = distanceToNeighbours.map { case (possibleNeighbour, cosineComponentsToPossibleNeighbour) =>
-          (possibleNeighbour, CosineSimilarityAssistant.cosineSimilarity(similarityEtalon, cosineComponentsToPossibleNeighbour.getDistanceMetrics))
-        }.
-          sorted
+        //        val similarityEtalon = Array(0, numberOfRous.toDouble) // 1-st element is for minimal distance, second one is for max number of rows where errors/matches on the same positions were done.
+        //        val neighbours = distanceToNeighbours.map { case (possibleNeighbour, cosineComponentsToPossibleNeighbour) =>
+        //          (possibleNeighbour, CosineSimilarityAssistant.cosineSimilarity(similarityEtalon, cosineComponentsToPossibleNeighbour.getDistanceMetrics))
+        //        }.
+        val neighbours = distanceToNeighbours
+          .sortWith(_._2.getDistanceMetrics(0) < _._2.getDistanceMetrics(0)) //TODO optimize
           .take(sizeOfTheNeighbourhood.toInt)
           .map(_._1)
+        logger.debug(f"Chosen neighbours for ${currentEvaluatedTemplate.idShort} :  ${neighbours.map(_.idShort).mkString(" , ")}")
+
 
         currentEvaluatedTemplate.copy(neighbours = neighbours)
       }
       logger.debug(s"Finished calculation of neighbours for population in TemplateNSLCEvaluator.")
       withNeighbours
     }
+
   }
 
 }

@@ -10,12 +10,17 @@ import com.automl.problemtype.ProblemType
 import com.typesafe.scalalogging.LazyLogging
 import kamon.Kamon
 import kamon.metric.MeasurementUnit
+import org.apache.commons.lang3.RandomStringUtils
 
 
 //TODO rename to TemplateTreeNode
 sealed trait TemplateTree[+A <: TemplateMember]{
 
   def member: A
+
+  val id = RandomStringUtils.randomAlphanumeric(5) // NOTE: Do not use as unique key
+//  val orderNumber:Int No we don't want to keep track of the indexes as they will be changing all the time due to evolutions
+
   def subMembers: Seq[TemplateTree[A]]
 
   def evaluateFitness(trainingDF: DataFrame, testDF: DataFrame, problemType: ProblemType)(implicit tc: TreeContext = TreeContext()): FitnessResult

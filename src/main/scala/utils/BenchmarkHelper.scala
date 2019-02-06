@@ -16,7 +16,7 @@ object BenchmarkHelper {
         println(s"$marker# Failure: ${ex.getMessage}")
     } finally {
       val t1 = System.currentTimeMillis()
-      println(s"$marker# Elapsed time: " + (t1 - t0) + "ms")
+      println(s"Benchmark. $marker took: " + (t1 - t0) + "ms")
     }
     result.asInstanceOf[R]
   }

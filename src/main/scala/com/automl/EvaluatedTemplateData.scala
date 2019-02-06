@@ -14,6 +14,8 @@ case class EvaluatedTemplateData(id: String,
                                  probability: Double = -1,
                                  neighbours: Seq[EvaluatedTemplateData] = Nil) {
 
+  def idShort = s"$id:${template.member.name.take(5)}" // TODO add short name to members
+
   def withRank(value: Long): EvaluatedTemplateData = copy(rank = value)
   def withProbability(value: Double): EvaluatedTemplateData = copy(probability = value)
 

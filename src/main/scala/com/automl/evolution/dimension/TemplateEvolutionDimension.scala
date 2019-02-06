@@ -31,36 +31,38 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: P
   // Dependencies on other dimensions. Hardcoded for now. Should come from AutoML.runEvolution method parameters.
   val hyperParamsEvDim = new TemplateHyperParametersEvolutionDimension
 
+  val evaluator = if(problemType == MultiClassClassificationProblem) {
+     new TemplateNSLCEvaluator(new MisclassificationDistance)
+  } else ???
+
   implicit val templatesEvaluationCache = mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]()  // TODO make it faster with reference to value
 
   override def evolve(population: TPopulation, workingDF: DataFrame): TPopulation = {
 
     val evaluatedOriginalPopulation = evaluatePopulation(population, workingDF)
 
-    evaluatedOriginalPopulation.printSortedByFitness()
+    //Need to decide where selecting neighbours should go. To evaluation or selection or to its own phase.
+    val evaluatedOriginalPopulationWithNeighbours = evaluator.findNeighbours(evaluatedOriginalPopulation, evaluatedOriginalPopulation, population.size)
 
-    val selectedParents = selectParents(evaluatedOriginalPopulation)
+    evaluatedOriginalPopulationWithNeighbours.printSortedByFitness()
+
+    val selectedParents = selectParents(evaluatedOriginalPopulationWithNeighbours)
 
     //    val selectedParents = rankSelectionStrategy.parentSelectionByShare(0.8, evaluatedOriginalPopulation)
     //Second phase: We are going to compute fitness functions and rank all the individuals.
     //Draw from these population with the probability distribution proportional to rank values.
     val bestTemplatesSelectedForMutation = selectedParents.map(_.template)
 
-    //Problem: initial duplication of individuals. Are we allowed repetitions at all? For now lets keep it 100% diverse.
-    // Duplications could be both in parents and losers.
-    val losersIndividuals = evaluatedOriginalPopulation.diff(selectedParents)
+    //Problem: initial ot on the way duplication of individuals. Are we allowed repetitions at all? For now lets keep try to force diversity on mutation phase.
+    val populationForUpcomingMutation = new TPopulation(bestTemplatesSelectedForMutation, population.mutationProbabilities)
 
-    val duplicateTemplatesInLosersToMutate = if(losersIndividuals.distinct.size < losersIndividuals.size) {
-      val distinctsInLosersTemplates = losersIndividuals.distinct
-      losersIndividuals.diff(distinctsInLosersTemplates).map(_.template)
-    } else Nil
-
-    val populationForUpcomingMutation = new TPopulation(bestTemplatesSelectedForMutation ++ duplicateTemplatesInLosersToMutate, population.mutationProbabilities)
     val offspring = mutateParentPopulation(populationForUpcomingMutation)
 
-    val mutantsEvaluationsForOffspringAndDuplicates = evaluatePopulation(offspring, workingDF)
+    val mutantsEvaluationsForOffspring = evaluatePopulation(offspring, workingDF)
 
-    val evaluationResultsForNewExpandedGeneration = mutantsEvaluationsForOffspringAndDuplicates ++ evaluatedOriginalPopulation.distinct //losersEvaluations.distinct ++ bestEvaluations.distinct
+    val evaluatedOffspringWithNeighbours = evaluator.findNeighbours(mutantsEvaluationsForOffspring, mutantsEvaluationsForOffspring ++ evaluatedOriginalPopulationWithNeighbours, population.size)
+
+    val evaluationResultsForNewExpandedGeneration = evaluatedOffspringWithNeighbours ++ evaluatedOriginalPopulationWithNeighbours
 
     val survivedForNextGenerationEvaluatedTemplates = selectSurvived(population, evaluationResultsForNewExpandedGeneration)
 
@@ -79,6 +81,7 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: P
 
   override def selectParents(evaluated: Seq[EvaluatedTemplateData]): Seq[EvaluatedTemplateData] = {
     val selectedParents = rankSelectionStrategy.parentSelectionByShareWithLocalCompetitions(0.5, evaluated)
+    logger.debug(s"Selected parents: ${selectedParents.map(_.idShort).mkString(" , ")}")
     selectedParents
   }
 
@@ -86,8 +89,7 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: P
     // If we made sure that mutation Strategy ensures diversity than we need to perform extra mutations for duplications only in the case of cold start in the first iteration.
     val offspring = mutationStrategy.mutate(population) // duplicates are kind of a winners as well and that is unfair but we will eliminate it int the first iteration
     //TODO we can keep track on those who have already passed mutate function and see whether a new one is a duplicate or not.
-    logger.info("Offspring population:")
-    PopulationHelper.print(offspring)
+    PopulationHelper.print(offspring, "Offspring population:")
     offspring
   }
 
@@ -99,10 +101,9 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: P
     val bestEvaluatedHyperParametersField: HyperParametersField = null
 //    val bestEvaluatedHyperParametersField = hyperParamsEvDim.getBestFromPopulation(workingDF)// During next generation's call of this.evolve we will be able to get new/better individuals
 
-    //TODO it is not generic to use MisclassificationDistance as we can be solving regression here as well
-    if(problemType == MultiClassClassificationProblem)
-      new TemplateNSLCEvaluator(new MisclassificationDistance)
-        .evaluateIndividuals(population, workingDF, bestEvaluatedHyperParametersField, problemType)
+    if(problemType == MultiClassClassificationProblem) {
+      evaluator.evaluateIndividuals(population, workingDF, bestEvaluatedHyperParametersField, problemType)
+    }
     else {
       ???
     }

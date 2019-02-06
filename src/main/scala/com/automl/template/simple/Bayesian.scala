@@ -11,6 +11,9 @@ import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.attribute.Attribute
 import org.apache.spark.ml.classification.NaiveBayes
 import org.apache.spark.ml.evaluation.{MulticlassClassificationEvaluator, RegressionEvaluator}
+import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
+import org.apache.spark.mllib.evaluation.MulticlassMetrics
+import org.apache.spark.mllib.stat.{MultivariateStatisticalSummary, Statistics}
 import org.apache.spark.sql._
 import org.apache.spark.sql.types.{DoubleType, StringType}
 import utils.SparkMLUtils
@@ -59,20 +62,41 @@ case class Bayesian() extends SimpleModelMember with SparkSessionProvider with L
       case MultiClassClassificationProblem | BinaryClassificationProblem => //TODO generalize to a common method of evaluation for this type of problem.
 //        val isStringResponse = trainDF.schema.apply("label").dataType.isInstanceOf[StringType]
 
+        val classes = trainDF.select("indexedLabel").distinct().collect().map(_.getDouble(0))
+
+        require(classes contains(0.0), s"Bayesian labels should have all indexes ans zero-based but instead: ${classes.mkString(",")}")
+
         val nb = new NaiveBayes().setModelType("multinomial")
-          .setSmoothing(1) //TODO run Crossvalidation with smoothing
+//          .setSmoothing(1) //TODO run Crossvalidation with smoothing
           .setLabelCol("indexedLabel")
+
+        val paramGrid = new ParamGridBuilder()
+          .addGrid(nb.smoothing, Array(1.0/*, 2.0, 3.0*/))
+          .build()
 
         val pipeline = new Pipeline()
           .setStages(Array(nb))
 
-        val model = pipeline.fit(trainDF)
-
-        val predictions = model.transform(testDF)
-
         val evaluator = new MulticlassClassificationEvaluator()
           .setLabelCol("indexedLabel")
           .setPredictionCol("prediction")
+
+        val isLargerBetter = evaluator.isLargerBetter // TODO
+
+        val cv = new CrossValidator()
+          .setEstimator(pipeline)
+          .setEvaluator(evaluator)
+          .setEstimatorParamMaps(paramGrid)
+          .setNumFolds(3)
+//          .setSeed(1234)
+
+        val model = cv.fit(trainDF)  //best out of grid's parameters will be returned based on averaged over `setNumFolds` folds validation
+
+        logger.debug("Best Bayesian params: " + model.getEstimatorParamMaps.zip(model.avgMetrics).mkString(",").toString)
+
+        val predictions = model.transform(testDF)
+
+        MulticlassMetricsHelper.showStatistics(predictions)
 
         val f1: Double = evaluator
           .setMetricName("f1")
@@ -84,5 +108,51 @@ case class Bayesian() extends SimpleModelMember with SparkSessionProvider with L
         FitnessResult(Map("f1" -> f1), problemType, predictions)
 
     }
+  }
+}
+
+
+object MulticlassMetricsHelper {
+
+  def showStatistics(predictionAndLabel: DataFrame) = {
+
+    // Instantiate metrics object
+    val metrics = new MulticlassMetrics(predictionAndLabel.select("prediction", "indexedLabel").rdd.map(r => (r.getDouble(0), r.getDouble(1))))
+
+    // Confusion matrix
+    println("Confusion matrix:")
+    println(metrics.confusionMatrix)
+
+    // Overall Statistics
+    val accuracy = metrics.accuracy
+    println("Summary Statistics")
+    println(s"Accuracy = $accuracy")
+
+    // Precision by label
+    val labels = metrics.labels
+    labels.foreach { l =>
+      println(s"Precision($l) = " + metrics.precision(l))
+    }
+
+    // Recall by label
+    labels.foreach { l =>
+      println(s"Recall($l) = " + metrics.recall(l))
+    }
+
+    // False positive rate by label
+    labels.foreach { l =>
+      println(s"FPR($l) = " + metrics.falsePositiveRate(l))
+    }
+
+    // F-measure by label
+    labels.foreach { l =>
+      println(s"F1-Score($l) = " + metrics.fMeasure(l))
+    }
+
+    // Weighted stats
+    println(s"Weighted precision: ${metrics.weightedPrecision}")
+    println(s"Weighted recall: ${metrics.weightedRecall}")
+    println(s"Weighted F1 score: ${metrics.weightedFMeasure}")
+    println(s"Weighted false positive rate: ${metrics.weightedFalsePositiveRate}")
   }
 }

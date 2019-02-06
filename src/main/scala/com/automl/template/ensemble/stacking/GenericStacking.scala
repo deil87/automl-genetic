@@ -55,13 +55,13 @@ case class GenericStacking(unusedMetaLearner: PipelineStage = new LinearRegressi
         val metaLearner = new LinearRegression().setFeaturesCol("features").setLabelCol("indexedLabel")
 
         val finalPredictions = stacking.performStacking(metaLearner)
-          .showN_AndContinue(100, "Before rounding predictions from GenericStacking")
+//          .showN_AndContinue(100, "Before rounding predictions from GenericStacking")
           .withColumnReplace("prediction", rint($"prediction")) //NOTE we need to round because LinearRegression metalearner returns raw predictions
           .select("uniqueIdColumn", "features", "prediction") //TODO make sure that performStacking is returning predictions for testDF
           .cache()
 
         val predictionsReunitedWithLabels = finalPredictions.join(testDF.select("indexedLabel", "uniqueIdColumn"), "uniqueIdColumn")
-          .showN_AndContinue(100, "GenericStacking predictions")
+//          .showN_AndContinue(100, "GenericStacking predictions")
           .cache()
 
         val evaluator = new MulticlassClassificationEvaluator()

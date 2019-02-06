@@ -31,7 +31,7 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
     */
   def mutate(population: TPopulation): TPopulation = {
 
-    logger.info(s"\n\nStarting new mutation phase for the population...")
+    logger.info(s"Starting new mutation phase for the population...")
 
     def mutateIndividual(individual: TemplateTree[TemplateMember]) = {
 
@@ -61,11 +61,11 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
           if(targetLevelOfMutation == currentLevel) {
             val pivot = new Random().nextDouble()
             if(pivot > 0.8) { // ToDO with `doWithProbability` helper method. DoOtherwise?
-              logger.info("Mutate leaf node to ensembling one causing encreasing of complexity")
+              logger.info("\t\t Mutate leaf node to ensembling one causing encreasing of complexity")
               val numberOfNewChildren = new Random().nextInt(3)
               NodeTemplate(getRandomEnsemblingMember, Seq(lt) ++ (1 to numberOfNewChildren).map(_ => LeafTemplate(getRandomBaseMemberBasedOnProblemType)))
             } else {
-              logger.info("Mutate leaf node to another leaf node")
+              logger.info("\t\t Mutate leaf node to another leaf node")
               LeafTemplate(getRandomBaseMemberBasedOnProblemType)
             }
           } else
@@ -78,10 +78,10 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
           if(targetLevelOfMutation == currentLevel) {
             val pivot = new Random().nextDouble()
             if(pivot > 0.8) {
-              logger.info("Mutate ensembling node by adding new leaf template to its submembers")
+              logger.info("\t\t Mutate ensembling node by adding new leaf template to its submembers")
               NodeTemplate(ensemblingMember, subMembers :+ LeafTemplate(getRandomBaseMemberBasedOnProblemType))
             } else {
-              logger.info("Mutate ensembling node by adding new ensembling node to its submembers")
+              logger.info("\t\t Mutate ensembling node by adding new ensembling node to its submembers")
               //TODO not just add ensembling node but replace some of the sub members
               val numberOfNewChildren = new Random().nextInt(3)
               NodeTemplate(ensemblingMember, subMembers :+ NodeTemplate(getRandomEnsemblingMember,  (1 to numberOfNewChildren).map(_ => LeafTemplate(getRandomBaseMemberBasedOnProblemType))))

@@ -46,6 +46,7 @@ class TemplateSimpleEvaluator(implicit as: ActorSystem) extends PopulationEvalua
 
         val cacheKey = (materializedTemplate, workingDataSet.count())
         if (cache.isDefinedAt(cacheKey)) {
+//          println(s"${Console.BLUE} Cache hit happened for $idx-th individual based on: \n template: $individualTemplate \n algorithm: $materializedTemplate \n")
           logger.debug(s"Cache hit happened for $idx-th individual based on: \n template: $individualTemplate \n algorithm: $materializedTemplate \n")
           cacheHitsCounterKamon.increment(1)
         }
@@ -57,7 +58,7 @@ class TemplateSimpleEvaluator(implicit as: ActorSystem) extends PopulationEvalua
           materializedTemplate.evaluateFitness(trainingSplit, testSplit, problemType)
         })
         webClientNotifier.map(wcn => wcn ! UpdateWeb(s"Evaluated ${TemplateTreeHelper.renderAsString_v2(materializedTemplate)} with fitness value: " + fr.metricsMap))
-        val iad = EvaluatedTemplateData(idx.toString, individualTemplate, materializedTemplate, fr)
+        val iad = EvaluatedTemplateData(idx.toString + ":" + individualTemplate.id, individualTemplate, materializedTemplate, fr)
         iad.sendMetric()
         iad
       }
