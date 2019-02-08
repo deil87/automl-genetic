@@ -1,5 +1,6 @@
 package com.automl.template.simple
 
+import com.automl.evolution.dimension.{BayesianHPGroup, Smoothing}
 import com.automl.exception.SuspiciousPerformanceException
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
@@ -19,7 +20,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.types.{DoubleType, StringType}
 import utils.SparkMLUtils
 
-case class Bayesian() extends SimpleModelMember with SparkSessionProvider with LazyLogging{
+case class Bayesian(hpGroup: BayesianHPGroup = BayesianHPGroup.default) extends SimpleModelMember with SparkSessionProvider with LazyLogging{
   override def name: String = "Bayesian " + super.name
 
   override def canHandleProblemType: PartialFunction[ProblemType, Boolean] = {
@@ -69,32 +70,36 @@ case class Bayesian() extends SimpleModelMember with SparkSessionProvider with L
 
         val nb = new NaiveBayes()
           .setModelType("multinomial")
-//          .setSmoothing(1) //TODO run Crossvalidation with smoothing
           .setLabelCol("indexedLabel")
 
-        val paramGrid = new ParamGridBuilder()
-          .addGrid(nb.smoothing, Array(1.0/*, 2.0, 3.0*/))
-          .build()
+        val naiveBayesWithHP = hpGroup.hpParameters.foldLeft(nb)((res, next) => next match {
+          case p@Smoothing() =>
+            logger.debug(s"Bayesian smoothing hyper-parameter was set to ${p.currentValue}")
+            res.setSmoothing(p.currentValue)
+        })
 
-        val pipeline = new Pipeline()
-          .setStages(Array(nb))
+//        val paramGrid = new ParamGridBuilder()
+//          .addGrid(nb.smoothing, Array(1.0/*, 2.0, 3.0*/))
+//          .build()
+//
+//        val pipeline = new Pipeline()
+//          .setStages(Array(nb))
+//
+//        val evaluator = new MulticlassClassificationEvaluator()
+//          .setLabelCol("indexedLabel")
+//          .setPredictionCol("prediction")
+//
+//        val isLargerBetter = evaluator.isLargerBetter // TODO
+//
+//        val cv = new CrossValidator()
+//          .setEstimator(pipeline)
+//          .setEvaluator(evaluator)
+//          .setEstimatorParamMaps(paramGrid)
+//          .setNumFolds(3)
 
-        val evaluator = new MulticlassClassificationEvaluator()
-          .setLabelCol("indexedLabel")
-          .setPredictionCol("prediction")
+        val model = naiveBayesWithHP.fit(trainDF)  //best out of grid's parameters will be returned based on averaged over `setNumFolds` folds validation
 
-        val isLargerBetter = evaluator.isLargerBetter // TODO
-
-        val cv = new CrossValidator()
-          .setEstimator(pipeline)
-          .setEvaluator(evaluator)
-          .setEstimatorParamMaps(paramGrid)
-          .setNumFolds(3)
-//          .setSeed(1234)
-
-        val model = cv.fit(trainDF)  //best out of grid's parameters will be returned based on averaged over `setNumFolds` folds validation
-
-        logger.debug("Best Bayesian params: " + model.getEstimatorParamMaps.zip(model.avgMetrics).mkString(",").toString)
+//        logger.debug("Best Bayesian params: " + model.getEstimatorParamMaps.zip(model.avgMetrics).mkString(",").toString)
 
         val predictions = model.transform(testDF)
 

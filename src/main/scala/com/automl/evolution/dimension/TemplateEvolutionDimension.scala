@@ -48,13 +48,8 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: P
 
     val selectedParents = selectParents(evaluatedOriginalPopulationWithNeighbours)
 
-    //    val selectedParents = rankSelectionStrategy.parentSelectionByShare(0.8, evaluatedOriginalPopulation)
-    //Second phase: We are going to compute fitness functions and rank all the individuals.
-    //Draw from these population with the probability distribution proportional to rank values.
-    val bestTemplatesSelectedForMutation = selectedParents.map(_.template)
-
     //Problem: initial ot on the way duplication of individuals. Are we allowed repetitions at all? For now lets keep try to force diversity on mutation phase.
-    val populationForUpcomingMutation = new TPopulation(bestTemplatesSelectedForMutation, population.mutationProbabilities)
+    val populationForUpcomingMutation = extractIndividualsFromEvaluatedIndividuals(selectedParents)
 
     val offspring = mutateParentPopulation(populationForUpcomingMutation)
 
@@ -64,7 +59,7 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: P
 
     val evaluationResultsForNewExpandedGeneration = evaluatedOffspringWithNeighbours ++ evaluatedOriginalPopulationWithNeighbours
 
-    val survivedForNextGenerationEvaluatedTemplates = selectSurvived(population, evaluationResultsForNewExpandedGeneration)
+    val survivedForNextGenerationEvaluatedTemplates = selectSurvived(population.size, evaluationResultsForNewExpandedGeneration)
 
     val evolvedPopulation = new TPopulation(survivedForNextGenerationEvaluatedTemplates.map(_.template), offspring.mutationProbabilities)
 
@@ -75,8 +70,13 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: P
     evolvedPopulation
   }
 
-  private def selectSurvived(population: TPopulation, evaluationResultsForNewExpandedGeneration: Seq[EvaluatedTemplateData]) = {
-    rankSelectionStrategy.parentSelectionBySizeWithLocalCompetitions(population.size, evaluationResultsForNewExpandedGeneration)
+  override def selectSurvived(populationSize: Int, evaluationResultsForNewExpandedGeneration: Seq[EvaluatedTemplateData]) = {
+    rankSelectionStrategy.parentSelectionBySizeWithLocalCompetitions(populationSize, evaluationResultsForNewExpandedGeneration)
+  }
+
+
+  override def extractIndividualsFromEvaluatedIndividuals(evaluatedIndividuals: Seq[EvaluatedTemplateData]): TPopulation = {
+    new TPopulation(evaluatedIndividuals.map(_.template), null) // population.mutationProbabilities
   }
 
   override def selectParents(evaluated: Seq[EvaluatedTemplateData]): Seq[EvaluatedTemplateData] = {

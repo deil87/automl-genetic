@@ -6,6 +6,7 @@ import com.typesafe.scalalogging.LazyLogging
 
 import scala.util.Random
 
+// TODO make selection strategy generic and suitable for different coevolutions
 class RankSelectionStrategy extends LazyLogging{
 
   def parentSelectionByShare(selectionShare: Double, individuals: Seq[EvaluatedTemplateData]): Seq[EvaluatedTemplateData] = {
