@@ -156,8 +156,7 @@ class AutoML(data: DataFrame,
             logger.info(s"Time left: ${(maxTime - System.currentTimeMillis() + startTime) / 1000}")
             logger.info(s"Generation number $generationNumber is launched ( evolution number $evolutionNumber)")
 
-            logger.info("Current population:")
-            PopulationHelper.print(populationOfTemplates)
+            PopulationHelper.print(populationOfTemplates, "Current population")
 
             val evolvedPopulation = templateEvDim.evolve(populationOfTemplates, workingDataSet)
             // TODO If we stuck here for too long then we are not updating `populationOfTemplates` and starting next generation from scratch.

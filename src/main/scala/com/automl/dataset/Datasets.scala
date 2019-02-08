@@ -4,7 +4,7 @@ import com.automl.TPopulation
 import com.automl.spark.SparkSessionProvider
 import com.automl.template.LeafTemplate
 import com.automl.template.simple.{Bayesian, DecisionTree, LogisticRegressionModel}
-import org.apache.spark.ml.feature.{StandardScaler, VectorAssembler}
+import org.apache.spark.ml.feature.{StandardScaler, StringIndexer, VectorAssembler}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.functions.{monotonically_increasing_id, rand}
 import utils.SparkMLUtils
@@ -52,7 +52,7 @@ object Datasets extends SparkSessionProvider {
     preparedWineDF
   }
 
-  def getGlassDataFrame: DataFrame = {
+  def getGlassDataFrame(seed: Long): DataFrame = {
     val glassDF = SparkMLUtils.loadResourceDF("/dataset/glass/glass.csv")
 
     val features = Array("RI", "Na", "Mg", "Al", "Si", "K", "Ca", "Ba", "Fe")
@@ -71,16 +71,21 @@ object Datasets extends SparkSessionProvider {
       .setWithStd(true)
       .setWithMean(false)
 
+    val labelIndexer = new StringIndexer()
+      .setInputCol("TypeOfGlass")
+      .setOutputCol("indexedLabel")
+      .setStringOrderType("alphabetAsc")
+
     val preparedGlassDF = glassDF
-      .orderBy(rand())  // Shuffling
+      .orderBy(rand(seed))  // Shuffling
       .applyTransformation(featuresAssembler)
       .applyTransformation(scaler)
       .drop("features")
       .withColumnRenamed("scaledFeatures", "features")
       .toLong("Id")
       .withColumnRenamed("Id", "uniqueIdColumn")
-      .withColumnRenamed("TypeOfGlass", "indexedLabel")
-      .toDouble("indexedLabel")
+      .applyIndexer(labelIndexer)
+//      .toDouble("indexedLabel")
       .showN_AndContinue(10)
       .cache()
     preparedGlassDF

@@ -44,7 +44,7 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric]( dista
 
         //TODO FIX We are storing this result in cache but not into the queue
         val fitness: FitnessResult = cache.getOrElseUpdate(cacheKey, {
-          logger.debug(s"Calculated new value for $idx-th individual based on: \n template: $individualTemplate")
+          logger.debug(s"Calculated new value for $idx-th individual based on template: $individualTemplate")
           // TODO can we split it randomly here???
 
           val Array(trainingSplit, testSplit) = workingDataSet.randomSplit(Array(0.67, 0.33), 11L)

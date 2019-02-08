@@ -1,6 +1,6 @@
 package com.automl.template.ensemble.bagging
 
-import com.automl.classifier.ensemble.bagging.SparkBagging
+import com.automl.classifier.ensemble.bagging.SparkGenericBagging
 import com.automl.problemtype.ProblemType
 import com.automl.regressor.{AverageRegressor, EnsemblingRegressor}
 import com.automl.template.ensemble.EnsemblingModelMember
@@ -15,6 +15,6 @@ trait BaggingMember extends EnsemblingModelMember {
 
 object BaggingMember {
 
-  val SimpleBagging = SparkBagging()
+  val SimpleBagging = SparkGenericBagging()
   val poolOfBaggingModels: Set[EnsemblingModelMember] = Set(SimpleBagging)
 }

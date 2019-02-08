@@ -1,6 +1,6 @@
 package com.automl
 
-import com.automl.helper.FitnessResult
+import com.automl.helper.{FitnessResult, PopulationHelper}
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem}
 import com.automl.template.{TemplateMember, TemplateTree}
 import com.typesafe.scalalogging.LazyLogging
@@ -39,10 +39,6 @@ object EvaluatedTemplateData extends LazyLogging {
 
   implicit def individualHelper(individuals: Seq[EvaluatedTemplateData]) = new {
 
-    def printSortedByFitness(): Unit = {
-      individuals.zipWithIndex.sortBy(_._1.fitness.getCorrespondingMetric).map { case (indivData, idx) =>
-        (idx, s"$idx) ${indivData.fitness.metricsMap} \n")
-      }.sortBy(_._1).foreach { case (_, str) => logger.info(str) }
-    }
+    def printSortedByFitness(): Unit = PopulationHelper.renderEvaluatedIndividuals(individuals)
   }
 }

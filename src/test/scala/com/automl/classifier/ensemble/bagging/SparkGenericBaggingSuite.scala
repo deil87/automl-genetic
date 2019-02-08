@@ -12,7 +12,7 @@ import org.scalatest.{FunSuite, Matchers}
 import utils.SparkMLUtils
 
 
-class SparkBaggingSuite extends FunSuite with Matchers with SparkSessionProvider{
+class SparkGenericBaggingSuite extends FunSuite with Matchers with SparkSessionProvider{
 
   import utils.SparkMLUtils._
 
@@ -52,14 +52,14 @@ class SparkBaggingSuite extends FunSuite with Matchers with SparkSessionProvider
       LeafTemplate(DecisionTree()),
       LeafTemplate(RandomForest()),
       LeafTemplate(Bayesian()),
-      NodeTemplate(SparkBagging(), Seq(
+      NodeTemplate(SparkGenericBagging(), Seq(
         LeafTemplate(new LinearRegressionModel()),
         LeafTemplate(GradientBoosting()),
         LeafTemplate(DecisionTree())
       ))
     )
 
-    val ensemb = NodeTemplate(SparkBagging(), models)
+    val ensemb = NodeTemplate(SparkGenericBagging(), models)
 
     println(TemplateTreeHelper.renderAsString_v2(ensemb))
 
@@ -91,7 +91,7 @@ class SparkBaggingSuite extends FunSuite with Matchers with SparkSessionProvider
     )
 
     assertThrows[IllegalArgumentException] {
-      SparkBagging().checkThatWeHaveSameSetsOfCategoricalLevelsForAllSubmembers(samples)(ss)
+      SparkGenericBagging().checkThatWeHaveSameSetsOfCategoricalLevelsForAllSubmembers(samples)(ss)
     }
   }
 
@@ -105,7 +105,7 @@ class SparkBaggingSuite extends FunSuite with Matchers with SparkSessionProvider
       LeafTemplate(DecisionTree())
     )
 
-    val ensemb = NodeTemplate(SparkBagging(), models)
+    val ensemb = NodeTemplate(SparkGenericBagging(), models)
 
     println(TemplateTreeHelper.renderAsString_v2(ensemb))
 
@@ -143,7 +143,7 @@ class SparkBaggingSuite extends FunSuite with Matchers with SparkSessionProvider
       LeafTemplate(new LogisticRegressionModel())
     )
 
-    val ensemb = NodeTemplate(SparkBagging(), models)
+    val ensemb = NodeTemplate(SparkGenericBagging(), models)
 
     println(TemplateTreeHelper.renderAsString_v2(ensemb))
 

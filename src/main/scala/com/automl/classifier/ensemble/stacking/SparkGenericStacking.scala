@@ -40,7 +40,7 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) extends LazyLog
   * @df training set which wil be folded
   * */
   def foldingStage(trainDF: DataFrame, testDF: DataFrame) = {
-    logger.info(s"Folding stage of SparkGenericStacking is started. Preparing $numFold train/valid pair from training frame.")
+    logger.debug(s"Folding stage of SparkGenericStacking is started. Preparing $numFold train/valid pair from training frame.")
 
     val projection = trainDF.select("uniqueIdColumn", responseColumn)
     val ss = trainDF.sparkSession
@@ -56,7 +56,7 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) extends LazyLog
     splits = splitsRdd.map { case (training, validation) =>
       val trainingSplitDF = ss.createDataFrame(training, schema).cache()
       val validationSplitDF = ss.createDataFrame(validation, schema).cache()
-      logger.info(f"Created ${training.count()}%10s train / ${validation.count()}%-10s validation pair.")
+      logger.debug(f"Created ${training.count()}%10s train / ${validation.count()}%-10s validation pair.")
       (trainingSplitDF, validationSplitDF)
     }
   }
@@ -141,6 +141,7 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) extends LazyLog
     /*
     * First stage
     * */
+    val numberOfFolds = splits.length
 
     val splitsWithPredictions = splits.zipWithIndex.map { case ((trainingFoldIds, holdoutFoldIds), splitIndex) =>
 
@@ -164,7 +165,7 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) extends LazyLog
 
     require(trainDataSet.count() == reunitedSplits.count(), "Reunited splits do not sum up to the original training dataset's size.")
 
-    logger.info(s"CrossValidated predictions from ${member.member.name} were added to the `trainModelsPredictionsDF`")
+    logger.info(s"CrossValidated predictions( nfolds = $numberOfFolds ) from ${member.member.name} were reunited and joined to the `trainModelsPredictionsDF`")
 
     trainModelsPredictionsDF = trainModelsPredictionsDF.join(reunitedSplits, "uniqueIdColumn").cache()
 
@@ -172,7 +173,7 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) extends LazyLog
     * Second stage
     * */
 
-    logger.info(s"Predictions based on the whole training dataset are going to be calculated by ${member.member.name}")
+    logger.info(s"Predictions for test split are going to be calculateg by ${member.member.name} model trained on whole training dataset")
 
     val predictionsForTestSetDF: DataFrame =
       member

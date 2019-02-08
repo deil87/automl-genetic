@@ -1,6 +1,6 @@
 package com.automl.template.ensemble.stacking
 
-import com.automl.classifier.ensemble.bagging.SparkBagging
+import com.automl.classifier.ensemble.bagging.SparkGenericBagging
 import com.automl.problemtype.ProblemType
 import com.automl.spark.SparkSessionProvider
 import com.automl.template._
@@ -74,7 +74,7 @@ class GenericStackingRegressionSuite extends FunSuite with Matchers with SparkSe
       LeafTemplate(DecisionTree()),
       LeafTemplate(RandomForest()),
 //      LeafTemplate(Bayesian()), // TODO why Bayesian model is so bad?
-      NodeTemplate(SparkBagging(), Seq(
+      NodeTemplate(SparkGenericBagging(), Seq(
         LeafTemplate(new LinearRegressionModel()),
         LeafTemplate(GradientBoosting()),
         LeafTemplate(DecisionTree())
@@ -103,10 +103,10 @@ class GenericStackingRegressionSuite extends FunSuite with Matchers with SparkSe
     val models = Seq(
       LeafTemplate(DecisionTree()),
       NodeTemplate(GenericStacking(), Seq(
-        NodeTemplate(SparkBagging(), Seq(
+        NodeTemplate(SparkGenericBagging(), Seq(
           LeafTemplate(LinearRegressionModel())
         )),
-        NodeTemplate(SparkBagging(), Seq(
+        NodeTemplate(SparkGenericBagging(), Seq(
           LeafTemplate(LinearRegressionModel())
         ))
       ))

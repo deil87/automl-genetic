@@ -1,5 +1,6 @@
 package com.automl.template.simple
 
+import com.automl.exception.SuspiciousPerformanceException
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
@@ -60,13 +61,14 @@ case class Bayesian() extends SimpleModelMember with SparkSessionProvider with L
         FitnessResult(Map("rmse" -> rmse), problemType, predictions.drop("rawPrediction").drop("probability"))
 
       case MultiClassClassificationProblem | BinaryClassificationProblem => //TODO generalize to a common method of evaluation for this type of problem.
-//        val isStringResponse = trainDF.schema.apply("label").dataType.isInstanceOf[StringType]
 
         val classes = trainDF.select("indexedLabel").distinct().collect().map(_.getDouble(0))
 
         require(classes contains(0.0), s"Bayesian labels should have all indexes ans zero-based but instead: ${classes.mkString(",")}")
+        require(classes.length == 6, s"For glass dataset there should be 5 classes but instead: ${classes.mkString(",")}")
 
-        val nb = new NaiveBayes().setModelType("multinomial")
+        val nb = new NaiveBayes()
+          .setModelType("multinomial")
 //          .setSmoothing(1) //TODO run Crossvalidation with smoothing
           .setLabelCol("indexedLabel")
 
@@ -96,16 +98,15 @@ case class Bayesian() extends SimpleModelMember with SparkSessionProvider with L
 
         val predictions = model.transform(testDF)
 
+        val metrics = new MulticlassMetrics(predictions.select("prediction", "indexedLabel").rdd.map(r => (r.getDouble(0), r.getDouble(1))))
+
         MulticlassMetricsHelper.showStatistics(predictions)
 
-        val f1: Double = evaluator
-          .setMetricName("f1")
-          .evaluate(predictions)
+        if(metrics.weightedFMeasure <= 0.1 )
+          throw SuspiciousPerformanceException("Bayesian predictions are too low")
 
-//        if(f1 <= 0.2 )
-//          predictions.showN_AndContinue(100, "Bayesian predictions are too low: ")
-        logger.info(s"Finished. $name : F1 metric = " + f1 + s". Number of rows = ${trainDF.count()} / ${testDF.count()}")
-        FitnessResult(Map("f1" -> f1), problemType, predictions)
+        logger.info(s"Finished. $name : F1 metric = " + metrics.weightedFMeasure + s". Number of rows = ${trainDF.count()} / ${testDF.count()}")
+        FitnessResult(Map("f1" -> metrics.weightedFMeasure, "weightedPrecision" -> metrics.weightedPrecision, "weightedRecall" -> metrics.weightedRecall), problemType, predictions)
 
     }
   }

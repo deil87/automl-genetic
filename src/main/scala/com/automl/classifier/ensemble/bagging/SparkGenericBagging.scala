@@ -17,7 +17,7 @@ import org.apache.spark.ml.linalg.{Vector => MLVector}
 import scala.collection.mutable
 
 //TODO consider moving closer to BaggingMember
-case class SparkBagging() extends BaggingMember with LazyLogging{
+case class SparkGenericBagging() extends BaggingMember with LazyLogging{
 
   import utils.SparkMLUtils._
 

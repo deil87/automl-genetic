@@ -1,7 +1,7 @@
 package com.automl.evolution.dimension
 
 import akka.actor.ActorSystem
-import com.automl.classifier.ensemble.bagging.SparkBagging
+import com.automl.classifier.ensemble.bagging.SparkGenericBagging
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.RegressionProblem
 import com.automl.{AutoML, TPopulation}
@@ -79,9 +79,9 @@ class TemplateEvolutionDimensionSuite extends WordSpec with Matchers with SparkS
     "caching is working within ensemble nodes" in new Fixture{
 
       val template = Seq(
-        NodeTemplate(SparkBagging(), Seq(
+        NodeTemplate(SparkGenericBagging(), Seq(
           LeafTemplate(LinearRegressionModel()),
-          NodeTemplate(SparkBagging(), Seq(
+          NodeTemplate(SparkGenericBagging(), Seq(
             LeafTemplate(LinearRegressionModel()),
             LeafTemplate(LinearRegressionModel())
           ))

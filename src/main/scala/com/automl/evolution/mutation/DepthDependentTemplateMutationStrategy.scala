@@ -61,12 +61,14 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
           if(targetLevelOfMutation == currentLevel) {
             val pivot = new Random().nextDouble()
             if(pivot > 0.8) { // ToDO with `doWithProbability` helper method. DoOtherwise?
-              logger.info("\t\t Mutate leaf node to ensembling one causing encreasing of complexity")
               val numberOfNewChildren = new Random().nextInt(3)
+              val randomEnsemblingMember = getRandomEnsemblingMember
+              logger.info(s"\t\t Mutation happened from leaf node ${lt} to ensembling of $numberOfNewChildren submembers - ${randomEnsemblingMember} , causing increasing of complexity.")
               NodeTemplate(getRandomEnsemblingMember, Seq(lt) ++ (1 to numberOfNewChildren).map(_ => LeafTemplate(getRandomBaseMemberBasedOnProblemType)))
             } else {
-              logger.info("\t\t Mutate leaf node to another leaf node")
-              LeafTemplate(getRandomBaseMemberBasedOnProblemType)
+              val randomBaseMemberBasedOnProblemType = getRandomBaseMemberBasedOnProblemType
+              logger.info(s"\t\t Mutation happened from leaf node ${lt} to another leaf node ${randomBaseMemberBasedOnProblemType}")
+              LeafTemplate(randomBaseMemberBasedOnProblemType)
             }
           } else
             {

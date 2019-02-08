@@ -1,6 +1,6 @@
 package com.automl
 
-import com.automl.classifier.ensemble.bagging.SparkBagging
+import com.automl.classifier.ensemble.bagging.SparkGenericBagging
 import com.automl.helper.TemplateTreeHelper
 import com.automl.template._
 import com.automl.template.simple._
@@ -11,10 +11,10 @@ class AlgorithmTreeSuite extends FunSuite with Matchers{
 
 
   val template =
-    NodeTemplate(SparkBagging(),
+    NodeTemplate(SparkGenericBagging(),
       Seq(
         LeafTemplate(LinearRegressionModel()),
-        NodeTemplate(SparkBagging(),
+        NodeTemplate(SparkGenericBagging(),
           Seq(
             LeafTemplate(Wildcard(List(Bayesian())))
           )
@@ -28,10 +28,10 @@ class AlgorithmTreeSuite extends FunSuite with Matchers{
     val materializedAlgorithm = TemplateTreeHelper.materialize(template)
 
     val expectedAlgorithm =
-      NodeTemplate(SparkBagging(),
+      NodeTemplate(SparkGenericBagging(),
         Seq(
           LeafTemplate(LinearRegressionModel()),
-          NodeTemplate(SparkBagging(),
+          NodeTemplate(SparkGenericBagging(),
             Seq(
               LeafTemplate(Bayesian())
             )

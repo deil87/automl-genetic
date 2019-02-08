@@ -24,10 +24,12 @@ case class GenericStacking(unusedMetaLearner: PipelineStage = new LinearRegressi
                                                            subMembers: Seq[TemplateTree[A]],
                                                            problemType: ProblemType)
                                                           (implicit tc: TreeContext = TreeContext()): FitnessResult = {
+    val stackingNumberOfFolds = 3
     logger.debug(s"Evaluating $name ...")
     val responseColumnName = if(problemType.isClassification) "indexedLabel" else "label"
-    val stacking = new SparkGenericStacking(4, responseColumnName)
+    val stacking = new SparkGenericStacking(stackingNumberOfFolds, responseColumnName)
 
+    logger.debug(s"Stacking number of folds is set to $stackingNumberOfFolds")
     stacking.foldingStage(trainDF, testDF)
 
     subMembers.foldLeft(stacking)((stackingModel, nextMember) => {
