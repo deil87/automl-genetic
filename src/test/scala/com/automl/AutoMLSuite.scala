@@ -1,7 +1,6 @@
 package com.automl
 
 import akka.actor.ActorSystem
-import com.automl.evolution.dimension.{TemplateEvolutionDimension, TemplateHyperParametersEvolutionDimension}
 import com.automl.evolution.diversity.DistinctDiversityStrategy
 import com.automl.evolution.mutation.DepthDependentTemplateMutationStrategy
 import com.automl.helper.{FitnessResult, PopulationHelper}

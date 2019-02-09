@@ -1,5 +1,6 @@
 package com.automl.evolution.dimension
 import akka.actor.{ActorRef, ActorSystem}
+import com.automl.evolution.dimension.hparameter.{HyperParametersField, TemplateHyperParametersEvolutionDimension}
 import com.automl.evolution.diversity.{DistinctDiversityStrategy, MisclassificationDistance}
 import com.automl.evolution.evaluation.{TemplateNSLCEvaluator, TemplateSimpleEvaluator}
 import com.automl.{EvaluatedTemplateData, Population, TPopulation}

@@ -1,6 +1,6 @@
 package com.automl.template.simple
 
-import com.automl.evolution.dimension.{BayesianHPGroup, Smoothing}
+import com.automl.evolution.dimension.hparameter.{BayesianHPGroup, Smoothing}
 import com.automl.exception.SuspiciousPerformanceException
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType

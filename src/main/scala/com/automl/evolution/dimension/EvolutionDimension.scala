@@ -27,6 +27,7 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
 
   // Template pattern
   def evolve(population: PopulationType, workingDF: DataFrame): PopulationType = {
+    logger.debug("Starting next evolution...")
     val evaluatedOriginalPopulation = evaluatePopulation(population, workingDF)
 
     logger.debug("Selecting parents:")
@@ -42,9 +43,11 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
 
     updateHallOfFame(evaluatedOffspring)
 
+    logger.debug("Selecting survivals:")
     val survivedForNextGenerationEvaluatedTemplates = selectSurvived(population.size, evaluatedOffspring)
 
     val evolvedNewGeneration = extractIndividualsFromEvaluatedIndividuals(survivedForNextGenerationEvaluatedTemplates)
+    logger.debug("Evolution is finished.")
 
     _population = evolvedNewGeneration
     evolvedNewGeneration

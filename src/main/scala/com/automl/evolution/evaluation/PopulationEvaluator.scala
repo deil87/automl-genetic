@@ -1,7 +1,7 @@
 package com.automl.evolution.evaluation
 
 import com.automl.EvaluatedTemplateData
-import com.automl.evolution.dimension.HyperParametersField
+import com.automl.evolution.dimension.hparameter.HyperParametersField
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.template.{TemplateMember, TemplateTree}

@@ -1,6 +1,7 @@
 package com.automl.evolution.dimension
 
 import com.automl.dataset.Datasets
+import com.automl.evolution.dimension.hparameter._
 import com.automl.problemtype.ProblemType.MultiClassClassificationProblem
 import com.automl.template.simple.Bayesian
 import com.typesafe.scalalogging.LazyLogging

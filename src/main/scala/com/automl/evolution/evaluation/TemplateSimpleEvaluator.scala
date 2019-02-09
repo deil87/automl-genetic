@@ -4,7 +4,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
-import com.automl.evolution.dimension.HyperParametersField
+import com.automl.evolution.dimension.hparameter.HyperParametersField
 import com.automl.helper.{FitnessResult, TemplateTreeHelper}
 import com.automl.problemtype.ProblemType
 import com.automl.route.UpdateWeb

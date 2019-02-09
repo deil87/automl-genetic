@@ -1,5 +1,6 @@
 package com.automl.template.simple
 
+import com.automl.evolution.dimension.hparameter.{LRRegParam, LogisticRegressionHPGroup}
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
@@ -11,7 +12,7 @@ import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 import org.apache.spark.ml.feature.StandardScaler
 import org.apache.spark.sql._
 
-case class LogisticRegressionModel() extends LinearModelMember with LazyLogging{
+case class LogisticRegressionModel(hpGroup: LogisticRegressionHPGroup = LogisticRegressionHPGroup.default) extends LinearModelMember with LazyLogging{
 
   override def name: String = "LogisticRegressionModel " + super.name
 
@@ -52,11 +53,16 @@ case class LogisticRegressionModel() extends LinearModelMember with LazyLogging{
           .setWithStd(true)
           .setWithMean(false)
 
-        val model = new LogisticRegression()
+        val lrEstimator = new LogisticRegression()
           .setLabelCol("indexedLabel")
           .setMaxIter(20)
-          .setRegParam(0.3)
           .setElasticNetParam(0.8)
+
+        val lrWithHP = hpGroup.hpParameters.foldLeft(lrEstimator)((res, next) => next match {
+          case p@LRRegParam() =>
+            logger.debug(s"LogisticRegression lambda hyper-parameter was set to ${p.currentValue}")
+            res.setRegParam(p.currentValue)
+        })
 
         val preparedTrainingDF = trainDF
           .applyTransformation(scaler)
@@ -64,7 +70,7 @@ case class LogisticRegressionModel() extends LinearModelMember with LazyLogging{
           .withColumnRenamed("scaledFeatures", "features")
           .cache()
 
-        val lrModel = model.fit(preparedTrainingDF)
+        val lrModel = lrWithHP.fit(preparedTrainingDF)
         val prediction = lrModel.transform(testDF)
 
         val evaluator = new MulticlassClassificationEvaluator()

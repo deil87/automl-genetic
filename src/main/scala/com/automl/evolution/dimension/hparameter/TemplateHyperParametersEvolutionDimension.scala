@@ -1,16 +1,14 @@
-package com.automl.evolution.dimension
-import java.util.UUID
+package com.automl.evolution.dimension.hparameter
+
 
 import com.automl.Population
 import com.automl.problemtype.ProblemType
-import com.automl.template.simple.Bayesian
+import com.automl.template.simple.{Bayesian, LogisticRegressionModel}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
-import org.apache.spark.ml.param.{ParamPair, Params}
 import org.apache.spark.sql.DataFrame
 import com.automl.Evaluated
-import com.automl.helper.FitnessResult
-import com.automl.template.{TemplateMember, TemplateTree}
+import com.automl.evolution.dimension.EvolutionDimension
 
 import scala.collection.mutable
 import scala.util.Random
@@ -116,6 +114,9 @@ class TemplateHyperParametersEvolutionDimension(evolveEveryGenerations: Int = 1,
           case hpGroup@BayesianHPGroup(_) =>
             val metric = Bayesian(hpGroup).fitnessError(trainingSplit, testSplit, problemType).getCorrespondingMetric
             metric
+          case hpGroup@LogisticRegressionHPGroup(_) =>
+            val metric = LogisticRegressionModel(hpGroup).fitnessError(trainingSplit, testSplit, problemType).getCorrespondingMetric
+            metric
           case _ => ???
         }
          metricsFromAllModelsEvaluations.sum
@@ -160,18 +161,6 @@ trait HyperParametersGroup[HPModelBoundedType <: MutableHParameter[Double, HPMod
   def mutate(): HyperParametersGroup[HPModelBoundedType]
 } //TODO instead of using Any we can create our own hierarhy of wrapper classes to make them have coomon ancestor like ParameterType
 
-case class BayesianHPGroup(hpParameters:Seq[BayesianHParameter[Double]] = Seq(Smoothing()))
-                extends HyperParametersGroup[BayesianHParameter[Double]] {
-
-  // TODO consider using HList
-  override def mutate(): HyperParametersGroup[BayesianHParameter[Double]] = {
-    BayesianHPGroup(hpParameters = hpParameters.map(hpModelTpe => hpModelTpe.mutate()))
-  }
-}
-object BayesianHPGroup {
-  val default = BayesianHPGroup()
-}
-
 
 trait HPRange[RangeType <: AnyVal] {
   def min: RangeType
@@ -188,39 +177,6 @@ trait MutableHParameter[+T, V <: MutableHParameter[T, V]] extends HParameter[T] 
   def currentValue: T
   def mutate(): V
 }
-
-//trait ModelSpecificHP[+T] extends MutableHParameter[T]
-
-trait BayesianHParameter[T <: AnyVal] extends MutableHParameter[T, BayesianHParameter[T]]
-
-case class Smoothing() extends BayesianHParameter[Double] with DoubleHPRange { // we can specialize with Marker trait which parameter can be used with which Model
-  override def min: Double = 1.0
-
-  override def max: Double = 10.0
-
-  override def step: Double = 1.0
-
-  override def getDefault: Double = 2.0
-
-  var currentValue: Double = getDefault
-
-  override def mutate(): Smoothing = {
-    var newValue = getNextWithinTheRange
-    while(newValue == currentValue) {
-      newValue = getNextWithinTheRange
-    }
-    val newVersion = Smoothing()
-    newVersion.currentValue = newValue
-    newVersion
-  }
-
-  private def getNextWithinTheRange = {
-    new Random().nextInt(max.toInt) + min
-  }
-
-  override def toString: String = "smoothing:" + currentValue.toString
-}
-
 
 
 class HPPopulation(val individuals: Seq[ HyperParametersField]) extends Population[HyperParametersField]

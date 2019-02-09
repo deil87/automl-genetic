@@ -1,7 +1,7 @@
 package com.automl.evolution.evaluation
 
 import akka.actor.ActorSystem
-import com.automl.evolution.dimension.HyperParametersField
+import com.automl.evolution.dimension.hparameter.HyperParametersField
 import com.automl.evolution.diversity.{CosineSimilarityAssistant, DistanceMetric, DistanceStrategy, MultidimensionalDistanceMetric}
 import com.automl.helper.{FitnessResult, TemplateTreeHelper}
 import com.automl.problemtype.ProblemType
