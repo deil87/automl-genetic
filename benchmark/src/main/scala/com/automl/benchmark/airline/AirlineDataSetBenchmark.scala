@@ -1,7 +1,6 @@
 package com.automl.benchmark.airline
 
 import akka.actor.{ActorRef, ActorSystem}
-import com.automl.evolution.dimension.{TemplateEvolutionDimension, TemplateHyperParametersEvolutionDimension}
 import com.automl.spark.SparkSessionProvider
 import com.automl.template.LeafTemplate
 import com.automl.template.simple._

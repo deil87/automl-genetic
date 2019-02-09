@@ -32,6 +32,8 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
 
   def getInitialColdStartPopulation: PopulationType
 
+  def evolutionDimensionLabel: String
+
   implicit val individualsEvaluationCache:mutable.Map[(T, Long), EvaluatedResult#FitnessType] //cache store anyone regardless of performance and could be/should be capped to prevent OOM
 
   val hallOfFame: mutable.PriorityQueue[EvaluatedResult]

@@ -1,5 +1,6 @@
 package com.automl.evolution.dimension
 
+import akka.actor.ActorSystem
 import com.automl.dataset.Datasets
 import com.automl.evolution.dimension.hparameter._
 import com.automl.problemtype.ProblemType.MultiClassClassificationProblem
@@ -10,6 +11,10 @@ import org.scalatest.{FunSuite, Matchers}
 import scala.collection.mutable
 
 class TemplateHyperParametersEvolutionDimensionTest extends FunSuite with Matchers with LazyLogging{
+  implicit val system = ActorSystem("AutoMLSuite-system")
+
+  val problem = MultiClassClassificationProblem
+  val templateEvolutionDimension = new TemplateEvolutionDimension(1, problem)
 
   test("mutation of the group should work") {
     val hpGroupOfParameters =  BayesianHPGroup()
@@ -24,7 +29,8 @@ class TemplateHyperParametersEvolutionDimensionTest extends FunSuite with Matche
 
   test("every evolution should improve performance") {
 
-    val dimension = new TemplateHyperParametersEvolutionDimension(problemType = MultiClassClassificationProblem)
+
+    val dimension = new TemplateHyperParametersEvolutionDimension(templateEvolutionDimension, problemType = problem)
     val initialPopulation = new HPPopulation(Seq(
       HyperParametersField(Seq(BayesianHPGroup())),
       HyperParametersField(Seq(BayesianHPGroup()))
@@ -51,7 +57,7 @@ class TemplateHyperParametersEvolutionDimensionTest extends FunSuite with Matche
 
   test("that evolution process will converge with smoothing == 1.0 ") {
 
-    val dimension = new TemplateHyperParametersEvolutionDimension(problemType = MultiClassClassificationProblem)
+    val dimension = new TemplateHyperParametersEvolutionDimension(templateEvolutionDimension, problemType = problem)
     val initialPopulation = new HPPopulation(Seq(
       HyperParametersField(Seq(BayesianHPGroup())),
       HyperParametersField(Seq(BayesianHPGroup()))

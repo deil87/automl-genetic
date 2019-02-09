@@ -1,6 +1,8 @@
 package com.automl.evolution.dimension.hparameter
 
+import akka.actor.ActorSystem
 import com.automl.dataset.Datasets
+import com.automl.evolution.dimension.TemplateEvolutionDimension
 import com.automl.problemtype.ProblemType.MultiClassClassificationProblem
 import com.typesafe.scalalogging.LazyLogging
 import org.scalatest.{FunSuite, Matchers}
@@ -9,9 +11,14 @@ import scala.util.Random
 
 class LRRegParamTest extends FunSuite with Matchers with LazyLogging{
 
+  implicit val system = ActorSystem("AutoMLSuite-system")
+
+  val problem = MultiClassClassificationProblem
+  val templateEvolutionDimension = new TemplateEvolutionDimension(1, problem)
+
   test("that evolution process will converge with regularisation param ") {
 
-    val dimension = new TemplateHyperParametersEvolutionDimension(problemType = MultiClassClassificationProblem)
+    val dimension = new TemplateHyperParametersEvolutionDimension(templateEvolutionDimension, problemType = problem)
     val initialPopulation = new HPPopulation(Seq(
       HyperParametersField(Seq(LogisticRegressionHPGroup())),
       HyperParametersField(Seq(LogisticRegressionHPGroup())),

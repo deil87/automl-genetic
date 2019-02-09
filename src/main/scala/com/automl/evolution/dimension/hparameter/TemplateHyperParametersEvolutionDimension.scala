@@ -21,8 +21,11 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
 
   override var _population: HPPopulation = _
 
-  val defaultConfig = ConfigFactory.load()
-  val numberOfHPEvolutionsPerGeneration = defaultConfig.getInt("evolution.hyperParameterDimension.numOfEvolutionsPerGen")
+  val hpdConfig = ConfigFactory.load().getConfig("evolution.hyperParameterDimension")
+
+  lazy val evolutionDimensionLabel: String = hpdConfig.getString("name")
+
+  lazy val numberOfHPEvolutionsPerGeneration: Int = hpdConfig.getInt("numOfEvolutionsPerGen")
 
   override implicit val individualsEvaluationCache: mutable.Map[(HyperParametersField, Long), Double] = mutable.Map[(HyperParametersField, Long), Double]()
 
@@ -50,9 +53,9 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
     // Use lenses here :)
     new HPPopulation(
       population.individuals.map { hpField => {
-        logger.debug(s"Hash code before ${hpField.hashCode()} for value ${hpField.modelsHParameterGroups.map(_.hpParameters.map(_.currentValue).mkString(","))}")
         val newField = HyperParametersField(modelsHParameterGroups = hpField.modelsHParameterGroups.map { hpGroup => hpGroup.mutate() })
-        logger.debug(s"Hash code after ${newField.hashCode()} for value ${newField.modelsHParameterGroups.map(_.hpParameters.map(_.currentValue).mkString(","))}")
+        require(hpField.hashCode() != newField.hashCode(), "Hash codes should be different")
+        logger.debug(s"HyperParametersField mutated from ${hpField.modelsHParameterGroups.map(_.hpParameters.map(_.currentValue).mkString(","))} to ${newField.modelsHParameterGroups.map(_.hpParameters.map(_.currentValue).mkString(","))}")
         newField
       }
     })

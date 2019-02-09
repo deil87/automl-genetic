@@ -1,6 +1,6 @@
 package com.automl.evolution.dimension
 import akka.actor.{ActorRef, ActorSystem}
-import com.automl.evolution.dimension.hparameter.{HyperParametersField, TemplateHyperParametersEvolutionDimension}
+import com.automl.evolution.dimension.hparameter.{EvaluatedHyperParametersField, HyperParametersField, TemplateHyperParametersEvolutionDimension}
 import com.automl.evolution.diversity.{DistinctDiversityStrategy, MisclassificationDistance}
 import com.automl.evolution.evaluation.{TemplateNSLCEvaluator, TemplateSimpleEvaluator}
 import com.automl.{EvaluatedTemplateData, Population, TPopulation}
@@ -32,6 +32,9 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: P
   // Dependencies on other dimensions. Hardcoded for now. Should come from AutoML.runEvolution method parameters.
   val hyperParamsEvDim = new TemplateHyperParametersEvolutionDimension(this,problemType = problemType)
 
+
+  override def evolutionDimensionLabel: String = "TemplateEvolutionDimension"
+
   val evaluator = if(problemType == MultiClassClassificationProblem) {
      new TemplateNSLCEvaluator(new MisclassificationDistance)
   } else ???
@@ -39,15 +42,26 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: P
    // TODO make it faster with reference to value
   override implicit val individualsEvaluationCache = mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]()
 
-  override val hallOfFame: mutable.PriorityQueue[EvaluatedTemplateData] = ???
+  override val hallOfFame: mutable.PriorityQueue[EvaluatedTemplateData] = collection.mutable.PriorityQueue[EvaluatedTemplateData]()
 
   override def getInitialColdStartPopulation: TPopulation = ???
 
-  override def getBestFromHallOfFame: TemplateTree[TemplateMember] = ???
+  //Almost generalisable. Need to specify type that is common to _.template and _.field
+  override def getBestFromHallOfFame: TemplateTree[TemplateMember] = hallOfFame.headOption.map(_.template).getOrElse{getInitialPopulation.individuals.head}
 
   override def updateHallOfFame(evaluatedIndividuals: Seq[EvaluatedTemplateData]): Unit = ???
 
+  var skipEvolutionCountDown: Int = evolveEveryGenerations - 1
+
   override def evolve(population: TPopulation, workingDF: DataFrame): TPopulation = {
+
+    //Maybe it is better to set up flag for corner case like 'always execute'
+    if(skipEvolutionCountDown > 0) {
+      logger.debug(s"SKIPPING evolution. Next evolution in $skipEvolutionCountDown attempts")
+      skipEvolutionCountDown -= 1
+      return getPopulation
+    }
+    skipEvolutionCountDown = evolveEveryGenerations - 1
 
     val evaluatedOriginalPopulation = evaluatePopulation(population, workingDF)
 
@@ -118,7 +132,6 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: P
     else {
       ???
     }
-//    new TemplateSimpleEvaluator().evaluateIndividuals(population, workingDF, bestEvaluatedHyperParametersField, problemType)
   }
 
   override var _population: TPopulation = _

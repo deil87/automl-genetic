@@ -1,6 +1,7 @@
 <configuration scan="true" scanPeriod="30 seconds">
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+
         <!--<filter class="ch.qos.logback.core.filter.EvaluatorFilter">
             <evaluator>
                 <expression>return marker.getName().equals("timeboxing");</expression>
@@ -17,7 +18,14 @@
     </filter>-->
         <encoder>
             <!--<pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} %msg%n</pattern>-->
-            <pattern>%d{HH:mm:ss.SSS} %-5level %msg%n</pattern>
+            <pattern>%d{HH:mm:ss.SSS} %-5level TED %msg%n</pattern>
+        </encoder>
+    </appender>
+    <appender name="STDOUT_L2" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <!--<pattern>%d{HH:mm:ss.SSS} %relative %-5level HED      %msg%n</pattern>-->
+            <pattern>%d{HH:mm:ss.SSS} %-5level HED      %msg%n</pattern>
+            <!--<pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) HED      %msg%n</pattern>--> <!--highlighting does not work-->
         </encoder>
     </appender>
 
@@ -35,6 +43,7 @@
         <OnMismatch>DENY</OnMismatch>
     </turboFilter>-->
 
+    <!-- We can make indentations with different Markers -->
     <logger name="breeze.optimize.OWLQN" level="ERROR"/>
     <logger name="com.automl" level="INFO"/>
     <logger name="com.automl.AutoML" level="INFO"/>
@@ -43,7 +52,10 @@
     <logger name="com.automl.template.simple.Bayesian" level="DEBUG" />
     <logger name="com.automl.evolution.evaluation" level="DEBUG"/>
     <logger name="com.automl.evolution.selection" level="DEBUG"/>
-    <logger name="com.automl.evolution.dimension" level="DEBUG"/>
+    <!--<logger name="com.automl.evolution.dimension.TemplateEvolutionDimensionSuite" level="DEBUG"/>-->
+    <logger name="com.automl.evolution.dimension.hparameter.TemplateHyperParametersEvolutionDimension" level="DEBUG" additivity="false">
+        <appender-ref ref="STDOUT_L2" />
+    </logger>
     <!--<logger name="com.automl.spark" level="DEBUG"/>-->
     <logger name="org.apache.spark" level="ERROR"/>
     <logger name="com.github.fommil.jni.JniLoader" level="ERROR"/>
