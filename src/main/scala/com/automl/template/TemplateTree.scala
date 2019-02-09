@@ -2,6 +2,7 @@ package com.automl.template
 
 import java.util.UUID
 
+import com.automl.evolution.dimension.hparameter.HyperParametersField
 import com.automl.template.ensemble.EnsemblingModelMember
 import com.automl.template.simple.SimpleModelMember
 import org.apache.spark.sql.DataFrame
@@ -23,7 +24,7 @@ sealed trait TemplateTree[+A <: TemplateMember]{
 
   def subMembers: Seq[TemplateTree[A]]
 
-  def evaluateFitness(trainingDF: DataFrame, testDF: DataFrame, problemType: ProblemType)(implicit tc: TreeContext = TreeContext()): FitnessResult
+  def evaluateFitness(trainingDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParamsMap: HyperParametersField)(implicit tc: TreeContext = TreeContext()): FitnessResult
 
   def height: Int = 1 + subMembers.foldLeft(1){ case (h, subMember) => Math.max(h, subMember.height)}
 }
@@ -32,7 +33,7 @@ case class LeafTemplate[+A <: TemplateMember](member: A) extends TemplateTree[A]
   override def subMembers: Seq[TemplateTree[A]] = throw new UnsupportedOperationException("Leaf template isn't supposed to have subMembers")
 
 
-  override def evaluateFitness(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType)(implicit tc: TreeContext = TreeContext()): FitnessResult = {
+  override def evaluateFitness(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParamsMap: HyperParametersField)(implicit tc: TreeContext = TreeContext()): FitnessResult = {
 
     TemplateTree.updateLeafTC(member.name, height,tc)
 
@@ -48,11 +49,11 @@ case class NodeTemplate[+A <: TemplateMember](member: A, subMembers: Seq[Templat
   require(member.isInstanceOf[EnsemblingModelMember], "NodeTemplates's member shoud be of ensembling type")
 
   //We delegating calculation to ensemble member as well
-  override def evaluateFitness(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType)(implicit tc: TreeContext = TreeContext()): FitnessResult = {
+  override def evaluateFitness(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParamsField: HyperParametersField)(implicit tc: TreeContext = TreeContext()): FitnessResult = {
     val updatedTC = TemplateTree.updateNodeTC(member.name, height, tc)
     //member.fitnessError(trainDF, testDF, subMembers)
     //or
-    member.asInstanceOf[EnsemblingModelMember].ensemblingFitnessError(trainDF, testDF, subMembers, problemType)(updatedTC)
+    member.asInstanceOf[EnsemblingModelMember].ensemblingFitnessError(trainDF, testDF, subMembers, problemType, hyperParamsField)(updatedTC)
   }
 }
 

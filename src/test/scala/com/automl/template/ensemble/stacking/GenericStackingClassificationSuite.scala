@@ -1,6 +1,7 @@
 package com.automl.template.ensemble.stacking
 
 import com.automl.dataset.Datasets
+import com.automl.evolution.dimension.hparameter.HyperParametersField
 import com.automl.problemtype.ProblemType
 import com.automl.spark.SparkSessionProvider
 import com.automl.template.LeafTemplate
@@ -32,7 +33,7 @@ class GenericStackingClassificationSuite extends FunSuite with Matchers with Bef
     )
 
     val problemType = ProblemType.MultiClassClassificationProblem
-    val fitnessResult = genericStacking.ensemblingFitnessError(trainDF, testDF, models, problemType)
+    val fitnessResult = genericStacking.ensemblingFitnessError(trainDF, testDF, models, problemType, hyperParamsField = HyperParametersField.default)
 
 
     val gsf1 = fitnessResult.getCorrespondingMetric
@@ -54,7 +55,7 @@ class GenericStackingClassificationSuite extends FunSuite with Matchers with Bef
     )
 
     val problemType = ProblemType.MultiClassClassificationProblem
-    val fitnessResult = genericStacking.ensemblingFitnessError(trainDF, testDF, models, problemType)
+    val fitnessResult = genericStacking.ensemblingFitnessError(trainDF, testDF, models, problemType, hyperParamsField = HyperParametersField.default)
 
 
     val gsf1 = fitnessResult.getCorrespondingMetric
@@ -73,7 +74,7 @@ class GenericStackingClassificationSuite extends FunSuite with Matchers with Bef
     )
 
     val problemType = ProblemType.MultiClassClassificationProblem
-    val fitnessResult = genericStacking.ensemblingFitnessError(trainDF, testDF, models, problemType)
+    val fitnessResult = genericStacking.ensemblingFitnessError(trainDF, testDF, models, problemType, hyperParamsField = HyperParametersField.default)
 
 
     val gsf1 = fitnessResult.getCorrespondingMetric

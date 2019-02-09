@@ -3,6 +3,7 @@ package com.automl.classifier.ensemble.stacking
 import java.util.Random
 import java.util.concurrent.TimeUnit
 
+import com.automl.evolution.dimension.hparameter.HyperParametersField
 import com.automl.problemtype.ProblemType
 import com.automl.template.{TemplateMember, TemplateTree}
 import com.typesafe.scalalogging.LazyLogging
@@ -130,7 +131,7 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) extends LazyLog
   /**
     * Adding TemplateMember to the ensemble
     */
-  def addModel[A <: TemplateMember](member: TemplateTree[A], trainDataSet: DataFrame, testDataSet: DataFrame, problemType: ProblemType): SparkGenericStacking = {
+  def addModel[A <: TemplateMember](member: TemplateTree[A], trainDataSet: DataFrame, testDataSet: DataFrame, problemType: ProblemType, hyperParamsMap: HyperParametersField): SparkGenericStacking = {
     trainDataSet.cache()
     testDataSet.cache()
     import utils.SparkMLUtils._
@@ -148,7 +149,7 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) extends LazyLog
       val trainingFold = trainingFoldIds.join(trainDataSet, "uniqueIdColumn").cache()
       val holdoutFold = holdoutFoldIds.join(trainDataSet, "uniqueIdColumn").cache()
 
-      val fitnessResultWithPredictions = member.evaluateFitness(trainingFold, holdoutFold, problemType)
+      val fitnessResultWithPredictions = member.evaluateFitness(trainingFold, holdoutFold, problemType, hyperParamsMap)
 
       val holdoutFoldPredictions = fitnessResultWithPredictions.dfWithPredictions
         .withColumnRenamed("prediction", predictionCol)
@@ -177,7 +178,7 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) extends LazyLog
 
     val predictionsForTestSetDF: DataFrame =
       member
-        .evaluateFitness(trainDataSet, testDataSet, problemType)
+        .evaluateFitness(trainDataSet, testDataSet, problemType, hyperParamsMap)
         .dfWithPredictions
         .withColumnRenamed("prediction", predictionCol)
 //      .showN_AndContinue(100, "Raw predictions")

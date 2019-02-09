@@ -1,5 +1,6 @@
 package com.automl.classifier.ensemble.bagging
 
+import com.automl.evolution.dimension.hparameter.HyperParametersField
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
@@ -29,7 +30,8 @@ case class SparkGenericBagging() extends BaggingMember with LazyLogging{
   override def ensemblingFitnessError[A <: TemplateMember](trainDF: DataFrame,
                                                            testDF: DataFrame,
                                                            subMembers: Seq[TemplateTree[A]],
-                                                           problemType: ProblemType)
+                                                           problemType: ProblemType,
+                                                           hyperParamsMap: HyperParametersField)
                                                           (implicit tc: TreeContext): FitnessResult = {
 
     import trainDF.sparkSession.implicits._
@@ -43,7 +45,7 @@ case class SparkGenericBagging() extends BaggingMember with LazyLogging{
       //TODO  Should we keep aside testDF? Maybe we are computing just training error. We need to split trainingSample into (train,test)
       //TODO We need to make sure that Indexers of submembers have the same sets of indexes ( sorting frame by `label`).
       // But by sampling trainDF we can not guarantee that we will not miss some level
-      (model, model.evaluateFitness(trainingSample, testDF, problemType))
+      (model, model.evaluateFitness(trainingSample, testDF, problemType, hyperParamsMap))
     }
 
     val dfWithPredictionsFromBaseModels: Seq[DataFrame] = results

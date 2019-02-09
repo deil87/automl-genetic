@@ -5,6 +5,7 @@ import com.automl.regressor.EnsemblingRegressor
 import com.automl.template.{EvaluationMagnet, TemplateMember, TemplateTree, TreeContext}
 import com.automl.template.ensemble.EnsemblingModelMember
 import com.automl.classifier.ensemble.stacking.SparkGenericStacking
+import com.automl.evolution.dimension.hparameter.HyperParametersField
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
 import com.typesafe.scalalogging.LazyLogging
@@ -22,7 +23,8 @@ case class GenericStacking(unusedMetaLearner: PipelineStage = new LinearRegressi
   override def ensemblingFitnessError[A <: TemplateMember](trainDF: DataFrame,
                                                            testDF: DataFrame,
                                                            subMembers: Seq[TemplateTree[A]],
-                                                           problemType: ProblemType)
+                                                           problemType: ProblemType,
+                                                           hyperParamsField: HyperParametersField)
                                                           (implicit tc: TreeContext = TreeContext()): FitnessResult = {
     val stackingNumberOfFolds = 3
     logger.debug(s"Evaluating $name ...")
@@ -34,7 +36,7 @@ case class GenericStacking(unusedMetaLearner: PipelineStage = new LinearRegressi
 
     subMembers.foldLeft(stacking)((stackingModel, nextMember) => {
 
-      stackingModel.addModel(nextMember, trainDF, testDF, problemType)
+      stackingModel.addModel(nextMember, trainDF, testDF, problemType, hyperParamsField)
     })
 
     problemType match {

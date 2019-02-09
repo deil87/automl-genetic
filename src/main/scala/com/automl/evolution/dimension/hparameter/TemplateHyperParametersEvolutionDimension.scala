@@ -8,7 +8,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.DataFrame
 import com.automl.Evaluated
-import com.automl.evolution.dimension.EvolutionDimension
+import com.automl.evolution.dimension.{EvolutionDimension, TemplateEvolutionDimension}
 
 import scala.collection.mutable
 import scala.util.Random
@@ -16,7 +16,7 @@ import scala.util.Random
 // it should be a HYPER DIMENSION. We want to find the best FIELD of hyper parameters here.
 //It is right thing that I have removed problemType from methods parameters of EvolutionDimension as not all dimensions are going to be dependant on this.
 //If we need dimension to depend we can pass parameter to a constructor of the dimension's class
-class TemplateHyperParametersEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: ProblemType)
+class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: TemplateEvolutionDimension, evolveEveryGenerations: Int = 1, problemType: ProblemType)
   extends EvolutionDimension[HPPopulation, HyperParametersField, EvaluatedHyperParametersField] with LazyLogging{
 
   override var _population: HPPopulation = _
@@ -28,43 +28,6 @@ class TemplateHyperParametersEvolutionDimension(evolveEveryGenerations: Int = 1,
 
 
   override val hallOfFame: mutable.PriorityQueue[EvaluatedHyperParametersField] = collection.mutable.PriorityQueue[EvaluatedHyperParametersField]()
-
-  //TODO consider moving this to EvolutionDimension interface
-  def evolveInitial(workingDF: DataFrame):HPPopulation = {
-    val initialPopulation = Seq(
-      HyperParametersField(
-        Seq(
-          //          new ModelHyperParameters("LogisticRegression", new HyperParametersGroup(???)),
-          BayesianHPGroup()
-        )
-      ), HyperParametersField(
-        Seq(
-          BayesianHPGroup()
-        )
-      )
-    )
-    evolve(new HPPopulation(individuals = initialPopulation), workingDF)
-  }
-
-  // TODO we need last population of templates or pool of templates per model(we are evolving parameters for)
-
-//  override def evolve(population: HPPopulation, workingDF: DataFrame): HPPopulation = {
-//
-//    val evaluatedOriginalPopulation = evaluatePopulation(population, workingDF)
-//
-//    val selectedParents = selectParents(evaluatedOriginalPopulation)
-//
-//    val selectedParentsPopulation = extractIndividualsFromEvaluated(selectedParents)
-//
-//    val offspring = mutateParentPopulation(selectedParentsPopulation)
-//
-//    val evaluationsForOffspring = evaluatePopulation(offspring, workingDF)
-//
-//    val survivedForNextGenerationEvaluatedTemplates = selectSurvived(population.size, evaluationsForOffspring)
-//
-//    extractIndividualsFromEvaluated(survivedForNextGenerationEvaluatedTemplates)
-//  }
-
 
 
   override def extractIndividualsFromEvaluatedIndividuals(evaluatedIndividuals: Seq[EvaluatedHyperParametersField]): HPPopulation = {
@@ -91,14 +54,20 @@ class TemplateHyperParametersEvolutionDimension(evolveEveryGenerations: Int = 1,
         val newField = HyperParametersField(modelsHParameterGroups = hpField.modelsHParameterGroups.map { hpGroup => hpGroup.mutate() })
         logger.debug(s"Hash code after ${newField.hashCode()} for value ${newField.modelsHParameterGroups.map(_.hpParameters.map(_.currentValue).mkString(","))}")
         newField
-
-        /*hpField.copy(modelsHParameterGroups = hpField.modelsHParameterGroups.map {
-          case hpGroup@BayesianHPGroup(_) => BayesianHPGroup(hpGroup.mutate().hpParameters )})*/
       }
     })
   }
 
+  // TODO we need last population of templates or pool of templates per model(we are evolving parameters for)
   override def evaluatePopulation(population: HPPopulation, workingDF: DataFrame): Seq[EvaluatedHyperParametersField] = {
+
+    // Note: there are multiple strategies of evaluating hps for template population.
+    // 1) estimate base model/ building blocks of the templates(ensembles)
+    // 2) estimate on last survived population
+    // 3) estimate on hallOfFame models
+    // 4) ideally we need tu estimate parameters for all possible positions of the models in the ensembles.... this is for the future versions.
+    // 5) mixture of 3) and 1)
+    parentTemplateEvDimension.getPopulation
 
     val Array(trainingSplit, testSplit) = workingDF.randomSplit(Array(0.67, 0.33), 11L) // TODO move to Config ratio
     population.individuals.map { hpField =>
@@ -113,13 +82,14 @@ class TemplateHyperParametersEvolutionDimension(evolveEveryGenerations: Int = 1,
         val metricsFromAllModelsEvaluations = hpField.modelsHParameterGroups.map {
           case hpGroup@BayesianHPGroup(_) =>
             val metric = Bayesian(hpGroup).fitnessError(trainingSplit, testSplit, problemType).getCorrespondingMetric
+            // We should get last Best Population from the TemplateCoevolution and estimate on the whole population or representative sample
             metric
           case hpGroup@LogisticRegressionHPGroup(_) =>
             val metric = LogisticRegressionModel(hpGroup).fitnessError(trainingSplit, testSplit, problemType).getCorrespondingMetric
             metric
           case _ => ???
         }
-         metricsFromAllModelsEvaluations.sum
+         metricsFromAllModelsEvaluations.sum   // we sum all metrics from each ModelHPGroup inn the field so that we can later decide which Field is the best
       })
       EvaluatedHyperParametersField(hpField, fitness)
     }
@@ -128,13 +98,33 @@ class TemplateHyperParametersEvolutionDimension(evolveEveryGenerations: Int = 1,
   def updateHallOfFame(evaluatedIndividuals: Seq[EvaluatedHyperParametersField]):Unit = {
     val hallOfFameUpdateSize = 5  // TODO Config
     hallOfFame.headOption.map{bestAtAllTimes =>
-      evaluatedIndividuals.filter(_.score >= bestAtAllTimes.score).take(hallOfFameUpdateSize).foreach(ev => hallOfFame.enqueue(ev))
+      evaluatedIndividuals.filter(_.score >= bestAtAllTimes.score).take(hallOfFameUpdateSize).foreach(ev => hallOfFame.enqueue(ev)) //TODO Too many duplicate entries in the queue!!!
     }.getOrElse{
       evaluatedIndividuals.take(hallOfFameUpdateSize).foreach(ev => hallOfFame.enqueue(ev))
 //      hallOfFame ++ evaluatedIndividuals.take(hallOfFameUpdateSize) //TODO why it does not put elements?
     }
-
   }
+
+
+  override def getInitialColdStartPopulation: HPPopulation = {
+    new HPPopulation(Seq(
+      HyperParametersField(
+        Seq(
+          BayesianHPGroup()
+        )
+      ), HyperParametersField(
+        Seq(
+          BayesianHPGroup()
+        )
+      )
+    ))
+  }
+
+  //Note: if we don't have hallOfFame filled up then we want to just take any HyperParametersField field to start with ( we don't have hyper parameters evaluated yet)
+  // WE can start Template evolution with default hyper parameters because evaluation of hyper parameters on first iteration contributes only
+  // to the upcoming evolutions as for the first iteration we have nothing to compare against for HyperParameter dimension //TODO make it configurable strategy
+  //But it makes sense to search for HPs first. It is faster and brings more value
+  override def getBestFromHallOfFame: HyperParametersField = hallOfFame.headOption.map(_.field).getOrElse{getInitialPopulation.individuals.head}
 
   override def getBestFromPopulation(workingDF: DataFrame): EvaluatedHyperParametersField = {
     logger.debug("Getting best individual from population...")
@@ -153,6 +143,16 @@ case class HyperParametersField(modelsHParameterGroups: Seq[HyperParametersGroup
   override def hashCode(): Int = {
     modelsHParameterGroups.map(_.hpParameters.map(_.currentValue.hashCode()).sum).sum
   }
+
+  def getLogisticRegressionHPGroup: HyperParametersGroup[_ <: MutableHParameter[Double, _]] = {
+    modelsHParameterGroups.find{
+      case LogisticRegressionHPGroup(_) => true
+    }.get
+  }
+}
+
+object HyperParametersField {
+  def default = HyperParametersField(Seq(BayesianHPGroup(), LogisticRegressionHPGroup()))
 }
 
 //Подумать над тем чтобы использовать обычный Map

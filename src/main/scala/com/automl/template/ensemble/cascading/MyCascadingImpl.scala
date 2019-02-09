@@ -1,5 +1,6 @@
 package com.automl.template.ensemble.cascading
 
+import com.automl.evolution.dimension.hparameter.HyperParametersField
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.regressor.EnsemblingRegressor
@@ -12,7 +13,8 @@ case class MyCascadingImpl() extends CascadingMember {
   override def ensemblingFitnessError[A <: TemplateMember](trainDF: DataFrame,
                                                            testDF: DataFrame,
                                                            subMembers: Seq[TemplateTree[A]],
-                                                           problemType: ProblemType)
+                                                           problemType: ProblemType,
+                                                           hyperParamsMap: HyperParametersField)
                                                           (implicit tc: TreeContext = TreeContext()): FitnessResult = ???
 
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???

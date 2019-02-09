@@ -21,11 +21,26 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
 
   var _population: PopulationType
 
+  //We should have best population and bestIndividual as a separate things
+  def getInitialPopulation: PopulationType = {
+    val useMetaDB = false
+    if(useMetaDB) getInitialPopulationFromMetaDB
+    else getInitialColdStartPopulation
+  }
+
+  def getInitialPopulationFromMetaDB: PopulationType = ???
+
+  def getInitialColdStartPopulation: PopulationType
+
   implicit val individualsEvaluationCache:mutable.Map[(T, Long), EvaluatedResult#FitnessType] //cache store anyone regardless of performance and could be/should be capped to prevent OOM
 
   val hallOfFame: mutable.PriorityQueue[EvaluatedResult]
 
   // Template pattern
+  def evolveFromLastPopulation(workingDF: DataFrame): PopulationType = {
+    evolve(getPopulation, workingDF)
+  }
+
   def evolve(population: PopulationType, workingDF: DataFrame): PopulationType = {
     logger.debug("Starting next evolution...")
     val evaluatedOriginalPopulation = evaluatePopulation(population, workingDF)
@@ -54,7 +69,7 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
   }
   def updateHallOfFame(evaluatedIndividuals: Seq[EvaluatedResult]):Unit
 
-  def getBestFromHallOfFame:EvaluatedResult = hallOfFame.head
+  def getBestFromHallOfFame:T
 
   def selectParents(evaluatedIndividuals: Seq[EvaluatedResult]):  Seq[EvaluatedResult]
 

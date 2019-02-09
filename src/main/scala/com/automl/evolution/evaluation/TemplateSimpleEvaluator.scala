@@ -32,7 +32,7 @@ class TemplateSimpleEvaluator(implicit as: ActorSystem) extends PopulationEvalua
 
   override def evaluateIndividuals(population: TPopulation,
                                    workingDataSet: DataFrame,
-                                   hyperParamsMap: HyperParametersField,
+                                   hyperParamsField: HyperParametersField,
                                    problemType: ProblemType)
                                   (implicit cache: mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]): Seq[EvaluatedTemplateData] = {
 
@@ -55,7 +55,7 @@ class TemplateSimpleEvaluator(implicit as: ActorSystem) extends PopulationEvalua
           // TODO can we split it randomly here???
 
           val Array(trainingSplit, testSplit) = workingDataSet.randomSplit(Array(0.67, 0.33), 11L)
-          materializedTemplate.evaluateFitness(trainingSplit, testSplit, problemType)
+          materializedTemplate.evaluateFitness(trainingSplit, testSplit, problemType, hyperParamsField)
         })
         webClientNotifier.map(wcn => wcn ! UpdateWeb(s"Evaluated ${TemplateTreeHelper.renderAsString_v2(materializedTemplate)} with fitness value: " + fr.metricsMap))
         val iad = EvaluatedTemplateData(idx.toString + ":" + individualTemplate.id, individualTemplate, materializedTemplate, fr)

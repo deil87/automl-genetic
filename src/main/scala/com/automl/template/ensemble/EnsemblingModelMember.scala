@@ -1,5 +1,6 @@
 package com.automl.template.ensemble
 
+import com.automl.evolution.dimension.hparameter.HyperParametersField
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.regressor.{AverageRegressor, EnsemblingRegressor}
@@ -21,7 +22,8 @@ trait EnsemblingModelMember extends TemplateMember {
   def ensemblingFitnessError[A <: TemplateMember](trainDF: DataFrame,
                                                   testDF: DataFrame,
                                                   subMembers: Seq[TemplateTree[A]],
-                                                  problemType: ProblemType)
+                                                  problemType: ProblemType,
+                                                  hyperParamsMap: HyperParametersField)
                                                  (implicit tc: TreeContext = TreeContext()): FitnessResult
 
 }

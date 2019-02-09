@@ -1,5 +1,6 @@
 package com.automl.classifier.ensemble.bagging
 
+import com.automl.evolution.dimension.hparameter.HyperParametersField
 import com.automl.helper.TemplateTreeHelper
 import com.automl.problemtype.ProblemType
 import com.automl.spark.SparkSessionProvider
@@ -65,7 +66,7 @@ class SparkGenericBaggingSuite extends FunSuite with Matchers with SparkSessionP
 
     val Array(trainingSplit, testSplit) = prepairedAirlineDF.randomSplit(Array(0.8, 0.2))
 
-    ensemb.evaluateFitness(trainingSplit, testSplit, ProblemType.RegressionProblem)
+    ensemb.evaluateFitness(trainingSplit, testSplit, ProblemType.RegressionProblem, hyperParamsField = HyperParametersField.default)
   }
 
   test("Spark Bagging should sample training dataset for submembers in appropriate way )") {
@@ -125,7 +126,7 @@ class SparkGenericBaggingSuite extends FunSuite with Matchers with SparkSessionP
 
     val problemType = ProblemType.MultiClassClassificationProblem
 
-    val baggingF1 = ensemb.evaluateFitness(trainingSplit, testSplit, problemType).getCorrespondingMetric
+    val baggingF1 = ensemb.evaluateFitness(trainingSplit, testSplit, problemType, hyperParamsField = HyperParametersField.default).getCorrespondingMetric
 
     val dtF1 = DecisionTree().fitnessError(trainingSplit, testSplit, problemType).getMetricByName("f1")
 
@@ -180,7 +181,7 @@ class SparkGenericBaggingSuite extends FunSuite with Matchers with SparkSessionP
 
     val problemType = ProblemType.MultiClassClassificationProblem
 
-    val baggingF1 = ensemb.evaluateFitness(trainingSplit, testSplit, problemType).getCorrespondingMetric
+    val baggingF1 = ensemb.evaluateFitness(trainingSplit, testSplit, problemType, hyperParamsField = HyperParametersField.default).getCorrespondingMetric
 
     val dtF1 = DecisionTree().fitnessError(trainingSplit, testSplit, problemType).getMetricByName("f1")
 

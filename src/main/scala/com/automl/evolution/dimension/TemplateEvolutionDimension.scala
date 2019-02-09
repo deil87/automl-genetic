@@ -30,7 +30,7 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: P
   val rankSelectionStrategy = new RankSelectionStrategy
 
   // Dependencies on other dimensions. Hardcoded for now. Should come from AutoML.runEvolution method parameters.
-  val hyperParamsEvDim = new TemplateHyperParametersEvolutionDimension(problemType = problemType)
+  val hyperParamsEvDim = new TemplateHyperParametersEvolutionDimension(this,problemType = problemType)
 
   val evaluator = if(problemType == MultiClassClassificationProblem) {
      new TemplateNSLCEvaluator(new MisclassificationDistance)
@@ -40,6 +40,10 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: P
   override implicit val individualsEvaluationCache = mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]()
 
   override val hallOfFame: mutable.PriorityQueue[EvaluatedTemplateData] = ???
+
+  override def getInitialColdStartPopulation: TPopulation = ???
+
+  override def getBestFromHallOfFame: TemplateTree[TemplateMember] = ???
 
   override def updateHallOfFame(evaluatedIndividuals: Seq[EvaluatedTemplateData]): Unit = ???
 
@@ -70,7 +74,7 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: P
     val evolvedPopulation = new TPopulation(survivedForNextGenerationEvaluatedTemplates.map(_.template), offspring.mutationProbabilities)
 
     // Do backpropagation of fitness. Evolve other dimensions by using new evaluations/best templates
-//    hyperParamsEvDim.evolve()
+    hyperParamsEvDim.evolveFromLastPopulation(workingDF)
 
     _population = evolvedPopulation
     evolvedPopulation
@@ -100,15 +104,16 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: P
   }
 
   override def evaluatePopulation(population: TPopulation, workingDF: DataFrame): Seq[EvaluatedTemplateData] = {
-    //TODO implement Template pattern ( separate login into multiple functions and introduce them in EvolutionDimension)
+
     /* Template dimension depends on others dimensions and we need to get data from them first.
     This could be implemented in a custom hardcoded evaluator or with dependencies tree */
     //TODO  For how long we want to search for a hyperparameters? We can introduce HPSearchStepsPerGeneration parameter or we need to add logic that decides how often we need to evolve subdimensions
-    val bestEvaluatedHyperParametersField: HyperParametersField = null
-//    val bestEvaluatedHyperParametersField = hyperParamsEvDim.getBestFromPopulation(workingDF)// During next generation's call of this.evolve we will be able to get new/better individuals
+    if(hyperParamsEvDim.hallOfFame.isEmpty)
+      hyperParamsEvDim.evolve(hyperParamsEvDim.getInitialPopulation, workingDF) // TODO consider stratified sample for first iteration or maybe for all iterations
+    val bestHyperParametersField: HyperParametersField = hyperParamsEvDim.getBestFromHallOfFame
 
     if(problemType == MultiClassClassificationProblem) {
-      evaluator.evaluateIndividuals(population, workingDF, bestEvaluatedHyperParametersField, problemType)
+      evaluator.evaluateIndividuals(population, workingDF, bestHyperParametersField, problemType)
     }
     else {
       ???
