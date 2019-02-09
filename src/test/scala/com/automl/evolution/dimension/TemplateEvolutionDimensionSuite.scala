@@ -73,7 +73,7 @@ class TemplateEvolutionDimensionSuite extends WordSpec with Matchers with SparkS
       t.evaluatePopulation(population, ds2)
       t.evaluatePopulation(population, ds3)
 
-      t.templatesEvaluationCache.size should be (6)  // (numbers of templates in population) * (# of different sizes of training datasets)
+      t.individualsEvaluationCache.size should be (6)  // (numbers of templates in population) * (# of different sizes of training datasets)
     }
 
     "caching is working within ensemble nodes" in new Fixture{

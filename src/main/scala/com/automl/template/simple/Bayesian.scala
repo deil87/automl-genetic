@@ -105,7 +105,7 @@ case class Bayesian(hpGroup: BayesianHPGroup = BayesianHPGroup.default) extends 
 
         val metrics = new MulticlassMetrics(predictions.select("prediction", "indexedLabel").rdd.map(r => (r.getDouble(0), r.getDouble(1))))
 
-        MulticlassMetricsHelper.showStatistics(predictions)
+//        MulticlassMetricsHelper.showStatistics(predictions)
 
         if(metrics.weightedFMeasure <= 0.1 )
           throw SuspiciousPerformanceException("Bayesian predictions are too low")
@@ -118,7 +118,7 @@ case class Bayesian(hpGroup: BayesianHPGroup = BayesianHPGroup.default) extends 
 }
 
 
-object MulticlassMetricsHelper {
+object MulticlassMetricsHelper extends LazyLogging {
 
   def showStatistics(predictionAndLabel: DataFrame) = {
 

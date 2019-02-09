@@ -52,7 +52,7 @@ object Datasets extends SparkSessionProvider {
     preparedWineDF
   }
 
-  def getGlassDataFrame(seed: Long): DataFrame = {
+  def getGlassDataFrame(shufflingSeed: Long): DataFrame = {
     val glassDF = SparkMLUtils.loadResourceDF("/dataset/glass/glass.csv")
 
     val features = Array("RI", "Na", "Mg", "Al", "Si", "K", "Ca", "Ba", "Fe")
@@ -77,7 +77,7 @@ object Datasets extends SparkSessionProvider {
       .setStringOrderType("alphabetAsc")
 
     val preparedGlassDF = glassDF
-      .orderBy(rand(seed))  // Shuffling
+      .orderBy(rand(shufflingSeed))  // Shuffling
       .applyTransformation(featuresAssembler)
       .applyTransformation(scaler)
       .drop("features")

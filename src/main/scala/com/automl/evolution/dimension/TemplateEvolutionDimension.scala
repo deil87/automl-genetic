@@ -29,13 +29,18 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: P
   val rankSelectionStrategy = new RankSelectionStrategy
 
   // Dependencies on other dimensions. Hardcoded for now. Should come from AutoML.runEvolution method parameters.
-  val hyperParamsEvDim = new TemplateHyperParametersEvolutionDimension
+  val hyperParamsEvDim = new TemplateHyperParametersEvolutionDimension(problemType = problemType)
 
   val evaluator = if(problemType == MultiClassClassificationProblem) {
      new TemplateNSLCEvaluator(new MisclassificationDistance)
   } else ???
 
-  implicit val templatesEvaluationCache = mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]()  // TODO make it faster with reference to value
+   // TODO make it faster with reference to value
+  override implicit val individualsEvaluationCache = mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]()
+
+  override val hallOfFame: mutable.PriorityQueue[EvaluatedTemplateData] = ???
+
+  override def updateHallOfFame(evaluatedIndividuals: Seq[EvaluatedTemplateData]): Unit = ???
 
   override def evolve(population: TPopulation, workingDF: DataFrame): TPopulation = {
 
@@ -116,6 +121,7 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: P
     problemType match {
       case MultiClassClassificationProblem | BinaryClassificationProblem =>
         val defaultRegressionMetric = "f1"
+        //TODO we might want to take evaluated population from dimension, Althoug it should be in the cache.
         evaluatePopulation(getPopulation, workingDF).sortWith(_.fitness.metricsMap(defaultRegressionMetric) > _.fitness.metricsMap(defaultRegressionMetric)).head
       case RegressionProblem =>
         // TODO maybe keep them in sorted heap?

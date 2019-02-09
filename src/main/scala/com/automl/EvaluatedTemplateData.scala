@@ -1,7 +1,6 @@
 package com.automl
 
 import com.automl.helper.{FitnessResult, PopulationHelper}
-import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem}
 import com.automl.template.{TemplateMember, TemplateTree}
 import com.typesafe.scalalogging.LazyLogging
 import kamon.Kamon
@@ -12,7 +11,9 @@ case class EvaluatedTemplateData(id: String,
                                  fitness: FitnessResult,
                                  rank: Long = -1,
                                  probability: Double = -1,
-                                 neighbours: Seq[EvaluatedTemplateData] = Nil) {
+                                 neighbours: Seq[EvaluatedTemplateData] = Nil) extends Evaluated {
+
+  type FitnessType = FitnessResult
 
   def idShort = s"$id:${template.member.name.take(5)}" // TODO add short name to members
 

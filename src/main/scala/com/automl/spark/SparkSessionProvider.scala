@@ -7,7 +7,7 @@ trait SparkSessionProvider extends LazyLogging{
 
     implicit val ss: SparkSession = SparkSessionProvider.ss
 
-  logger.debug("Numbers of cached RDDs:"  + ss.sparkContext.getPersistentRDDs.size)
+  logger.trace("Numbers of cached RDDs:"  + ss.sparkContext.getPersistentRDDs.size)
 
 }
 
