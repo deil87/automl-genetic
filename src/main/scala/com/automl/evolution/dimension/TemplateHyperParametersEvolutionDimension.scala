@@ -127,7 +127,7 @@ class TemplateHyperParametersEvolutionDimension(evolveEveryGenerations: Int = 1,
   def updateHallOfFame(evaluatedIndividuals: Seq[EvaluatedHyperParametersField]):Unit = {
     val hallOfFameUpdateSize = 5  // TODO Config
     hallOfFame.headOption.map{bestAtAllTimes =>
-      hallOfFame ++ evaluatedIndividuals.filter(_.score >= bestAtAllTimes.score).take(hallOfFameUpdateSize)
+      evaluatedIndividuals.filter(_.score >= bestAtAllTimes.score).take(hallOfFameUpdateSize).foreach(ev => hallOfFame.enqueue(ev))
     }.getOrElse{
       evaluatedIndividuals.take(hallOfFameUpdateSize).foreach(ev => hallOfFame.enqueue(ev))
 //      hallOfFame ++ evaluatedIndividuals.take(hallOfFameUpdateSize) //TODO why it does not put elements?
@@ -232,7 +232,7 @@ case class EvaluatedHyperParametersField(field: HyperParametersField, score:Doub
 object EvaluatedHyperParametersField {
   implicit val individualsOrdering: Ordering[EvaluatedHyperParametersField] = new Ordering[EvaluatedHyperParametersField] {
     override def compare(x: EvaluatedHyperParametersField, y: EvaluatedHyperParametersField): Int = {
-      y.score.compareTo(x.score) // TODO swap y and x depending on what is needed in the Priority queue
+      x.score.compareTo(y.score) // TODO swap y and x depending on what is needed in the Priority queue
     }
   }
 }
