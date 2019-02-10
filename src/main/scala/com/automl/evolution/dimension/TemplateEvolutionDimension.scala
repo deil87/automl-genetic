@@ -32,6 +32,7 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: P
   // Dependencies on other dimensions. Hardcoded for now. Should come from AutoML.runEvolution method parameters.
   val hyperParamsEvDim = new TemplateHyperParametersEvolutionDimension(this,problemType = problemType)
 
+  override var _population: TPopulation = _
 
   override def evolutionDimensionLabel: String = "TemplateEvolutionDimension"
 
@@ -85,6 +86,8 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: P
 
     val survivedForNextGenerationEvaluatedTemplates = selectSurvived(population.size, evaluationResultsForNewExpandedGeneration)
 
+    _evaluatedPopulation = survivedForNextGenerationEvaluatedTemplates
+
     val evolvedPopulation = new TPopulation(survivedForNextGenerationEvaluatedTemplates.map(_.template), offspring.mutationProbabilities)
 
     // Do backpropagation of fitness. Evolve other dimensions by using new evaluations/best templates
@@ -134,18 +137,16 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: P
     }
   }
 
-  override var _population: TPopulation = _
-
   override def getBestFromPopulation(workingDF: DataFrame): EvaluatedTemplateData = {
     problemType match {
       case MultiClassClassificationProblem | BinaryClassificationProblem =>
         val defaultRegressionMetric = "f1"
         //TODO we might want to take evaluated population from dimension, Althoug it should be in the cache.
-        evaluatePopulation(getPopulation, workingDF).sortWith(_.fitness.metricsMap(defaultRegressionMetric) > _.fitness.metricsMap(defaultRegressionMetric)).head
+        getEvaluatedPopulation.sortWith(_.fitness.metricsMap(defaultRegressionMetric) > _.fitness.metricsMap(defaultRegressionMetric)).head
       case RegressionProblem =>
         // TODO maybe keep them in sorted heap?
         val defaultRegressionMetric = "rmse"
-        evaluatePopulation(getPopulation, workingDF).sortWith(_.fitness.metricsMap(defaultRegressionMetric) < _.fitness.metricsMap(defaultRegressionMetric)).head
+        getEvaluatedPopulation.sortWith(_.fitness.metricsMap(defaultRegressionMetric) < _.fitness.metricsMap(defaultRegressionMetric)).head
     }
 
   }

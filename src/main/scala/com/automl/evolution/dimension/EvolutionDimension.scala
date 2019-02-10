@@ -1,11 +1,7 @@
 package com.automl.evolution.dimension
 
-import com.automl.helper.FitnessResult
-import com.automl.problemtype.ProblemType
-import com.automl.template.{TemplateMember, TemplateTree}
 import com.automl.{Evaluated, EvaluatedTemplateData, Population}
 import com.typesafe.scalalogging.LazyLogging
-import org.apache.spark.ml.param.Params
 import org.apache.spark.sql.DataFrame
 
 import scala.collection.mutable
@@ -20,6 +16,8 @@ import scala.collection.mutable
 trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: Evaluated] extends LazyLogging{
 
   var _population: PopulationType
+
+  var _evaluatedPopulation: Seq[EvaluatedResult] = Nil
 
   //We should have best population and bestIndividual as a separate things
   def getInitialPopulation: PopulationType = {
@@ -63,12 +61,15 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
     logger.debug("Selecting survivals:")
     val survivedForNextGenerationEvaluatedTemplates = selectSurvived(population.size, evaluatedOffspring)
 
+    _evaluatedPopulation = survivedForNextGenerationEvaluatedTemplates
+
     val evolvedNewGeneration = extractIndividualsFromEvaluatedIndividuals(survivedForNextGenerationEvaluatedTemplates)
     logger.debug("Evolution is finished.")
 
     _population = evolvedNewGeneration
-    evolvedNewGeneration
+    _population
   }
+
   def updateHallOfFame(evaluatedIndividuals: Seq[EvaluatedResult]):Unit
 
   def getBestFromHallOfFame:T
@@ -87,6 +88,8 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
   def selectSurvived(populationSize:Int, evaluatedIndividuals: Seq[EvaluatedResult]):  Seq[EvaluatedResult]
 
   def getPopulation: PopulationType = _population
+
+  def getEvaluatedPopulation: Seq[EvaluatedResult] = _evaluatedPopulation
 
   def getBestFromPopulation(workingDF: DataFrame): EvaluatedResult
 

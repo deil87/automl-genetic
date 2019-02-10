@@ -57,6 +57,7 @@
         <appender-ref ref="STDOUT_L2" />
     </logger>
     <!--<logger name="com.automl.spark" level="DEBUG"/>-->
+    <logger name="utils" level="DEBUG"/>
     <logger name="org.apache.spark" level="ERROR"/>
     <logger name="com.github.fommil.jni.JniLoader" level="ERROR"/>
 

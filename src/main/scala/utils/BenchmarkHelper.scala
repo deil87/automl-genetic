@@ -1,22 +1,24 @@
 package utils
 
+import com.typesafe.scalalogging.LazyLogging
 import org.scalameter.{Key, Warmer, _}
 
 import scala.util.control.NonFatal
 
-object BenchmarkHelper {
+object BenchmarkHelper extends LazyLogging{
 
   def time[R](marker: String)(block: => R): R = {
+    logger.debug(s"Benchmark $marker started.")
     val t0 = System.currentTimeMillis()
     var result: Any = null
     try {
       result = block
     } catch {
       case NonFatal(ex) =>
-        println(s"$marker# Failure: ${ex.getMessage}")
+        logger.debug(s"$marker# Failure: ${ex.getMessage}")
     } finally {
       val t1 = System.currentTimeMillis()
-      println(s"Benchmark. $marker took: " + (t1 - t0) + "ms")
+      logger.debug(s"Benchmark. $marker took: " + (t1 - t0) + "ms")
     }
     result.asInstanceOf[R]
   }

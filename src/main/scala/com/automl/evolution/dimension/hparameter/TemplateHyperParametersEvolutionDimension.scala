@@ -9,6 +9,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.DataFrame
 import com.automl.Evaluated
 import com.automl.evolution.dimension.{EvolutionDimension, TemplateEvolutionDimension}
+import utils.BenchmarkHelper
 
 import scala.collection.mutable
 import scala.util.Random
@@ -64,37 +65,45 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
   // TODO we need last population of templates or pool of templates per model(we are evolving parameters for)
   override def evaluatePopulation(population: HPPopulation, workingDF: DataFrame): Seq[EvaluatedHyperParametersField] = {
 
+    val numberOfBestTemplates = 3
     // Note: there are multiple strategies of evaluating hps for template population.
     // 1) estimate base model/ building blocks of the templates(ensembles)
-    // 2) estimate on last survived population
-    // 3) estimate on hallOfFame models
+    // 2) estimate on last survived population(part of it)
+    // 3) estimate on hallOfFame models (but we more conserned about population we are evolving at hands)
     // 4) ideally we need tu estimate parameters for all possible positions of the models in the ensembles.... this is for the future versions.
     // 5) mixture of 3) and 1)
-    parentTemplateEvDimension.getPopulation
+    BenchmarkHelper.time("Hyper-parameter evaluatePopulation ") {
+      val threeBestTemplates = parentTemplateEvDimension.getEvaluatedPopulation.sortWith((a, b) => a.fitness.orderTo(b.fitness)).map(_.template).take(numberOfBestTemplates)
 
-    val Array(trainingSplit, testSplit) = workingDF.randomSplit(Array(0.67, 0.33), 11L) // TODO move to Config ratio
-    population.individuals.map { hpField =>
-      val cacheKey = (hpField, workingDF.count())
-      val cacheKeyHashCode = cacheKey.hashCode()
-      if (individualsEvaluationCache.isDefinedAt(cacheKey)) {
-        logger.debug(s"Hyper parameter evolution. Cache hit happened for individual: $hpField")
-        logger.debug(s"Retrieved value from the cache with hashCode = $cacheKeyHashCode : ${individualsEvaluationCache(cacheKey)}")
-      }
-      val fitness = individualsEvaluationCache.getOrElseUpdate(cacheKey, {
-        logger.debug(s"Entry with hashCode = ${cacheKey.hashCode()} was added to the cache.")
-        val metricsFromAllModelsEvaluations = hpField.modelsHParameterGroups.map {
-          case hpGroup@BayesianHPGroup(_) =>
-            val metric = Bayesian(hpGroup).fitnessError(trainingSplit, testSplit, problemType).getCorrespondingMetric
-            // We should get last Best Population from the TemplateCoevolution and estimate on the whole population or representative sample
-            metric
-          case hpGroup@LogisticRegressionHPGroup(_) =>
-            val metric = LogisticRegressionModel(hpGroup).fitnessError(trainingSplit, testSplit, problemType).getCorrespondingMetric
-            metric
-          case _ => ???
+      val Array(trainingSplit, testSplit) = workingDF.randomSplit(Array(0.67, 0.33), 11L) // TODO move to Config ratio
+      population.individuals.map { hpField =>
+        val cacheKey = (hpField, workingDF.count())
+        val cacheKeyHashCode = cacheKey.hashCode()
+        if (individualsEvaluationCache.isDefinedAt(cacheKey)) {
+          logger.debug(s"Cache hit happened for individual: $hpField")
+          logger.debug(s"Retrieved value from the cache with hashCode = $cacheKeyHashCode : ${individualsEvaluationCache(cacheKey)}")
         }
-         metricsFromAllModelsEvaluations.sum   // we sum all metrics from each ModelHPGroup inn the field so that we can later decide which Field is the best
-      })
-      EvaluatedHyperParametersField(hpField, fitness)
+        val fitness = individualsEvaluationCache.getOrElseUpdate(cacheKey, {
+          logger.debug(s"Entry with hashCode = ${cacheKey.hashCode()} was added to the cache.")
+          // Estimating 1) building blocks
+          logger.debug(s"Evaluating hpfield on base models:")
+          val metricsFromBaseModels = hpField.modelsHParameterGroups.map {
+            case hpGroup@BayesianHPGroup(_) =>
+              val metric = Bayesian(hpGroup).fitnessError(trainingSplit, testSplit, problemType).getCorrespondingMetric
+              // We should get last Best Population from the TemplateCoevolution and estimate on the whole population or representative sample
+              metric
+            case hpGroup@LogisticRegressionHPGroup(_) =>
+              val metric = LogisticRegressionModel(hpGroup).fitnessError(trainingSplit, testSplit, problemType).getCorrespondingMetric
+              metric
+            case _ => ???
+          }
+          // Estimating 2)
+          logger.debug(s"Evaluating hpfield on ${threeBestTemplates.size} best templates in current population:")
+          val threeBestEvaluations = threeBestTemplates.map(template => template.evaluateFitness(trainingSplit, testSplit, problemType, hyperParamsMap = hpField).getCorrespondingMetric)
+          metricsFromBaseModels.sum + threeBestEvaluations.sum // we sum all metrics from each ModelHPGroup inn the field so that we can later decide which Field is the best
+        })
+        EvaluatedHyperParametersField(hpField, fitness)
+      }
     }
   }
 
