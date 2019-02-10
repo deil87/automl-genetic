@@ -103,7 +103,7 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
 
       trainingSplit.cache()
 
-      val autoMl = new AutoML(trainingSplit, maxTime = 300000, useMetaDB = false, initialPopulationSize = Some(7), seedPopulation = seedPopulation, maxGenerations = 5)
+      val autoMl = new AutoML(trainingSplit, maxTime = 300000, useMetaDB = false, initialPopulationSize = Some(7), seedPopulation = Some(seedPopulation), maxGenerations = 5)
 
       autoMl.runEvolution(system)
 

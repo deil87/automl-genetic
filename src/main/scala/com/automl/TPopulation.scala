@@ -9,6 +9,8 @@ trait Population[T] {
   def individuals: Seq[T]
 
   def size: Int = individuals.length
+
+  def nonEmpty: Boolean = size != 0
 }
 
 class TPopulation(val individuals: Seq[ TemplateTree[TemplateMember]],

@@ -11,11 +11,19 @@ case class EvaluatedTemplateData(id: String,
                                  fitness: FitnessResult,
                                  rank: Long = -1,
                                  probability: Double = -1,
-                                 neighbours: Seq[EvaluatedTemplateData] = Nil) extends Evaluated {
+                                 neighbours: Seq[EvaluatedTemplateData] = Nil) extends Evaluated[EvaluatedTemplateData] {
 
+  override type ItemType = TemplateTree[TemplateMember]
   type FitnessType = FitnessResult
 
   def idShort = s"$id:${template.member.name.take(5)}" // TODO add short name to members
+
+
+  override def item: TemplateTree[TemplateMember] = template
+  override def result: FitnessResult = fitness
+
+
+  override def compare(other: EvaluatedTemplateData): Boolean = fitness.orderTo(other.fitness)
 
   def withRank(value: Long): EvaluatedTemplateData = copy(rank = value)
   def withProbability(value: Double): EvaluatedTemplateData = copy(probability = value)
@@ -40,6 +48,9 @@ object EvaluatedTemplateData extends LazyLogging {
 
   implicit def individualHelper(individuals: Seq[EvaluatedTemplateData]) = new {
 
-    def printSortedByFitness(): Unit = PopulationHelper.renderEvaluatedIndividuals(individuals)
+    // TODO No usage
+    def printSortedByFitness(): Unit = {
+      logger.debug(PopulationHelper.renderEvaluatedIndividuals(individuals))
+    }
   }
 }

@@ -61,7 +61,7 @@ class AirlineDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProv
       maxTime = 3 * 60000,
       useMetaDB = false,
       initialPopulationSize = Some(7),
-      seedPopulation = seedPopulation,
+      seedPopulation = Some(seedPopulation),
       maxGenerations = 5)
 
     autoMl.runEvolution(as)

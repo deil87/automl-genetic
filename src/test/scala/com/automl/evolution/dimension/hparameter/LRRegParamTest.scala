@@ -14,7 +14,7 @@ class LRRegParamTest extends FunSuite with Matchers with LazyLogging{
   implicit val system = ActorSystem("AutoMLSuite-system")
 
   val problem = MultiClassClassificationProblem
-  val templateEvolutionDimension = new TemplateEvolutionDimension(1, problem)
+  val templateEvolutionDimension = new TemplateEvolutionDimension(None,1, problem)
 
   test("that evolution process will converge with regularisation param ") {
 

@@ -14,7 +14,7 @@ class TemplateHyperParametersEvolutionDimensionTest extends FunSuite with Matche
   implicit val system = ActorSystem("AutoMLSuite-system")
 
   val problem = MultiClassClassificationProblem
-  val templateEvolutionDimension = new TemplateEvolutionDimension(1, problem)
+  val templateEvolutionDimension = new TemplateEvolutionDimension(None,1, problem)
 
   test("mutation of the group should work") {
     val hpGroupOfParameters =  BayesianHPGroup()

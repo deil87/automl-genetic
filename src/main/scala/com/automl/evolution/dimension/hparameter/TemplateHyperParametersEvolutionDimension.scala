@@ -9,6 +9,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.DataFrame
 import com.automl.Evaluated
 import com.automl.evolution.dimension.{EvolutionDimension, TemplateEvolutionDimension}
+import com.automl.helper.PopulationHelper
 import utils.BenchmarkHelper
 
 import scala.collection.mutable
@@ -20,7 +21,7 @@ import scala.util.Random
 class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: TemplateEvolutionDimension, evolveEveryGenerations: Int = 1, problemType: ProblemType)
   extends EvolutionDimension[HPPopulation, HyperParametersField, EvaluatedHyperParametersField] with LazyLogging{
 
-  override var _population: HPPopulation = _
+  override var _population: HPPopulation = new HPPopulation(Nil)
 
   val hpdConfig = ConfigFactory.load().getConfig("evolution.hyperParameterDimension")
 
@@ -62,6 +63,13 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
     })
   }
 
+
+  override def showCurrentPopulation(): Unit = { // TODO generalize
+      if(getEvaluatedPopulation.nonEmpty)
+        logger.debug(PopulationHelper.renderEvaluatedIndividuals(getEvaluatedPopulation))
+      else {}
+  }
+
   // TODO we need last population of templates or pool of templates per model(we are evolving parameters for)
   override def evaluatePopulation(population: HPPopulation, workingDF: DataFrame): Seq[EvaluatedHyperParametersField] = {
 
@@ -98,7 +106,7 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
             case _ => ???
           }
           // Estimating 2)
-          logger.debug(s"Evaluating hpfield on ${threeBestTemplates.size} best templates in current population:")
+          logger.debug(s"Evaluating hpfield on ${threeBestTemplates.size} best templates in current template population:")
           val threeBestEvaluations = threeBestTemplates.map(template => template.evaluateFitness(trainingSplit, testSplit, problemType, hyperParamsMap = hpField).getCorrespondingMetric)
           metricsFromBaseModels.sum + threeBestEvaluations.sum // we sum all metrics from each ModelHPGroup inn the field so that we can later decide which Field is the best
         })
@@ -113,20 +121,22 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
       evaluatedIndividuals.filter(_.score >= bestAtAllTimes.score).take(hallOfFameUpdateSize).foreach(ev => hallOfFame.enqueue(ev)) //TODO Too many duplicate entries in the queue!!!
     }.getOrElse{
       evaluatedIndividuals.take(hallOfFameUpdateSize).foreach(ev => hallOfFame.enqueue(ev))
-//      hallOfFame ++ evaluatedIndividuals.take(hallOfFameUpdateSize) //TODO why it does not put elements?
+//      hallOfFame ++: evaluatedIndividuals.take(hallOfFameUpdateSize) //TODO check this bulk approach
     }
   }
 
+
+  override def getInitialPopulationFromMetaDB: HPPopulation = ???
 
   override def getInitialColdStartPopulation: HPPopulation = {
     new HPPopulation(Seq(
       HyperParametersField(
         Seq(
-          BayesianHPGroup()
+          BayesianHPGroup(), LogisticRegressionHPGroup()
         )
       ), HyperParametersField(
         Seq(
-          BayesianHPGroup()
+          BayesianHPGroup(), LogisticRegressionHPGroup()
         )
       )
     ))
@@ -136,7 +146,7 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
   // WE can start Template evolution with default hyper parameters because evaluation of hyper parameters on first iteration contributes only
   // to the upcoming evolutions as for the first iteration we have nothing to compare against for HyperParameter dimension //TODO make it configurable strategy
   //But it makes sense to search for HPs first. It is faster and brings more value
-  override def getBestFromHallOfFame: HyperParametersField = hallOfFame.headOption.map(_.field).getOrElse{getInitialPopulation.individuals.head}
+  override def getBestFromHallOfFame: HyperParametersField = hallOfFame.headOption.map(_.field).getOrElse{getInitialPopulation.individuals.randElement}
 
   override def getBestFromPopulation(workingDF: DataFrame): EvaluatedHyperParametersField = {
     logger.debug("Getting best individual from population...")
@@ -193,8 +203,14 @@ trait MutableHParameter[+T, V <: MutableHParameter[T, V]] extends HParameter[T] 
 
 class HPPopulation(val individuals: Seq[ HyperParametersField]) extends Population[HyperParametersField]
 
-case class EvaluatedHyperParametersField(field: HyperParametersField, score:Double) extends Evaluated {
+case class EvaluatedHyperParametersField(field: HyperParametersField, score:Double) extends Evaluated[EvaluatedHyperParametersField] {
+  override type ItemType = HyperParametersField
   override type FitnessType = Double
+
+  override def item: HyperParametersField = field
+  override def result: Double = score
+
+  override def compare(other: EvaluatedHyperParametersField): Boolean = score > other.score // TODO bigger the better
 }
 
 object EvaluatedHyperParametersField {

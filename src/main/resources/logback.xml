@@ -45,7 +45,8 @@
 
     <!-- We can make indentations with different Markers -->
     <logger name="breeze.optimize.OWLQN" level="ERROR"/>
-    <logger name="com.automl" level="INFO"/>
+    <logger name="com.automl" level="DEBUG"/>
+    <logger name="com.automl.EvaluatedTemplateData" level="DEBUG"/>
     <logger name="com.automl.AutoML" level="INFO"/>
     <logger name="com.automl.template" level="INFO" />
     <logger name="com.automl.template.simple" level="INFO" />

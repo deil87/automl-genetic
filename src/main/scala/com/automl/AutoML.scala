@@ -2,7 +2,7 @@ package com.automl
 
 import akka.actor.ActorSystem
 import com.automl.dataset._
-import com.automl.evolution.dimension.{TemplateEvolutionDimension, TemplateHyperParametersEvolutionDimension}
+import com.automl.evolution.dimension.{TemplateEvolutionDimension}
 import com.automl.helper._
 import com.automl.problemtype.{ProblemType, ProblemTypeThresholdEstimator}
 import com.automl.report.AutoMLReporter
@@ -31,7 +31,7 @@ class AutoML(data: DataFrame,
              maxNumberOfChildrenPerEnsemblingNode: Int = 10,
              useMetaDB: Boolean,
              // TODO make it optional because of useMetaDB. Maybe we don't need this parameter as we should select appropriate models for a given problem type
-             seedPopulation: TPopulation = null,
+             seedPopulation: Option[TPopulation] = None,
              initialPopulationSize: Option[Int] = None,
              isBigSizeThreshold: Long = 500,
              isBigDimensionsThreshold: Long = 200,
@@ -78,15 +78,6 @@ class AutoML(data: DataFrame,
   implicit val samplingStrategy: SamplingStrategy = if(isDataSetBalanced) new RandomSampling() else new StratifiedSampling()
 
   val metaDB = new MetaDB() // TODO How it should look like?
-  // 100-300 dims,  500 - 5000 examples, num classes,
-  // metalerning landmarks(vector of performance of simple fast algorithms-> Set(DT, Bagging{KNN, GBL})
-  // Except from statistical metrics we can use base model's performance metrics as a metrics to choose similar datasets.
-  // SHould find Euclidian or Manhattan distance between vectors of of this metrics.
-
-  def generateInitialPopulation(size: Int): TPopulation = TPopulation.fromSeedPopulation(seedPopulation)
-    .withSize(size)
-    .withDefaultMutationProbs
-    .build
 
   def stagnationDetected(evaluationResult: Any): Boolean = {
     // If we run into stagnation?
@@ -99,17 +90,13 @@ class AutoML(data: DataFrame,
   /*Probably we need a tree of dimensions in order to predefine dependencies*/
   def runEvolution(implicit as: ActorSystem): Unit = {
 
-    val templateEvDim = new TemplateEvolutionDimension(problemType = problemType)
+    val templateEvDim = new TemplateEvolutionDimension(initialPopulation = seedPopulation,problemType = problemType)
 
     var workingDataSet: DataFrame = if(isDataBig) {
       samplingStrategy.sample(data, initialSampleSize) //TODO maybe we can start using EvolutionStrategy even here?
     } else data
 
-    var populationOfTemplates: TPopulation = if(useMetaDB) {
-      new TPopulation(metaDB.getPopulationOfTemplates)
-    } else {
-      generateInitialPopulation(initialPopulationSize.get)
-    }
+
 
     var currentDataSize = workingDataSet.count()
     currentDatasizeKamon.set(currentDataSize)
@@ -156,11 +143,7 @@ class AutoML(data: DataFrame,
             logger.info(s"Time left: ${(maxTime - System.currentTimeMillis() + startTime) / 1000}")
             logger.info(s"Generation number $generationNumber is launched ( evolution number $evolutionNumber)")
 
-            PopulationHelper.print(populationOfTemplates, "Current population")
-
-            val evolvedPopulation = templateEvDim.evolve(populationOfTemplates, workingDataSet)
-            // TODO If we stuck here for too long then we are not updating `populationOfTemplates` and starting next generation from scratch.
-            populationOfTemplates = evolvedPopulation // TODO maybe we don't need to store it here since we store it in dimension itself
+            templateEvDim.evolveFromLastPopulation(workingDataSet)
 
             val bestSurvivedEvaluatedTemplate = templateEvDim.getBestFromPopulation(workingDataSet)
             //TODO we were putting into queue only best from evolution not from each generation before.

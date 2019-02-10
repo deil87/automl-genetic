@@ -1,5 +1,6 @@
 package com.automl.evolution.dimension
 import akka.actor.{ActorRef, ActorSystem}
+import com.automl.EvaluatedTemplateData.logger
 import com.automl.evolution.dimension.hparameter.{EvaluatedHyperParametersField, HyperParametersField, TemplateHyperParametersEvolutionDimension}
 import com.automl.evolution.diversity.{DistinctDiversityStrategy, MisclassificationDistance}
 import com.automl.evolution.evaluation.{TemplateNSLCEvaluator, TemplateSimpleEvaluator}
@@ -10,6 +11,7 @@ import com.automl.helper.{FitnessResult, PopulationHelper}
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
 import com.automl.template.{TemplateMember, TemplateTree}
+import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.ml.param.Params
 import org.apache.spark.sql.DataFrame
@@ -21,9 +23,14 @@ import scala.collection.mutable
   * @param evolveEveryGenerations is not used for now
   * @param problemType We need to take into account which models we can mutate into filtered out by problemType
   */
-class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: ProblemType)(implicit val as: ActorSystem)
+class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, evolveEveryGenerations: Int = 1, problemType: ProblemType)(implicit val as: ActorSystem)
     extends EvolutionDimension[TPopulation, TemplateTree[TemplateMember], EvaluatedTemplateData]
     with LazyLogging{
+
+  val tdConfig = ConfigFactory.load().getConfig("evolution.templateDimension")
+
+  lazy val evolutionDimensionLabel: String = tdConfig.getString("name")
+  lazy val populationSize: Int = tdConfig.getInt("populationSize")
 
   val distinctStrategy = new DistinctDiversityStrategy()
   val mutationStrategy = new DepthDependentTemplateMutationStrategy(distinctStrategy, problemType)
@@ -32,9 +39,7 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: P
   // Dependencies on other dimensions. Hardcoded for now. Should come from AutoML.runEvolution method parameters.
   val hyperParamsEvDim = new TemplateHyperParametersEvolutionDimension(this,problemType = problemType)
 
-  override var _population: TPopulation = _
-
-  override def evolutionDimensionLabel: String = "TemplateEvolutionDimension"
+  override var _population: TPopulation = new TPopulation(Nil)
 
   val evaluator = if(problemType == MultiClassClassificationProblem) {
      new TemplateNSLCEvaluator(new MisclassificationDistance)
@@ -45,17 +50,34 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: P
 
   override val hallOfFame: mutable.PriorityQueue[EvaluatedTemplateData] = collection.mutable.PriorityQueue[EvaluatedTemplateData]()
 
-  override def getInitialColdStartPopulation: TPopulation = ???
+
+  override def getInitialPopulationFromMetaDB: TPopulation = ??? //new TPopulation(metaDB.getPopulationOfTemplates)
+
+  override def getInitialColdStartPopulation: TPopulation = {
+    initialPopulation.map{population =>
+      TPopulation.fromSeedPopulation(population)
+        .withSize(populationSize)
+        .withDefaultMutationProbs
+        .build
+    }.getOrElse(throw new IllegalStateException("Initial population was not specified")) // TODO we should provide default populatin here
+  }
 
   //Almost generalisable. Need to specify type that is common to _.template and _.field
   override def getBestFromHallOfFame: TemplateTree[TemplateMember] = hallOfFame.headOption.map(_.template).getOrElse{getInitialPopulation.individuals.head}
 
   override def updateHallOfFame(evaluatedIndividuals: Seq[EvaluatedTemplateData]): Unit = ???
 
+  override def showCurrentPopulation(): Unit = {
+    if(getEvaluatedPopulation.nonEmpty)
+      logger.debug(PopulationHelper.renderEvaluatedIndividuals(getEvaluatedPopulation))
+    else PopulationHelper.print(getPopulation, "Current population without evaluations")
+  }
+
   var skipEvolutionCountDown: Int = evolveEveryGenerations - 1
 
   override def evolve(population: TPopulation, workingDF: DataFrame): TPopulation = {
 
+    //TODO Control should be outside of Dimension concept
     //Maybe it is better to set up flag for corner case like 'always execute'
     if(skipEvolutionCountDown > 0) {
       logger.debug(s"SKIPPING evolution. Next evolution in $skipEvolutionCountDown attempts")
@@ -64,12 +86,20 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: P
     }
     skipEvolutionCountDown = evolveEveryGenerations - 1
 
-    val evaluatedOriginalPopulation = evaluatePopulation(population, workingDF)
+    showCurrentPopulation()
+
+    val evaluatedOriginalPopulation = { //TODO generalize method
+      if(getEvaluatedPopulation.nonEmpty) {
+        logger.debug("Taking evaluated population from previous generation.")
+        getEvaluatedPopulation
+      } else {
+        logger.debug("Evaluating population for the very first time.")
+        evaluatePopulation(population, workingDF)
+      }
+    }
 
     //Need to decide where selecting neighbours should go. To evaluation or selection or to its own phase.
     val evaluatedOriginalPopulationWithNeighbours = evaluator.findNeighbours(evaluatedOriginalPopulation, evaluatedOriginalPopulation, population.size)
-
-    evaluatedOriginalPopulationWithNeighbours.printSortedByFitness()
 
     val selectedParents = selectParents(evaluatedOriginalPopulationWithNeighbours)
 
@@ -125,8 +155,9 @@ class TemplateEvolutionDimension(evolveEveryGenerations: Int = 1, problemType: P
     /* Template dimension depends on others dimensions and we need to get data from them first.
     This could be implemented in a custom hardcoded evaluator or with dependencies tree */
     //TODO  For how long we want to search for a hyperparameters? We can introduce HPSearchStepsPerGeneration parameter or we need to add logic that decides how often we need to evolve subdimensions
+    logger.debug("Before evaluation of Template population we want to get best individuals from coevolutions we depend on. Checking HP coevolution...")
     if(hyperParamsEvDim.hallOfFame.isEmpty)
-      hyperParamsEvDim.evolve(hyperParamsEvDim.getInitialPopulation, workingDF) // TODO consider stratified sample for first iteration or maybe for all iterations
+      hyperParamsEvDim.evolveFromLastPopulation(workingDF) // TODO consider stratified sample for first iteration or maybe for all iterations
     val bestHyperParametersField: HyperParametersField = hyperParamsEvDim.getBestFromHallOfFame
 
     if(problemType == MultiClassClassificationProblem) {

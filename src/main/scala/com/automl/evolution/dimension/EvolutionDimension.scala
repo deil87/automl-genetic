@@ -13,7 +13,7 @@ import scala.collection.mutable
   * @tparam T
   */
 //TODO problemType: ProblemType parameter might be moved somewhere to a field like `population`
-trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: Evaluated] extends LazyLogging{
+trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: Evaluated[EvaluatedResult]] extends LazyLogging{
 
   var _population: PopulationType
 
@@ -26,7 +26,7 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
     else getInitialColdStartPopulation
   }
 
-  def getInitialPopulationFromMetaDB: PopulationType = ???
+  def getInitialPopulationFromMetaDB: PopulationType
 
   def getInitialColdStartPopulation: PopulationType
 
@@ -42,6 +42,7 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
   }
 
   def evolve(population: PopulationType, workingDF: DataFrame): PopulationType = {
+    showCurrentPopulation()
     logger.debug("Starting next evolution...")
     val evaluatedOriginalPopulation = evaluatePopulation(population, workingDF)
 
@@ -72,6 +73,8 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
 
   def updateHallOfFame(evaluatedIndividuals: Seq[EvaluatedResult]):Unit
 
+  def showCurrentPopulation(): Unit
+
   def getBestFromHallOfFame:T
 
   def selectParents(evaluatedIndividuals: Seq[EvaluatedResult]):  Seq[EvaluatedResult]
@@ -87,7 +90,7 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
 
   def selectSurvived(populationSize:Int, evaluatedIndividuals: Seq[EvaluatedResult]):  Seq[EvaluatedResult]
 
-  def getPopulation: PopulationType = _population
+  def getPopulation: PopulationType = if(_population.nonEmpty) _population else getInitialPopulation
 
   def getEvaluatedPopulation: Seq[EvaluatedResult] = _evaluatedPopulation
 
