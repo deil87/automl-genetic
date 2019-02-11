@@ -26,7 +26,7 @@ class RankSelectionStrategyTest extends WordSpec with Matchers{
 
       val selectionStrategy = new RankSelectionStrategy
       val evaluatedTemplateDatas = individualsSpanned.zipWithIndex.map { case (inds, idx) =>
-        EvaluatedTemplateData(idx.toString, inds, null, FitnessResult(Map("rmse" -> Random.nextDouble()), RegressionProblem, null))
+        EvaluatedTemplateData(idx.toString, inds, null, FitnessResult(Map("rmse" -> Random.nextDouble()), RegressionProblem, null), hyperParamsField = null)
       }
 
       val selectedParents = selectionStrategy.parentSelectionByShare(selectionShare, evaluatedTemplateDatas)

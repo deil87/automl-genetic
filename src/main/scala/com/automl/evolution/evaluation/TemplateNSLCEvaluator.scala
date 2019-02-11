@@ -53,7 +53,7 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric]( dista
           logger.debug(s"Entry $cacheKey with hashCode = ${cacheKey.hashCode()} was added to the cache with score = $fitnessResult")
           fitnessResult
         })
-        EvaluatedTemplateData(idx.toString + ":" + materializedTemplate.id, materializedTemplate, materializedTemplate, fitness)
+        EvaluatedTemplateData(idx.toString + ":" + materializedTemplate.id, materializedTemplate, materializedTemplate, fitness, hyperParamsField = hyperParamsField)
       }
     evaluatedTemplateData
   }

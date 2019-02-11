@@ -58,7 +58,7 @@ class TemplateSimpleEvaluator(implicit as: ActorSystem) extends PopulationEvalua
           materializedTemplate.evaluateFitness(trainingSplit, testSplit, problemType, hyperParamsField)
         })
         webClientNotifier.map(wcn => wcn ! UpdateWeb(s"Evaluated ${TemplateTreeHelper.renderAsString_v2(materializedTemplate)} with fitness value: " + fr.metricsMap))
-        val iad = EvaluatedTemplateData(idx.toString + ":" + individualTemplate.id, individualTemplate, materializedTemplate, fr)
+        val iad = EvaluatedTemplateData(idx.toString + ":" + individualTemplate.id, individualTemplate, materializedTemplate, fr, hyperParamsField = hyperParamsField)
         iad.sendMetric()
         iad
       }

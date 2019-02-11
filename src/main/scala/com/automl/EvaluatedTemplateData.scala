@@ -1,5 +1,6 @@
 package com.automl
 
+import com.automl.evolution.dimension.hparameter.HyperParametersField
 import com.automl.helper.{FitnessResult, PopulationHelper}
 import com.automl.template.{TemplateMember, TemplateTree}
 import com.typesafe.scalalogging.LazyLogging
@@ -11,16 +12,18 @@ case class EvaluatedTemplateData(id: String,
                                  fitness: FitnessResult,
                                  rank: Long = -1,
                                  probability: Double = -1,
-                                 neighbours: Seq[EvaluatedTemplateData] = Nil) extends Evaluated[EvaluatedTemplateData] {
+                                 neighbours: Seq[EvaluatedTemplateData] = Nil,
+                                 hyperParamsField: HyperParametersField = null) extends Evaluated[EvaluatedTemplateData] {
 
-  override type ItemType = TemplateTree[TemplateMember]
+  type ItemType = TemplateTree[TemplateMember]
   type FitnessType = FitnessResult
+  type ParamsType = HyperParametersField
 
   def idShort = s"$id:${template.member.name.take(5)}" // TODO add short name to members
 
-
   override def item: TemplateTree[TemplateMember] = template
   override def result: FitnessResult = fitness
+  override def params: HyperParametersField = hyperParamsField
 
 
   override def compare(other: EvaluatedTemplateData): Boolean = fitness.orderTo(other.fitness)

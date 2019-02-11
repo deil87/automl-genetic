@@ -8,6 +8,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.DataFrame
 import com.automl.Evaluated
+import com.automl.dataset.StratifiedSampling
 import com.automl.evolution.dimension.{EvolutionDimension, TemplateEvolutionDimension}
 import com.automl.helper.PopulationHelper
 import utils.BenchmarkHelper
@@ -74,6 +75,9 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
   override def evaluatePopulation(population: HPPopulation, workingDF: DataFrame): Seq[EvaluatedHyperParametersField] = {
 
     val numberOfBestTemplates = 3
+    val samplingRation = 0.5
+    val sampledWorkingDF = new StratifiedSampling().sample(workingDF, (workingDF.count() * samplingRation).toLong) //TODO every time we will compute and therefore deal with different damples.
+    logger.debug(s"Sampling of the workingDF for hyper parameter evaluations ( ${sampledWorkingDF.count()} out of ${workingDF.count()} )")
     // Note: there are multiple strategies of evaluating hps for template population.
     // 1) estimate base model/ building blocks of the templates(ensembles)
     // 2) estimate on last survived population(part of it)
@@ -83,9 +87,9 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
     BenchmarkHelper.time("Hyper-parameter evaluatePopulation ") {
       val threeBestTemplates = parentTemplateEvDimension.getEvaluatedPopulation.sortWith((a, b) => a.fitness.orderTo(b.fitness)).map(_.template).take(numberOfBestTemplates)
 
-      val Array(trainingSplit, testSplit) = workingDF.randomSplit(Array(0.67, 0.33), 11L) // TODO move to Config ratio
+      val Array(trainingSplit, testSplit) = sampledWorkingDF.randomSplit(Array(0.67, 0.33), 11L) // TODO move to Config ratio
       population.individuals.map { hpField =>
-        val cacheKey = (hpField, workingDF.count())
+        val cacheKey = (hpField, sampledWorkingDF.count())
         val cacheKeyHashCode = cacheKey.hashCode()
         if (individualsEvaluationCache.isDefinedAt(cacheKey)) {
           logger.debug(s"Cache hit happened for individual: $hpField")
@@ -210,6 +214,10 @@ class HPPopulation(val individuals: Seq[ HyperParametersField]) extends Populati
 case class EvaluatedHyperParametersField(field: HyperParametersField, score:Double) extends Evaluated[EvaluatedHyperParametersField] {
   override type ItemType = HyperParametersField
   override type FitnessType = Double
+
+  override type ParamsType = AnyVal //Unused
+
+  override def params:ParamsType = 42
 
   override def item: HyperParametersField = field
   override def result: Double = score

@@ -18,10 +18,11 @@ object PopulationHelper extends LazyLogging{
   //TODO move to EvolutionDimension or a trait that will be mixed to EvolutionDimension
   def renderEvaluatedIndividuals[T <: Evaluated[T]](individuals: Seq[T]): String = {
     individuals
-      .sortWith((a,b) => a.compare(b)).map(evd => (evd.result, evd.item))
+      .sortWith((a,b) => a.compare(b)).map(evd => (evd.result, evd.item, evd.params))
       .map {
-        case ( correspondingMetric, item:HyperParametersField) => f" - $item $correspondingMetric"
-        case ( correspondingMetric, template:TemplateTree[TemplateMember] ) => f" - ${TemplateTreeHelper.renderAsString_v2(template)} $correspondingMetric"
+        case ( correspondingMetric, item:HyperParametersField, _) => f" - $item $correspondingMetric"
+        case ( correspondingMetric, template:TemplateTree[TemplateMember], params: HyperParametersField) => f" - ${TemplateTreeHelper.renderAsString_v2(template)} \n Evaluation: $correspondingMetric hp: $params"
+        case _ => throw new IllegalStateException("Unmanaged cases")
       }
       .mkString("\n\t\t\t\t\t", "\n\t\t\t\t\t", "")
   }
