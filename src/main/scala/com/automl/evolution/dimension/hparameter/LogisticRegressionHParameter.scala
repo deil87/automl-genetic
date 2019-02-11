@@ -31,7 +31,7 @@ trait LogisticRegressionHParameter[T <: AnyVal] extends MutableHParameter[T, Log
   * Keep in mind that whatever value of lambda you decide is appropriate for your subsampled data, you can likely use
   * a smaller value to achieve comparable regularization on the full data set.
   */
-case class LRRegParam() extends LogisticRegressionHParameter[Double] with DoubleHPRange { // we can specialize with Marker trait which parameter can be used with which Model
+case class LRRegParam(initialValue: Option[Double] = None) extends LogisticRegressionHParameter[Double] with DoubleHPRange { // we can specialize with Marker trait which parameter can be used with which Model
   override def min: Double = 0.0
 
   override def max: Double = 1.0
@@ -40,16 +40,13 @@ case class LRRegParam() extends LogisticRegressionHParameter[Double] with Double
 
   override def getDefault: Double = round(new Random().nextDouble(), 1) // In theory we are interested not only on round values but on the best ones
 
-  var currentValue: Double = getDefault
+  var currentValue: Double = initialValue.getOrElse(getDefault)
 
   override def mutate(): LRRegParam = {
     val increase = new Random().nextBoolean()  // we might want to jump randomly somewhere but most of the time we need to move slowly
     val newValue = if (increase) Math.min(currentValue + step, max) else Math.max(currentValue - step, min)
-    currentValue = round(newValue, 1)
 
-    val newVersion = LRRegParam()
-    newVersion.currentValue = currentValue
-    newVersion
+    LRRegParam(Some(round(newValue, 1))) // or return this?
   }
 
 

@@ -57,7 +57,7 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
       population.individuals.map { hpField => {
         val newField = HyperParametersField(modelsHParameterGroups = hpField.modelsHParameterGroups.map { hpGroup => hpGroup.mutate() })
         require(hpField.hashCode() != newField.hashCode(), "Hash codes should be different")
-        logger.debug(s"HyperParametersField mutated from ${hpField.modelsHParameterGroups.map(_.hpParameters.map(_.currentValue).mkString(","))} to ${newField.modelsHParameterGroups.map(_.hpParameters.map(_.currentValue).mkString(","))}")
+        logger.debug(s"HyperParametersField mutated from $hpField to $newField")
         newField
       }
     })
@@ -92,7 +92,6 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
           logger.debug(s"Retrieved value from the cache with hashCode = $cacheKeyHashCode : ${individualsEvaluationCache(cacheKey)}")
         }
         val fitness = individualsEvaluationCache.getOrElseUpdate(cacheKey, {
-          logger.debug(s"Entry with hashCode = ${cacheKey.hashCode()} was added to the cache.")
           // Estimating 1) building blocks
           logger.debug(s"Evaluating hpfield on base models:")
           val metricsFromBaseModels = hpField.modelsHParameterGroups.map {
@@ -108,7 +107,10 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
           // Estimating 2)
           logger.debug(s"Evaluating hpfield on ${threeBestTemplates.size} best templates in current template population:")
           val threeBestEvaluations = threeBestTemplates.map(template => template.evaluateFitness(trainingSplit, testSplit, problemType, hyperParamsMap = hpField).getCorrespondingMetric)
-          metricsFromBaseModels.sum + threeBestEvaluations.sum // we sum all metrics from each ModelHPGroup inn the field so that we can later decide which Field is the best
+          val totalSumMetric = metricsFromBaseModels.sum + threeBestEvaluations.sum // we sum all metrics from each ModelHPGroup inn the field so that we can later decide which Field is the best
+          logger.debug(s"Entry $hpField with hashCode = ${cacheKey.hashCode()} was added to the cache with score = $totalSumMetric")
+          totalSumMetric
+
         })
         EvaluatedHyperParametersField(hpField, fitness)
       }
@@ -171,6 +173,8 @@ case class HyperParametersField(modelsHParameterGroups: Seq[HyperParametersGroup
       case LogisticRegressionHPGroup(_) => true
     }.get
   }
+
+  override def toString: String = modelsHParameterGroups.map(group => group.hpParameters.map(parameter => s"$parameter").mkString(" , ")).mkString(" | ")
 }
 
 object HyperParametersField {

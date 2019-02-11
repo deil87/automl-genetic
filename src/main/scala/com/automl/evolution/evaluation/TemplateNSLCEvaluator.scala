@@ -24,9 +24,9 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric]( dista
 
   override def evaluateIndividuals(population: TPopulation,
                                    workingDataSet: DataFrame,
-                                   hyperParamsMap: HyperParametersField,
+                                   hyperParamsField: HyperParametersField,
                                    problemType: ProblemType)
-                                  (implicit cache: mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]): Seq[EvaluatedTemplateData] = {
+                                  (implicit cache: mutable.Map[(TemplateTree[TemplateMember], HyperParametersField, Long), FitnessResult]): Seq[EvaluatedTemplateData] = {
 
     //TODO make use of hyperParamsMap for templated/nodes/classifiers
 
@@ -36,21 +36,22 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric]( dista
         // TODO we don't use Wildcards and therefore no need in materialization. Should we use them ? It could be a variance regulator.
         val materializedTemplate = TemplateTreeHelper.materialize(individualTemplate)
 
-        val cacheKey = (materializedTemplate, workingDataSet.count())
+        val cacheKey = (materializedTemplate, hyperParamsField, workingDataSet.count())
         if (cache.isDefinedAt(cacheKey)) {
-          logger.debug(s"Cache hit happened for $idx-th individual based on: template: $materializedTemplate")
-//          logger.debug(s"Cache hit happened for $idx-th individual based on: \n template: $individualTemplate \n algorithm: $materializedTemplate \n")
+          logger.debug(s"Cache hit happened for $idx-th individual based on: template: $cacheKey")
+          logger.debug(s"Retrieved value from the cache with hashCode = ${cacheKey.hashCode()} : ${cache(cacheKey)}")
         }
 
         //TODO FIX We are storing this result in cache but not into the queue
         val fitness: FitnessResult = cache.getOrElseUpdate(cacheKey, {
-          logger.debug(s"Calculated new value for $idx-th individual based on template: $materializedTemplate")
           // TODO can we split it randomly here???
 
           val Array(trainingSplit, testSplit) = workingDataSet.randomSplit(Array(0.67, 0.33), 11L)
           trainingSplit.cache()
           testSplit.cache()
-          materializedTemplate.evaluateFitness(trainingSplit, testSplit, problemType, hyperParamsMap)
+          val fitnessResult = materializedTemplate.evaluateFitness(trainingSplit, testSplit, problemType, hyperParamsField)
+          logger.debug(s"Entry $cacheKey with hashCode = ${cacheKey.hashCode()} was added to the cache with score = $fitnessResult")
+          fitnessResult
         })
         EvaluatedTemplateData(idx.toString + ":" + materializedTemplate.id, materializedTemplate, materializedTemplate, fitness)
       }

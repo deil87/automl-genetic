@@ -15,5 +15,5 @@ trait PopulationEvaluator[PopulationType] {
                           workingDataSet: DataFrame,
                           hyperParamField: HyperParametersField,
                           problemType: ProblemType)
-                         (implicit cache: mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]): Seq[EvaluatedTemplateData]
+                         (implicit cache: mutable.Map[(TemplateTree[TemplateMember], HyperParametersField, Long), FitnessResult]): Seq[EvaluatedTemplateData]
 }

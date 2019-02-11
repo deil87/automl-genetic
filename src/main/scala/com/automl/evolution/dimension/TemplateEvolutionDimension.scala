@@ -48,6 +48,8 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
    // TODO make it faster with reference to value
   override implicit val individualsEvaluationCache = mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]()
 
+  implicit val individualsEvaluationCacheExtended = mutable.Map[(TemplateTree[TemplateMember], HyperParametersField, Long), FitnessResult]()
+
   override val hallOfFame: mutable.PriorityQueue[EvaluatedTemplateData] = collection.mutable.PriorityQueue[EvaluatedTemplateData]()
 
 

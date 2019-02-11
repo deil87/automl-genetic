@@ -34,7 +34,7 @@ class TemplateSimpleEvaluator(implicit as: ActorSystem) extends PopulationEvalua
                                    workingDataSet: DataFrame,
                                    hyperParamsField: HyperParametersField,
                                    problemType: ProblemType)
-                                  (implicit cache: mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]): Seq[EvaluatedTemplateData] = {
+                                  (implicit cache: mutable.Map[(TemplateTree[TemplateMember], HyperParametersField, Long), FitnessResult]): Seq[EvaluatedTemplateData] = {
 
     //TODO make use of hyperParamsMap for templated/nodes/classifiers
 
@@ -44,7 +44,7 @@ class TemplateSimpleEvaluator(implicit as: ActorSystem) extends PopulationEvalua
         // TODO we don't use Wildcards and therefore no need in materialization. Should we use them ? It could be a variance regulator.
         val materializedTemplate = TemplateTreeHelper.materialize(individualTemplate)
 
-        val cacheKey = (materializedTemplate, workingDataSet.count())
+        val cacheKey = (materializedTemplate, hyperParamsField, workingDataSet.count())
         if (cache.isDefinedAt(cacheKey)) {
 //          println(s"${Console.BLUE} Cache hit happened for $idx-th individual based on: \n template: $individualTemplate \n algorithm: $materializedTemplate \n")
           logger.debug(s"Cache hit happened for $idx-th individual based on: \n template: $individualTemplate \n algorithm: $materializedTemplate \n")

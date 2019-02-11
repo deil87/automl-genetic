@@ -37,4 +37,11 @@ case class FitnessResult(metricsMap: Map[String, Double], problemType: ProblemTy
       else if(getCorrespondingMetric > other.getCorrespondingMetric) -1
       else 0
   }
+
+  override def toString: String = problemType match {
+    case MultiClassClassificationProblem | BinaryClassificationProblem =>
+      "f1:" + metricsMap("f1")
+    case RegressionProblem =>
+      "rmse:" + metricsMap("rmse")
+  }
 }
