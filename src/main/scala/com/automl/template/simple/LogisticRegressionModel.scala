@@ -1,6 +1,6 @@
 package com.automl.template.simple
 
-import com.automl.evolution.dimension.hparameter.{LRRegParam, LogisticRegressionHPGroup}
+import com.automl.evolution.dimension.hparameter.{ElasticNet, LRRegParam, LogisticRegressionHPGroup}
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
@@ -56,12 +56,14 @@ case class LogisticRegressionModel(hpGroup: LogisticRegressionHPGroup = Logistic
         val lrEstimator = new LogisticRegression()
           .setLabelCol("indexedLabel")
           .setMaxIter(20)
-          .setElasticNetParam(0.8)
 
         val lrWithHP = hpGroup.hpParameters.foldLeft(lrEstimator)((res, next) => next match {
-          case p@LRRegParam() =>
+          case p@LRRegParam(_) =>
             logger.debug(s"LogisticRegression lambda hyper-parameter was set to ${p.currentValue}")
             res.setRegParam(p.currentValue)
+          case p@ElasticNet(_) =>
+            logger.debug(s"LogisticRegression elastic_net hyper-parameter was set to ${p.currentValue}")
+            res.setElasticNetParam(p.currentValue)
         })
 
         val preparedTrainingDF = trainDF
@@ -71,7 +73,7 @@ case class LogisticRegressionModel(hpGroup: LogisticRegressionHPGroup = Logistic
           .cache()
 
         val lrModel = lrWithHP.fit(preparedTrainingDF)
-        val prediction = lrModel.transform(testDF)
+        val prediction = lrModel.transform(testDF).cache()
 
         val evaluator = new MulticlassClassificationEvaluator()
           .setLabelCol("indexedLabel")

@@ -1,5 +1,6 @@
 package com.automl.template.simple
 
+import com.automl.evolution.dimension.hparameter.{DecisionTreeHPGroup, MaxDepth}
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
@@ -8,17 +9,14 @@ import com.automl.template.EvaluationMagnet
 import com.automl.teststrategy.{TestStrategy, TrainingTestSplitStrategy}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.ml.Pipeline
-import org.apache.spark.ml.attribute.Attribute
 import org.apache.spark.ml.classification.{DecisionTreeClassificationModel, DecisionTreeClassifier, NaiveBayes}
 import org.apache.spark.ml.evaluation.{MulticlassClassificationEvaluator, RegressionEvaluator}
 import org.apache.spark.ml.regression.DecisionTreeRegressor
 import org.apache.spark.sql._
-import org.apache.spark.sql.types.DoubleType
 import utils.SparkMLUtils
 
-import scala.util.Random
 
-case class DecisionTree() extends SimpleModelMember with SparkSessionProvider with LazyLogging{
+case class DecisionTree(hpGroup: DecisionTreeHPGroup = DecisionTreeHPGroup.default) extends SimpleModelMember with SparkSessionProvider with LazyLogging{
   override def name: String = "DecisionTree " + super.name
 
   override def canHandleProblemType: PartialFunction[ProblemType, Boolean] = {
@@ -54,13 +52,17 @@ case class DecisionTree() extends SimpleModelMember with SparkSessionProvider wi
          FitnessResult(Map("rmse" -> rmse), problemType, predictions)
        case MultiClassClassificationProblem | BinaryClassificationProblem =>
 
-         val maxDepth = Random.nextInt(7) + 5
          val dtr = new DecisionTreeClassifier()
-           .setMaxDepth(maxDepth)
            .setLabelCol("indexedLabel")
 
+         val dtrWithHP = hpGroup.hpParameters.foldLeft(dtr)((res, next) => next match {
+           case p@MaxDepth(_) =>
+             logger.debug(s"DecisionTree max_depth hyper-parameter was set to ${p.currentValue}")
+             res.setMaxDepth(p.currentValue.toInt)
+         })
+
          val pipeline = new Pipeline()
-           .setStages(Array(dtr))
+           .setStages(Array(dtrWithHP))
 
          val model = pipeline.fit(trainDF)
 

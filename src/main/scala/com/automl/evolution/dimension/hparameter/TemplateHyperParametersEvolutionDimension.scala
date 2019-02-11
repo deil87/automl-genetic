@@ -3,7 +3,7 @@ package com.automl.evolution.dimension.hparameter
 
 import com.automl.Population
 import com.automl.problemtype.ProblemType
-import com.automl.template.simple.{Bayesian, LogisticRegressionModel}
+import com.automl.template.simple.{Bayesian, DecisionTree, LogisticRegressionModel}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.DataFrame
@@ -14,6 +14,7 @@ import com.automl.helper.PopulationHelper
 import utils.BenchmarkHelper
 
 import scala.collection.mutable
+import scala.math.BigDecimal.RoundingMode
 import scala.util.Random
 
 // it should be a HYPER DIMENSION. We want to find the best FIELD of hyper parameters here.
@@ -75,9 +76,10 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
   override def evaluatePopulation(population: HPPopulation, workingDF: DataFrame): Seq[EvaluatedHyperParametersField] = {
 
     val numberOfBestTemplates = 3
-    val samplingRation = 0.5
-    val sampledWorkingDF = new StratifiedSampling().sample(workingDF, (workingDF.count() * samplingRation).toLong) //TODO every time we will compute and therefore deal with different damples.
-    logger.debug(s"Sampling of the workingDF for hyper parameter evaluations ( ${sampledWorkingDF.count()} out of ${workingDF.count()} )")
+    val samplingRatio = 0.5
+    val sampledWorkingDF = new StratifiedSampling().sample(workingDF, samplingRatio).cache() //TODO every time we will compute and therefore deal with different damples.
+    val sampledWorkingDFCount = sampledWorkingDF.count()
+    logger.debug(s"Sampling of the workingDF for hyper parameter evaluations ( $sampledWorkingDFCount out of ${workingDF.count()} )")
     // Note: there are multiple strategies of evaluating hps for template population.
     // 1) estimate base model/ building blocks of the templates(ensembles)
     // 2) estimate on last survived population(part of it)
@@ -88,8 +90,10 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
       val threeBestTemplates = parentTemplateEvDimension.getEvaluatedPopulation.sortWith((a, b) => a.fitness.orderTo(b.fitness)).map(_.template).take(numberOfBestTemplates)
 
       val Array(trainingSplit, testSplit) = sampledWorkingDF.randomSplit(Array(0.67, 0.33), 11L) // TODO move to Config ratio
+      trainingSplit.cache()
+      testSplit.cache()
       population.individuals.map { hpField =>
-        val cacheKey = (hpField, sampledWorkingDF.count())
+        val cacheKey = (hpField, sampledWorkingDFCount)
         val cacheKeyHashCode = cacheKey.hashCode()
         if (individualsEvaluationCache.isDefinedAt(cacheKey)) {
           logger.debug(s"Cache hit happened for individual: $hpField")
@@ -106,8 +110,12 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
             case hpGroup@LogisticRegressionHPGroup(_) =>
               val metric = LogisticRegressionModel(hpGroup).fitnessError(trainingSplit, testSplit, problemType).getCorrespondingMetric
               metric
-            case _ => ???
+            case hpGroup@DecisionTreeHPGroup(_) =>
+              val metric = DecisionTree(hpGroup).fitnessError(trainingSplit, testSplit, problemType).getCorrespondingMetric
+              metric
+            case _ => throw new IllegalStateException("Unmatched HPGroup found in HP's evaluatePopulation method")
           }
+          //TODO make sure that when our corresponding metric is "the less the better" we properly compare results
           // Estimating 2)
           logger.debug(s"Evaluating hpfield on ${threeBestTemplates.size} best templates in current template population:")
           val threeBestEvaluations = threeBestTemplates.map(template => template.evaluateFitness(trainingSplit, testSplit, problemType, hyperParamsMap = hpField).getCorrespondingMetric)
@@ -124,10 +132,10 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
   def updateHallOfFame(evaluatedIndividuals: Seq[EvaluatedHyperParametersField]):Unit = {
     val hallOfFameUpdateSize = 5  // TODO Config
     hallOfFame.headOption.map{bestAtAllTimes =>
-      evaluatedIndividuals.filter(_.score >= bestAtAllTimes.score).take(hallOfFameUpdateSize).foreach(ev => hallOfFame.enqueue(ev)) //TODO Too many duplicate entries in the queue!!!
+      //TODO >= should be <= when we have "the less the better" approach
+      hallOfFame ++: evaluatedIndividuals.filter(_.score >= bestAtAllTimes.score).take(hallOfFameUpdateSize)
     }.getOrElse{
-      evaluatedIndividuals.take(hallOfFameUpdateSize).foreach(ev => hallOfFame.enqueue(ev))
-//      hallOfFame ++: evaluatedIndividuals.take(hallOfFameUpdateSize) //TODO check this bulk approach
+      hallOfFame ++: evaluatedIndividuals.take(hallOfFameUpdateSize)
     }
   }
 
@@ -138,11 +146,11 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
     new HPPopulation(Seq(
       HyperParametersField(
         Seq(
-          BayesianHPGroup(), LogisticRegressionHPGroup()
+          BayesianHPGroup(), LogisticRegressionHPGroup(), DecisionTreeHPGroup()
         )
       ), HyperParametersField(
         Seq(
-          BayesianHPGroup(), LogisticRegressionHPGroup()
+          BayesianHPGroup(), LogisticRegressionHPGroup(), DecisionTreeHPGroup()
         )
       )
     ))
@@ -197,7 +205,18 @@ trait HPRange[RangeType <: AnyVal] {
   def max: RangeType
   def step: RangeType
 }
-trait DoubleHPRange extends HPRange[Double]
+trait DoubleHPRange extends HPRange[Double] {
+
+  def round(value: Double, places: Int): Double = {
+    if (places < 0) throw new IllegalArgumentException
+    val bd = BigDecimal(value).setScale(places, RoundingMode.HALF_UP)
+    bd.doubleValue
+  }
+
+  def getNextWithinTheRange: Double = {
+    new Random().nextInt(max.toInt) + min
+  }
+}
 
 sealed trait HParameter[+T] {
   def getDefault:T

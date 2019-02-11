@@ -90,18 +90,9 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
 
     showCurrentPopulation()
 
-    val evaluatedOriginalPopulation = { //TODO generalize method
-      if(getEvaluatedPopulation.nonEmpty) {
-        logger.debug("Taking evaluated population from previous generation.")
-        getEvaluatedPopulation
-      } else {
-        logger.debug("Evaluating population for the very first time.")
-        evaluatePopulation(population, workingDF)
-      }
-    }
-
+    val evaluatedPopulation = getLastEvaluatedPopulation(workingDF)
     //Need to decide where selecting neighbours should go. To evaluation or selection or to its own phase.
-    val evaluatedOriginalPopulationWithNeighbours = evaluator.findNeighbours(evaluatedOriginalPopulation, evaluatedOriginalPopulation, population.size)
+    val evaluatedOriginalPopulationWithNeighbours = evaluator.findNeighbours(evaluatedPopulation, evaluatedPopulation, population.size)
 
     val selectedParents = selectParents(evaluatedOriginalPopulationWithNeighbours)
 

@@ -44,7 +44,7 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
   def evolve(population: PopulationType, workingDF: DataFrame): PopulationType = {
     showCurrentPopulation()
     logger.debug("Starting next evolution...")
-    val evaluatedOriginalPopulation = evaluatePopulation(population, workingDF)
+    val evaluatedOriginalPopulation = getLastEvaluatedPopulation(workingDF)
 
     logger.debug("Selecting parents:")
     val selectedParents= selectParents(evaluatedOriginalPopulation)
@@ -93,6 +93,16 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
   def getPopulation: PopulationType = if(_population.nonEmpty) _population else getInitialPopulation
 
   def getEvaluatedPopulation: Seq[EvaluatedResult] = _evaluatedPopulation
+
+  def getLastEvaluatedPopulation(workingDF: DataFrame): Seq[EvaluatedResult] = {
+    if(getEvaluatedPopulation.nonEmpty) {
+      logger.debug("Taking evaluated population from previous generation.")
+      getEvaluatedPopulation
+    } else {
+      logger.debug("Evaluating population for the very first time.")
+      evaluatePopulation(getPopulation, workingDF)
+    }
+  }
 
   def getBestFromPopulation(workingDF: DataFrame): EvaluatedResult
 

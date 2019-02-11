@@ -23,7 +23,7 @@ case class Smoothing() extends BayesianHParameter[Double] with DoubleHPRange { /
 
   override def step: Double = 1.0
 
-  override def getDefault: Double = 2.0
+  override def getDefault: Double = getNextWithinTheRange
 
   var currentValue: Double = getDefault
 
@@ -37,9 +37,6 @@ case class Smoothing() extends BayesianHParameter[Double] with DoubleHPRange { /
     newVersion
   }
 
-  private def getNextWithinTheRange = {
-    new Random().nextInt(max.toInt) + min
-  }
 
   override def toString: String = "smoothing:" + currentValue.toString
 }
