@@ -6,18 +6,20 @@ import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiCla
 import com.automl.template.EvaluationMagnet
 import com.automl.teststrategy.{TestStrategy, TrainingTestSplitStrategy}
 import com.typesafe.scalalogging.LazyLogging
+import org.apache.spark.ml.classification.{LinearSVC, OneVsRest}
+import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 import org.apache.spark.mllib.classification.SVMWithSGD
 import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 
-class SVMModel() extends LinearModelMember with LazyLogging{
+case class SVMModel() extends LinearModelMember with LazyLogging{
 
   override def name: String = "SVMModel " + super.name
 
   override def canHandleProblemType: PartialFunction[ProblemType, Boolean] = {
     case BinaryClassificationProblem => true
-    case MultiClassClassificationProblem => false
+    case MultiClassClassificationProblem => true
     case RegressionProblem => false
   }
 
@@ -28,30 +30,62 @@ class SVMModel() extends LinearModelMember with LazyLogging{
 
 
   override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType): FitnessResult = {
-
-    import utils.SparkMLUtils._
-    require(problemType == BinaryClassificationProblem) //TODO maybe this check is unnecessary
-
     logger.debug(s"Evaluating $name ...")
-    val numIterations = 100
-    val trainingLabeledPoints = trainDF.toMLLibLabelPoint.rdd
-    val model = SVMWithSGD.train(trainingLabeledPoints, numIterations, 1.0, 0.01, 1.0) // Looks like there is no version in spark.ml
+    import utils.SparkMLUtils._
+    problemType match {
+      case BinaryClassificationProblem =>
 
-    model.clearThreshold()
+        val numIterations = 100
+        val trainingLabeledPoints = trainDF.toMLLibLabelPoint.rdd
+        val model = SVMWithSGD.train(trainingLabeledPoints, numIterations, 1.0, 0.01, 1.0) // Looks like there is no version in spark.ml
 
-    val scoreAndLabels: RDD[(Double, Double)] = testDF.toMLLibLabelPoint.rdd.map { point =>
-      val score = model.predict(point.features)
-      (score, point.label)
+        model.clearThreshold()
+
+        val scoreAndLabels: RDD[(Double, Double)] = testDF.toMLLibLabelPoint.rdd.map { point =>
+          val score = model.predict(point.features)
+          (score, point.label)
+        }
+
+
+        val metrics = new BinaryClassificationMetrics(scoreAndLabels)
+        val auROC = metrics.areaUnderROC()
+
+        logger.info(s"Area under ROC = $auROC")
+        import testDF.sparkSession.implicits._
+        val predictionsAsDF = scoreAndLabels.toDF("score", "prediction") //TODO maybe we need to join scores and labels with original data here
+
+        FitnessResult(Map("auc" -> auROC), problemType, predictionsAsDF)
+
+      case MultiClassClassificationProblem =>
+
+        trainDF.cache()
+        testDF.cache()
+
+        trainDF.showAllAndContinue
+        val lsvc = new LinearSVC()
+          .setMaxIter(10)
+          .setRegParam(0.1)
+          .setLabelCol("indexedLabel")
+
+        val ovr = new OneVsRest()
+          .setClassifier(lsvc)
+          .setFeaturesCol("features")
+          .setLabelCol("indexedLabel")
+
+        val ovrModel = ovr.fit(trainDF)
+
+        val predictions = ovrModel.transform(testDF).cache()
+
+        MulticlassMetricsHelper.showStatistics(predictions)
+
+        val evaluator = new MulticlassClassificationEvaluator()
+          .setLabelCol("indexedLabel")
+          .setMetricName("f1")
+
+        val f1 = evaluator.evaluate(predictions)
+        logger.info(s"Finished. $name : F1 = " + f1)
+
+        FitnessResult(Map("f1" -> f1), problemType, predictions)
     }
-
-
-    val metrics = new BinaryClassificationMetrics(scoreAndLabels)
-    val auROC = metrics.areaUnderROC()
-
-    logger.info(s"Area under ROC = $auROC")
-    import testDF.sparkSession.implicits._
-    val predictionsAsDF = scoreAndLabels.toDF("score", "prediction") //TODO maybe we need to join scores and labels with original data here
-
-    FitnessResult(Map("auc" -> auROC), problemType, predictionsAsDF)
   }
 }

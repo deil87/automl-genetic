@@ -18,13 +18,19 @@ class TPopulation(val individuals: Seq[ TemplateTree[TemplateMember]],
 }
 
 object TPopulation {
-  lazy val firstEverPopulation = new TPopulation(TemplateTree.firstPopulation.toSeq)
 
   case class PopulationBuilder(individuals: Seq[ TemplateTree[TemplateMember]], mutationProbabilities: MutationProbabilities) {
     def withSize(populationSize: Int): PopulationBuilder = {
-      val rnd = new Random()
-      val spanned = Seq.fill(populationSize)(individuals(rnd.nextInt(individuals.size)))
-      this.copy(individuals = spanned)
+      if(populationSize >= individuals.size) {
+        val rnd = new Random()
+        val diff = populationSize - individuals.size
+        val spanned = Seq.fill(diff)(individuals(rnd.nextInt(individuals.size)))
+        this.copy(individuals = individuals ++ spanned)
+      } else {
+        val rnd = new Random()
+        val shrinked = Seq.fill(populationSize)(individuals(rnd.nextInt(individuals.size)))
+        this.copy(individuals = shrinked)
+      }
     }
 
     def withDefaultMutationProbs: PopulationBuilder = {

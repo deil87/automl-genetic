@@ -37,7 +37,7 @@ class PopulationWideProbabilityDrivenTMStrategy(diversityStrategy: DiversityStra
 
       def getRandomEnsemblingMember = EnsemblingModelMember.poolOfEnsemblingModels.toSeq.randElement
 
-      def getRandomBaseMember: TemplateMember = SimpleModelMember.poolOfSimpleModels.randElement
+      def getRandomBaseMember = SimpleModelMember.poolOfSimpleModels.randElement
 
       /**
         * We can learn over time and datasets about which level to mutate. #metalearning
@@ -78,7 +78,7 @@ class PopulationWideProbabilityDrivenTMStrategy(diversityStrategy: DiversityStra
           if(targetLevelOfMutation == 0) {
             val mutatedPartOfTree = nextModel match {
               case ens: EnsemblingModelMember => NodeTemplate(nextModel, Seq(nt))
-              case ens: SimpleModelMember => LeafTemplate(nextModel)
+              case ens: SimpleModelMember => LeafTemplate(ens)
             }
             mutationProbabilities.moveToExperienceSection(nextModel)
             mutatedPartOfTree

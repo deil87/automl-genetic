@@ -8,10 +8,12 @@ import org.apache.spark.sql.DataFrame
 
 import scala.util.Random
 
-case class Wildcard(members: Seq[TemplateMember] = SimpleModelMember.poolOfSimpleModels.randSubList)  extends TemplateMember{
+case class Wildcard(members: Seq[TemplateMember] = SimpleModelMember.poolOfSimpleModels.randSubList)  extends SimpleModelMember {
 
   lazy val size = members.length
 
+
+  override def canHandleProblemType: PartialFunction[ProblemType, Boolean] = ???
 
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 

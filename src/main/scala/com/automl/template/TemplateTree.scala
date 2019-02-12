@@ -29,7 +29,7 @@ sealed trait TemplateTree[+A <: TemplateMember]{
   def height: Int = 1 + subMembers.foldLeft(1){ case (h, subMember) => Math.max(h, subMember.height)}
 }
 
-case class LeafTemplate[+A <: TemplateMember](member: A) extends TemplateTree[A] {
+case class LeafTemplate[+A <: SimpleModelMember](member: A) extends TemplateTree[A] {
   override def subMembers: Seq[TemplateTree[A]] = throw new UnsupportedOperationException("Leaf template isn't supposed to have subMembers")
 
 
@@ -37,6 +37,8 @@ case class LeafTemplate[+A <: TemplateMember](member: A) extends TemplateTree[A]
 
     TemplateTree.updateLeafTC(member.name, height,tc)
 
+    trainDF.cache()
+    testDF.cache()
     member.fitnessError(trainDF, testDF, problemType)
   }
 
@@ -75,8 +77,6 @@ object TemplateTree extends LazyLogging{
     else
       tc.copy(level = Some(currentHeight))
   }
-  //TODO redundant
-  def firstPopulation = SimpleModelMember.poolOfSimpleModels.map(tm => LeafTemplate(tm))
 
 }
 

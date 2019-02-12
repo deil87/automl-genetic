@@ -1,6 +1,7 @@
 package com.automl.helper
 
 import com.automl.Wildcard
+import com.automl.template.simple.SimpleModelMember
 import com.automl.template.{LeafTemplate, NodeTemplate, TemplateMember, TemplateTree}
 
 import scala.collection.mutable.Queue
@@ -54,7 +55,7 @@ object TemplateTreeHelper {
     }
     template match {
       case LeafTemplate(x) =>
-        LeafTemplate(materializeTemplateMember(x))
+        LeafTemplate(materializeTemplateMember(x).asInstanceOf[SimpleModelMember])
 
       case NodeTemplate(x, subMembers) =>
         NodeTemplate(materializeTemplateMember(x), subMembers.map(sm => materialize(sm)))

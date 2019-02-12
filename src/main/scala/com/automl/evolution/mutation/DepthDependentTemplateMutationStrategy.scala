@@ -38,7 +38,9 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
 
       def getRandomEnsemblingMember = EnsemblingModelMember.randomMember
 
-      def getRandomBaseMemberBasedOnProblemType: TemplateMember = SimpleModelMember.randomMember(problemType)
+      def getRandomBaseMemberBasedOnProblemType = SimpleModelMember.randomMember(problemType)
+      def getRandomBaseMemberWithExclusion(exclude: Seq[SimpleModelMember]): TemplateMember =
+        SimpleModelMember.randomMemberWithExclusion(problemType, exclude)
 
       /**
         * @param depth
@@ -57,17 +59,18 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
       // We should perform one action of mutation per template. Somewhere in the tree. TODO probably it is more efficient to store level in nodes
       def traverseAndMutate(individual: TemplateTree[TemplateMember], currentLevel: Int,
                             targetLevelOfMutation: Int): TemplateTree[TemplateMember] = individual match {
-        case lt@LeafTemplate(_) =>
+        case lt@LeafTemplate(member) =>
           if(targetLevelOfMutation == currentLevel) {
             val pivot = new Random().nextDouble()
-            if(pivot > 0.8) { // ToDO with `doWithProbability` helper method. DoOtherwise?
+            if(pivot > 0.8) {
               val numberOfNewChildren = new Random().nextInt(3)
               val randomEnsemblingMember = getRandomEnsemblingMember
-              logger.info(s"\t\t Mutation happened from leaf node ${lt} to ensembling of $numberOfNewChildren submembers - ${randomEnsemblingMember} , causing increasing of complexity.")
+              logger.info(s"\t\t Mutation happened from leaf node $lt to ensembling of $numberOfNewChildren submembers - $randomEnsemblingMember , causing increasing of complexity.")
               NodeTemplate(getRandomEnsemblingMember, Seq(lt) ++ (1 to numberOfNewChildren).map(_ => LeafTemplate(getRandomBaseMemberBasedOnProblemType)))
             } else {
               val randomBaseMemberBasedOnProblemType = getRandomBaseMemberBasedOnProblemType
-              logger.info(s"\t\t Mutation happened from leaf node ${lt} to another leaf node ${randomBaseMemberBasedOnProblemType}")
+              // TODO rewrite so that we don't need to cast member to SimpleModelMember
+              logger.info(s"\t\t Mutation happened from leaf node $lt to another leaf node ${getRandomBaseMemberWithExclusion(Seq(member.asInstanceOf[SimpleModelMember]))}")
               LeafTemplate(randomBaseMemberBasedOnProblemType)
             }
           } else

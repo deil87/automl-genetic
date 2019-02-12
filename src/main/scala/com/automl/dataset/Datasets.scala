@@ -18,6 +18,7 @@ object Datasets extends SparkSessionProvider {
     val wineDF = SparkMLUtils.loadResourceDF("/dataset/wine.csv") // Exploratory data analysis https://rpubs.com/alicew1800/edwine_eda3
       .showN_AndContinue(5)
       .withColumnRenamed("Nonflavanoid.phenols", "nf_flavonoid")
+      .withColumnRenamed("Malic.acid", "malic_acid")
       .withColumnRenamed("Color.int", "color_int")
 
     val features = Array("Mg", "Flavanoids", "nf_flavonoid", "Proanth", "color_int", "Hue", "OD", "Proline")

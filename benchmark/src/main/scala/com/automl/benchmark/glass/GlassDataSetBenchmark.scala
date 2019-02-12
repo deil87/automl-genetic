@@ -8,6 +8,7 @@ import com.automl.template.ensemble.stacking.GenericStacking
 import com.automl.template.{LeafTemplate, NodeTemplate}
 import com.automl.template.simple._
 import com.automl.{AutoML, TPopulation}
+import com.automl.template.simple.SVMModel
 
 class GlassDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvider{
 
@@ -16,6 +17,7 @@ class GlassDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvid
   def run() = {
 
     val individuals = Seq(
+      LeafTemplate(SVMModel()),
       LeafTemplate(LogisticRegressionModel()),
       LeafTemplate(Bayesian()),
       NodeTemplate(SparkGenericBagging(),
@@ -37,7 +39,7 @@ class GlassDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvid
 
     val seedPopulation = new TPopulation(individuals)
 
-    val population = TPopulation.fromSeedPopulation(seedPopulation).withSize(10).build
+    val population = TPopulation.fromSeedPopulation(seedPopulation).withSize(7).build
     val seed = 1234
     val preparedGlassDF = Datasets.getGlassDataFrame(seed)
 
