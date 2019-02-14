@@ -33,6 +33,8 @@ case class EvaluatedTemplateData(id: String,
   def withRank(value: Long): EvaluatedTemplateData = copy(rank = value)
   def withProbability(value: Double): EvaluatedTemplateData = copy(probability = value)
 
+  def renderPredictionsAsRow: String = idShort + ":" + fitness.dfWithPredictions.select("prediction").collect().map(_.getDouble(0)).mkString(" , ")
+
   // TODO or maybe keep metric in template,
   // because actually fitness of algorithm represents template. Maybe it is the only way to keep numeration consistent
   val kamonMetric = Kamon.gauge(s"kamon.automl.population.individual.$id")

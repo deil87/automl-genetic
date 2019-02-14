@@ -6,19 +6,20 @@ import com.automl.evolution.diversity.{CosineSimilarityAssistant, DistanceMetric
 import com.automl.helper.{FitnessResult, TemplateTreeHelper}
 import com.automl.problemtype.ProblemType
 import com.automl.template.{TemplateMember, TemplateTree}
-import com.automl.{EvaluatedTemplateData, TPopulation}
+import com.automl.{ConsistencyChecker, EvaluatedTemplateData, TPopulation}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.DataFrame
 import utils.BenchmarkHelper
 
 import scala.collection.mutable
+import utils.SparkMLUtils._
 
 /**
   * Neighbourhoods are going to be found based on Phenotypic notion of the distance
   */
 //TODO DistanceMetric type could be dependant/parametrized on ProblemType
 class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric]( distanceStrategy: DistanceStrategy[DataFrame, DistMetric])(implicit as: ActorSystem)
-  extends PopulationEvaluator[TPopulation] with LazyLogging{
+  extends PopulationEvaluator[TPopulation] with ConsistencyChecker with LazyLogging{
 
 
 
@@ -60,12 +61,19 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric]( dista
 
   def findNeighbours(forWhomWeWantToFindNeighbours: Seq[EvaluatedTemplateData], neighbourhood: Seq[EvaluatedTemplateData], populationSize: Int) = {
     // QUESTION original  and withOffspring populations will have different neighbourhood sizes. Should we pass different `populationSize` or only size of original population
-      val sizeOfTheNeighbourhood = if(populationSize <= 30) 3 else populationSize / 10
+    val sizeOfTheNeighbourhood = if (populationSize <= 30) 3 else populationSize / 10
     BenchmarkHelper.time("Calculation of neighbours") {
+      checkOrderOfPredictionsIsTheSame(forWhomWeWantToFindNeighbours)
+
+      forWhomWeWantToFindNeighbours.foreach { currentEvaluatedTemplate =>
+//        compute most difficult instances. show them on stdout and show individuals that were added to population in the end of generation.
+        logger.debug(currentEvaluatedTemplate.renderPredictionsAsRow)
+      }
+
       logger.debug(s"Starting to calculate neighbours (size = $sizeOfTheNeighbourhood) for population (TemplateNSLCEvaluator):")
       val withNeighbours = forWhomWeWantToFindNeighbours.map { currentEvaluatedTemplate =>
 
-      val distanceToNeighbours = mutable.Buffer[(EvaluatedTemplateData, DistMetric)]() //TODO we can sort on the way by putting into sorted heap
+        val distanceToNeighbours = mutable.Buffer[(EvaluatedTemplateData, DistMetric)]() //TODO we can sort on the way by putting into sorted heap
         for (possibleNeighbour <- neighbourhood.diff(Seq(currentEvaluatedTemplate))) {
           //First we need to get predictions for all individuals and only then we can calculate phenotypic distances between them
 
@@ -97,4 +105,10 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric]( dista
 
   }
 
+  private def checkOrderOfPredictionsIsTheSame(forWhomWeWantToFindNeighbours: Seq[EvaluatedTemplateData]) = {
+    consistencyCheck {
+      val firstIds = forWhomWeWantToFindNeighbours.map { currentEvaluatedTemplate => currentEvaluatedTemplate.fitness.dfWithPredictions.select("uniqueIdColumn").take(1).map(_.getLong(0)).head }
+      if (!firstIds.forall(_ == firstIds.head)) throw new IllegalStateException("Order of uniqueIdColumn is different in predictions")
+    }
+  }
 }

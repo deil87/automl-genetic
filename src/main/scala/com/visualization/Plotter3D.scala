@@ -36,6 +36,7 @@ class Plotter3D {
     chart.getScene.add(scatter)
     val rectangle: Rectangle = new Rectangle(200, 200, 600, 600)
     ChartLauncher.openChart(chart, rectangle, "Title")
+    val t = 42
   }
 
 }
