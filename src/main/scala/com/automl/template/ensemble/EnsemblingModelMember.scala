@@ -8,8 +8,11 @@ import com.automl.template._
 import com.automl.template.ensemble.bagging.BaggingMember
 import com.automl.template.ensemble.boosting.BoostingMember
 import com.automl.template.ensemble.cascading.CascadingMember
-import com.automl.template.ensemble.stacking.StackingMember
+import com.automl.template.ensemble.stacking.{GenericStacking, StackingMember}
+import com.typesafe.config.ConfigFactory
 import org.apache.spark.sql._
+
+import scala.collection.JavaConverters._
 
 trait EnsemblingModelMember extends TemplateMember {
   override def name: String = "ensembling member"
@@ -33,5 +36,13 @@ object EnsemblingModelMember {
   val poolOfEnsemblingModels: Set[EnsemblingModelMember] =
     BaggingMember.poolOfBaggingModels + StackingMember.MyStackingImpl /*++ BoostingMember.poolOfBoostingModels + StackingMember.MyStackingImpl + CascadingMember.MyCascadingImpl*/
 
-  def randomMember: EnsemblingModelMember = poolOfEnsemblingModels.toSeq.randElement
+  val tdConfig = ConfigFactory.load().getConfig("evolution.templateDimension")
+  lazy val poolOfEnsemblingModelsNames: Seq[String] = tdConfig.getStringList("poolOfEnsemblingModels").asScala
+
+  def poolOfEnsemblingModelsByNames(names: Seq[String]): Seq[EnsemblingModelMember] = names.flatMap {
+    case "stacking" => BaggingMember.poolOfBaggingModels
+    case "bagging" => Set[EnsemblingModelMember](StackingMember.MyStackingImpl)
+  }
+
+  def randomMember: EnsemblingModelMember = poolOfEnsemblingModelsByNames(poolOfEnsemblingModelsNames).randElement
 }

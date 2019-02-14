@@ -1,16 +1,19 @@
 package com.automl.evolution.mutation
 
-import com.automl.{Population, TPopulation}
+import com.automl.{ConfigProvider, Population, TPopulation}
 import com.automl.evolution.diversity.DiversityStrategy
 import com.automl.evolution.selection.{RankBasedSelectionProbabilityAssigner, RouletteWheel}
 import com.automl.problemtype.ProblemType
 import com.automl.template.ensemble.EnsemblingModelMember
 import com.automl.template.simple.SimpleModelMember
+import com.automl.template.simple.SimpleModelMember.poolOfSimpleModels
 import com.automl.template.{LeafTemplate, NodeTemplate, TemplateMember, TemplateTree}
+import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.collection.immutable
 import scala.util.Random
+import scala.collection.JavaConverters._
 
 //Operate on a population-wide scale, so mutation function is somewhere inside in the dungeons
 /**
@@ -24,6 +27,9 @@ import scala.util.Random
   */
 class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrategy, problemType: ProblemType) extends LazyLogging {
 
+  val tdConfig = ConfigProvider.config.getConfig("evolution.templateDimension")
+
+  lazy val maxEnsembleDepth: Int = tdConfig.getInt("maxEnsembleDepth")
   /**
     *
     * @param population Among other things it contains population-wide mutation probabilities
@@ -39,6 +45,7 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
       def getRandomEnsemblingMember = EnsemblingModelMember.randomMember
 
       def getRandomBaseMemberBasedOnProblemType = SimpleModelMember.randomMember(problemType)
+
       def getRandomBaseMemberWithExclusion(exclude: Seq[SimpleModelMember]): TemplateMember =
         SimpleModelMember.randomMemberWithExclusion(problemType, exclude)
 
@@ -62,7 +69,8 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
         case lt@LeafTemplate(member) =>
           if(targetLevelOfMutation == currentLevel) {
             val pivot = new Random().nextDouble()
-            if(pivot > 0.8) {
+            // Note currentLevel is zero-based
+            if(pivot > 0.8 && currentLevel < maxEnsembleDepth - 1) {
               val numberOfNewChildren = new Random().nextInt(3)
               val randomEnsemblingMember = getRandomEnsemblingMember
               logger.info(s"\t\t Mutation happened from leaf node $lt to ensembling of $numberOfNewChildren submembers - $randomEnsemblingMember , causing increasing of complexity.")

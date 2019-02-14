@@ -129,17 +129,6 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
     }
   }
 
-  def updateHallOfFame(evaluatedIndividuals: Seq[EvaluatedHyperParametersField]):Unit = {
-    val hallOfFameUpdateSize = 5  // TODO Config
-    hallOfFame.headOption.map{bestAtAllTimes =>
-      //TODO >= should be <= when we have "the less the better" approach
-      hallOfFame ++: evaluatedIndividuals.filter(_.score >= bestAtAllTimes.score).take(hallOfFameUpdateSize)
-    }.getOrElse{
-      hallOfFame ++: evaluatedIndividuals.take(hallOfFameUpdateSize)
-    }
-  }
-
-
   override def getInitialPopulationFromMetaDB: HPPopulation = ???
 
   override def getInitialColdStartPopulation: HPPopulation = {

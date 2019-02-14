@@ -67,8 +67,6 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
   //Almost generalisable. Need to specify type that is common to _.template and _.field
   override def getBestFromHallOfFame: TemplateTree[TemplateMember] = hallOfFame.headOption.map(_.template).getOrElse{getInitialPopulation.individuals.head}
 
-  override def updateHallOfFame(evaluatedIndividuals: Seq[EvaluatedTemplateData]): Unit = ???
-
   override def showCurrentPopulation(): Unit = {
     if(getEvaluatedPopulation.nonEmpty)
       logger.debug(PopulationHelper.renderEvaluatedIndividuals(getEvaluatedPopulation))
@@ -101,9 +99,11 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
 
     val offspring = mutateParentPopulation(populationForUpcomingMutation)
 
-    val mutantsEvaluationsForOffspring = evaluatePopulation(offspring, workingDF)
+    val evaluatedOffspring = evaluatePopulation(offspring, workingDF)
 
-    val evaluatedOffspringWithNeighbours = evaluator.findNeighbours(mutantsEvaluationsForOffspring, mutantsEvaluationsForOffspring ++ evaluatedOriginalPopulationWithNeighbours, population.size)
+    updateHallOfFame(evaluatedOffspring)
+
+    val evaluatedOffspringWithNeighbours = evaluator.findNeighbours(evaluatedOffspring, evaluatedOffspring ++ evaluatedOriginalPopulationWithNeighbours, population.size)
 
     val evaluationResultsForNewExpandedGeneration = evaluatedOffspringWithNeighbours ++ evaluatedOriginalPopulationWithNeighbours
 

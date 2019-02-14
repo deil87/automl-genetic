@@ -71,7 +71,15 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
     _population
   }
 
-  def updateHallOfFame(evaluatedIndividuals: Seq[EvaluatedResult]):Unit
+  def updateHallOfFame(evaluatedIndividuals: Seq[EvaluatedResult]):Unit = {
+    val hallOfFameUpdateSize = 5  // TODO Config
+    hallOfFame.headOption.map{bestAtAllTimes =>
+      //TODO >= should be <= when we have "the less the better" approach
+      hallOfFame ++= evaluatedIndividuals.filter(_.compare(bestAtAllTimes)).take(hallOfFameUpdateSize)
+    }.getOrElse{
+      hallOfFame ++= evaluatedIndividuals.take(hallOfFameUpdateSize)
+    }
+  }
 
   def showCurrentPopulation(): Unit
 

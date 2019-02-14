@@ -1,7 +1,9 @@
 package com.automl
 
 import com.automl.evolution.dimension.hparameter.HyperParametersField
-import com.automl.helper.{FitnessResult, PopulationHelper}
+import com.automl.helper.{FitnessResult, PopulationHelper, TemplateTreeHelper}
+import com.automl.problemtype.ProblemType
+import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
 import com.automl.template.{TemplateMember, TemplateTree}
 import com.typesafe.scalalogging.LazyLogging
 import kamon.Kamon
@@ -54,6 +56,19 @@ object EvaluatedTemplateData extends LazyLogging {
     // TODO No usage
     def printSortedByFitness(): Unit = {
       logger.debug(PopulationHelper.renderEvaluatedIndividuals(individuals))
+    }
+  }
+
+  implicit def evaluatedHelper(individual: EvaluatedTemplateData) = new {
+    def render(problemType: ProblemType): String = {
+        s"${TemplateTreeHelper.renderAsString_v2(individual.template)}  ${fitnessRetrieveFunction(problemType,individual.fitness)} ${individual.hyperParamsField.toString}"
+    }
+
+    def fitnessRetrieveFunction(problemType: ProblemType, fitnessResult: FitnessResult) = problemType match {
+      case MultiClassClassificationProblem | BinaryClassificationProblem =>
+        fitnessResult.metricsMap("f1")
+      case RegressionProblem =>
+        fitnessResult.metricsMap("rmse")
     }
   }
 }

@@ -66,6 +66,10 @@ case class SVMModel() extends LinearModelMember with LazyLogging{
           .setMaxIter(10)
           .setRegParam(0.1)
           .setLabelCol("indexedLabel")
+          .setStandardization(true)
+          .setFitIntercept(true)
+          .setTol(1e-3) // TODO estimate?
+          //.setThreshold()
 
         val ovr = new OneVsRest()
           .setClassifier(lsvc)

@@ -79,14 +79,6 @@ class AutoML(data: DataFrame,
 
   val metaDB = new MetaDB() // TODO How it should look like?
 
-  def stagnationDetected(evaluationResult: Any): Boolean = {
-    // If we run into stagnation?
-    // We could check wheter our structures are not changing any more( bad mutation algorithm) or
-    // fitness values of our individuals do not improve(or within threshold) when datasize is maximum.
-    // We might never reach this state
-    false
-  } // TODO No stagnation detected for now
-
   /*Probably we need a tree of dimensions in order to predefine dependencies*/
   def runEvolution(implicit as: ActorSystem): Unit = {
 
@@ -97,12 +89,8 @@ class AutoML(data: DataFrame,
     } else data
 
 
-
     var currentDataSize = workingDataSet.count()
     currentDatasizeKamon.set(currentDataSize)
-
-    val bestEvaluatedTemplatesFromAllGenerationsQueue = collection.mutable.PriorityQueue[EvaluatedTemplateData]()
-
 
     //The fitness of each template is updated during evolutions and when the optimization terminates,
     // winning templates are saved as a new record into the metadatabase or corresponding records are
@@ -145,11 +133,6 @@ class AutoML(data: DataFrame,
 
             templateEvDim.evolveFromLastPopulation(workingDataSet)
 
-            val bestSurvivedEvaluatedTemplate = templateEvDim.getBestFromPopulation(workingDataSet)
-            //TODO we were putting into queue only best from evolution not from each generation before.
-            logger.info(s"Best candidate from  evolution #$evolutionNumber generation #$generationNumber added to priority queue: $bestSurvivedEvaluatedTemplate")
-            bestEvaluatedTemplatesFromAllGenerationsQueue.enqueue(bestSurvivedEvaluatedTemplate)
-
             generationNumber += 1
             generationNumberKamon.increment(1)
           }
@@ -183,7 +166,7 @@ class AutoML(data: DataFrame,
       }
     }
 
-    AutoMLReporter.show(bestEvaluatedTemplatesFromAllGenerationsQueue, problemType) // TODO we need to return best individual for validation on testSplit
+    AutoMLReporter.show(templateEvDim.hallOfFame, problemType) // TODO we need to return best individual for validation on testSplit
   }
 
 }

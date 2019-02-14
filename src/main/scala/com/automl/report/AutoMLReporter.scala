@@ -16,18 +16,9 @@ object AutoMLReporter {
 
       val winner = bestIndividuals.dequeue()
 
-      val fitnessRetrieveFunction: FitnessResult => Double = problemType match {
-        case MultiClassClassificationProblem | BinaryClassificationProblem =>
-          fr => fr.metricsMap("f1")
-        case RegressionProblem =>
-          fr => fr.metricsMap("rmse")
-      }
       println("\n##############################################################")
-      println("Fitness value of the BEST template: " +  fitnessRetrieveFunction(winner.fitness))
-      println("Best template: " + TemplateTreeHelper.renderAsString_v2(winner.template)) // TODO make print2 actually a printing method
-      println("Other best individuals results:\n" + bestIndividuals.dequeueAll.map{fr =>
-        TemplateTreeHelper.renderAsString_v2(fr.template) + " \n Fitness: " + fitnessRetrieveFunction(fr.fitness)
-      }.mkString(",\n")
+      println("Best template: " + winner.render(problemType))
+      println("Other best individuals results:\n" + bestIndividuals.dequeueAll.map{fr => fr.render(problemType) }.mkString(",\n")
       )
 
     }
