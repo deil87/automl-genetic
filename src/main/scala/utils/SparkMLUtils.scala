@@ -3,6 +3,7 @@ package utils
 import java.nio.file.Paths
 
 import com.automl.classifier.ensemble.stacking.DNNIteratorParams
+import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.linalg.{DenseVector, SparseVector}
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
@@ -101,12 +102,22 @@ object SparkMLUtils {
       indexer.fit(df).transform(df)
     }
 
+    def applyIndexersWithReplacing(indexers: Seq[StringIndexer]) =  {
+      indexers.foldLeft(df){(res, indexer) =>
+        indexer.fit(res)
+          .transform(res)
+          .drop(indexer.getInputCol)
+          .withColumnReplace(indexer.getOutputCol, indexer.getInputCol)
+          .showN_AndContinue(20)
+      }
+    }
+
     def applyBucketizer(bucketizer:  Bucketizer) = bucketizer.transform(df)
 
-    def applyIndexers(indexers: ((Dataset[_]) => StringIndexerModel)*) =  {
-//      val indexersSeq: Seq[(Dataset[_]) => StringIndexerModel] = indexers:_*
-      indexers.foldLeft(df)( (res, next) => next(df).transform(res))
-    }
+//    def applyIndexers(indexers: ((Dataset[_]) => StringIndexerModel)*) =  {
+////      val indexersSeq: Seq[(Dataset[_]) => StringIndexerModel] = indexers:_*
+//      indexers.foldLeft(df)( (res, next) => next(df).transform(res))
+//    }
 
     def applyDFTransformation(tr: sql.DataFrame => sql.DataFrame) = {
       tr(df)
@@ -120,6 +131,12 @@ object SparkMLUtils {
       val scalerModel = scaler.fit(df)
       scalerModel.transform(df)
     }
+
+    def applyVectorAssembler(fun: Array[String] => Transformer, exclude: Array[String]): sql.DataFrame = {
+      val scaler: Transformer = fun(df.schema.names.diff(exclude))
+      scaler.transform(df)
+    }
+
     def applyPCATransformation(pca: PCA): sql.DataFrame = {
       val pcaModel = pca.fit(df)
       pcaModel.transform(df)

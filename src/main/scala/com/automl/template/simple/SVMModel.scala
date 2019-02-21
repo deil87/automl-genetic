@@ -1,5 +1,6 @@
 package com.automl.template.simple
 
+import com.automl.PaddedLogging
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
@@ -13,7 +14,7 @@ import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 
-case class SVMModel() extends LinearModelMember with LazyLogging{
+case class SVMModel()(implicit val logPaddingSize: Int = 0) extends LinearModelMember with PaddedLogging{
 
   override def name: String = "SVMModel " + super.name
 

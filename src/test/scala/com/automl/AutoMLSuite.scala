@@ -18,6 +18,7 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
   import utils.SparkMLUtils._
 
   implicit val system = ActorSystem("AutoMLSuite-system")
+  implicit val logPaddingSize: Int = 0
 
   "AutoML" should {
 
@@ -40,7 +41,7 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
       val distinctStrategy = new DistinctDiversityStrategy()
 
       val problemType = RegressionProblem
-      
+
       val mutationStrategy = new DepthDependentTemplateMutationStrategy(distinctStrategy, problemType)
 
       val mutated = mutationStrategy.mutate(population)

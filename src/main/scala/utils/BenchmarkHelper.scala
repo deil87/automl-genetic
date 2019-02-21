@@ -1,24 +1,35 @@
 package utils
 
+import com.automl.PaddedLogging
 import com.typesafe.scalalogging.LazyLogging
 import org.scalameter.{Key, Warmer, _}
 
 import scala.util.control.NonFatal
 
-object BenchmarkHelper extends LazyLogging{
+case class BenchmarkHelper(marker: String, logPaddingSize: Int) extends PaddedLogging {
 
-  def time[R](marker: String)(block: => R): R = {
-    logger.debug(s"Benchmark $marker started.")
+  def apply[R](block: this.type => R): R = BenchmarkHelper.time(marker)(block(this))(logPaddingSize)
+
+}
+
+object BenchmarkHelper extends PaddedLogging {
+
+
+  override def logPaddingSize: Int = 0
+
+  def time[R](marker: String)(block: => R)(implicit logPaddingSize: Int): R = {
+
+    debugImpl(s"Benchmark << $marker >> started.")
     val t0 = System.currentTimeMillis()
     var result: Any = null
     try {
       result = block
     } catch {
       case NonFatal(ex) =>
-        logger.debug(s"$marker# Failure: ${ex.getMessage}")
+        debugImpl(s"$marker# Failure: ${ex.getMessage}")
     } finally {
       val t1 = System.currentTimeMillis()
-      logger.debug(s"Benchmark. $marker took: " + (t1 - t0) + "ms")
+      debugImpl(s"Benchmark << $marker >> took: " + (t1 - t0) + "ms")
     }
     result.asInstanceOf[R]
   }

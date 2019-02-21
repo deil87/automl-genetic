@@ -1,5 +1,6 @@
 package com.automl.template.simple
 
+import com.automl.PaddedLogging
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{MultiClassClassificationProblem, RegressionProblem}
@@ -10,7 +11,7 @@ import org.apache.spark.sql._
 * Could be used for both regression and classification problems.
 * There is no implementation in Spark for kNN because the model(data examples) couldn't be efficiently distributed.
 * */
-case class KNearestNeighbours() extends SimpleModelMember {
+case class KNearestNeighbours()(implicit val logPaddingSize: Int = 0) extends SimpleModelMember with PaddedLogging{
   override def name: String = "KNearestNeighbours " + super.name
 
   override def canHandleProblemType: PartialFunction[ProblemType, Boolean] = {

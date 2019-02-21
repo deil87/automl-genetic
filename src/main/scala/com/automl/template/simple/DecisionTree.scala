@@ -1,5 +1,6 @@
 package com.automl.template.simple
 
+import com.automl.PaddedLogging
 import com.automl.evolution.dimension.hparameter.{DecisionTreeHPGroup, MaxDepth}
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
@@ -16,7 +17,7 @@ import org.apache.spark.sql._
 import utils.SparkMLUtils
 
 
-case class DecisionTree(hpGroup: DecisionTreeHPGroup = DecisionTreeHPGroup.default) extends SimpleModelMember with SparkSessionProvider with LazyLogging{
+case class DecisionTree(hpGroup: DecisionTreeHPGroup = DecisionTreeHPGroup.default)(implicit val logPaddingSize: Int = 0) extends SimpleModelMember with SparkSessionProvider with PaddedLogging{
   override def name: String = "DecisionTree " + super.name
 
   override def canHandleProblemType: PartialFunction[ProblemType, Boolean] = {
@@ -33,7 +34,7 @@ case class DecisionTree(hpGroup: DecisionTreeHPGroup = DecisionTreeHPGroup.defau
 
   override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType): FitnessResult = {
 
-    logger.debug(s"Started evaluating $name ...")
+    debug(s"Started evaluating $name ...")
     import  SparkMLUtils._
 
     import ss.implicits._
@@ -48,7 +49,7 @@ case class DecisionTree(hpGroup: DecisionTreeHPGroup = DecisionTreeHPGroup.defau
 
          val rmse: Double = evaluator.evaluate(predictions)
 
-         logger.info(s"Finished. $name : RMSE = " + rmse)
+         info(s"Finished. $name : RMSE = " + rmse)
          FitnessResult(Map("rmse" -> rmse), problemType, predictions)
        case MultiClassClassificationProblem | BinaryClassificationProblem =>
 
@@ -57,7 +58,7 @@ case class DecisionTree(hpGroup: DecisionTreeHPGroup = DecisionTreeHPGroup.defau
 
          val dtrWithHP = hpGroup.hpParameters.foldLeft(dtr)((res, next) => next match {
            case p@MaxDepth(_) =>
-             logger.debug(s"DecisionTree max_depth hyper-parameter was set to ${p.currentValue}")
+             debug(s"DecisionTree max_depth hyper-parameter was set to ${p.currentValue}")
              res.setMaxDepth(p.currentValue.toInt)
          })
 
@@ -77,9 +78,9 @@ case class DecisionTree(hpGroup: DecisionTreeHPGroup = DecisionTreeHPGroup.defau
 
          val indexOfStageForModelInPipeline = 0
          val treeModel = model.stages(indexOfStageForModelInPipeline).asInstanceOf[DecisionTreeClassificationModel]
-         logger.debug("Learned classification tree model:\n" + treeModel.toDebugString)
+         debug("Learned classification tree model:\n" + treeModel.toDebugString)
 
-         logger.info(s"Finished. $name : F1 metric = " + f1 + s". Number of rows = ${trainDF.count()} / ${testDF.count()}")
+         info(s"Finished. $name : F1 metric = " + f1 + s". Number of rows = ${trainDF.count()} / ${testDF.count()}")
          FitnessResult(Map("f1" -> f1, "accuracy" -> accuracy), problemType, predictions)
      }
 

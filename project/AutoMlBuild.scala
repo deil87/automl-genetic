@@ -63,6 +63,9 @@ object AutoMlBuild extends Build {
     "nz.ac.waikato.cms.weka" % "weka-stable" % "3.8.1",
     "nz.ac.waikato.cms.weka" % "SMOTE" % "1.0.3",
 
+    //
+    "org.ejml" % "ejml-all" % "0.37.1", // we can choose sub module for our needs
+
     // Visualization
     "org.vegas-viz" %% "vegas" % "0.3.11",
     "org.vegas-viz" %% "vegas-spark" % "0.3.11",
@@ -103,9 +106,13 @@ object AutoMlBuild extends Build {
     settings = buildSettings ++ Seq(
       libraryDependencies ++= libDependencies ++ loggingLibDependencies,
 //      excludeDependencies ++= excludedDependencies,
+      resolvers += "Bintray" at "https://repo.jfrog.org/artifactory/libs-release-bintray/",
       resolvers += "com.teamdev" at "http://maven.teamdev.com/repository/products",
       resolvers += "jzy3d-snapshots" at "http://maven.jzy3d.org/releases",
       resolvers += "Local Maven Repository" at "file://"+ Path.userHome+"/.m2/repository",
+//      resolvers += "Bintray" at "https://bintray.com/bintray/jcenter/",
+//      resolvers += Resolver.jcenterRepo,
+//      resolvers += Resolver.bintrayRepo("bintray", "jcenter"),
       resolvers += Resolver.bintrayRepo("kamon-io", "snapshots"),
       ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) }
       )

@@ -1,5 +1,6 @@
 package com.automl.template.simple
 
+import com.automl.PaddedLogging
 import com.automl.evolution.dimension.hparameter.{ElasticNet, LRRegParam, LogisticRegressionHPGroup}
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
@@ -12,7 +13,7 @@ import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 import org.apache.spark.ml.feature.StandardScaler
 import org.apache.spark.sql._
 
-case class LogisticRegressionModel(hpGroup: LogisticRegressionHPGroup = LogisticRegressionHPGroup.default) extends LinearModelMember with LazyLogging{
+case class LogisticRegressionModel(hpGroup: LogisticRegressionHPGroup = LogisticRegressionHPGroup.default)(implicit val logPaddingSize: Int = 0) extends LinearModelMember with PaddedLogging{
 
   override def name: String = "LogisticRegressionModel " + super.name
 
@@ -32,7 +33,7 @@ case class LogisticRegressionModel(hpGroup: LogisticRegressionHPGroup = Logistic
   //We need here a task/problemType or something like ModelSearchContext()
   override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType): FitnessResult = {
 
-  logger.debug(s"Evaluating $name ...")
+  debug(s"Evaluating $name ...")
     problemType match {
       case BinaryClassificationProblem =>
         val model = new LogisticRegression()
@@ -42,7 +43,7 @@ case class LogisticRegressionModel(hpGroup: LogisticRegressionHPGroup = Logistic
         //      case BinaryClassificationProblem =>
         //      case MultiClassClassificationProblem =>
         //    }
-        //    logger.info(s"Area under ROC = $auROC")
+        //    info(s"Area under ROC = $auROC")
         //    import testDF.sparkSession.implicits._
         //    val predictionsAsDF = scoreAndLabels.toDF("score", "prediction") //TODO maybe we need to join scores and labels with original data here
         FitnessResult(???, ???, ???)
@@ -59,10 +60,10 @@ case class LogisticRegressionModel(hpGroup: LogisticRegressionHPGroup = Logistic
 
         val lrWithHP = hpGroup.hpParameters.foldLeft(lrEstimator)((res, next) => next match {
           case p@LRRegParam(_) =>
-            logger.debug(s"LogisticRegression lambda hyper-parameter was set to ${p.currentValue}")
+            debug(s"LogisticRegression lambda hyper-parameter was set to ${p.currentValue}")
             res.setRegParam(p.currentValue)
           case p@ElasticNet(_) =>
-            logger.debug(s"LogisticRegression elastic_net hyper-parameter was set to ${p.currentValue}")
+            debug(s"LogisticRegression elastic_net hyper-parameter was set to ${p.currentValue}")
             res.setElasticNetParam(p.currentValue)
         })
 
@@ -80,7 +81,7 @@ case class LogisticRegressionModel(hpGroup: LogisticRegressionHPGroup = Logistic
           .setMetricName("f1")
 
         val f1 = evaluator.evaluate(prediction)
-        logger.info(s"Finished. $name : F1 = " + f1)
+        info(s"Finished. $name : F1 = " + f1)
 
         FitnessResult(Map("f1" -> f1), problemType, prediction)
     }

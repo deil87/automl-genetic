@@ -1,5 +1,6 @@
 package com.automl.template.simple
 
+import com.automl.PaddedLogging
 import com.automl.problemtype.ProblemType
 import com.automl.template._
 import com.automl.template.ensemble.EnsemblingModelMember
@@ -8,9 +9,10 @@ import com.automl.template.simple.perceptron.LinearPerceptron
 import com.automl.teststrategy.TestStrategy
 import com.typesafe.config.ConfigFactory
 import org.apache.spark.sql._
+
 import scala.collection.JavaConverters._
 
-trait SimpleModelMember extends TemplateMember {
+trait SimpleModelMember extends TemplateMember { self: PaddedLogging =>
   override def name: String = "simpleModel member"
 
   def canHandleProblemType: PartialFunction[ProblemType, Boolean]
@@ -19,9 +21,12 @@ trait SimpleModelMember extends TemplateMember {
 
   def testStrategy: TestStrategy = ???
 
+  def setLogPadding(size: Int): Unit = overrideTo = size
+
 }
 
 object SimpleModelMember {
+
   val DeepNeuralNetwork: SimpleModelMember = new DeepNeuralNetwork()
   val NeuralNetwork: SimpleModelMember = new NeuralNetwork(Array(4,3,2,1))
   val Bayesian: SimpleModelMember = new Bayesian()

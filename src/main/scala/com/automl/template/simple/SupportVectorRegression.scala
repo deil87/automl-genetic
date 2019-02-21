@@ -1,5 +1,6 @@
 package com.automl.template.simple
 
+import com.automl.PaddedLogging
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
@@ -11,7 +12,7 @@ import org.apache.spark.sql._
 * although extensions to the technique have been made to support multi-class classification and regression problems.
  * The adaptation of SVM for regression is called Support Vector Regression or SVR for short.
 * */
-case class SupportVectorRegression() extends LinearModelMember {
+case class SupportVectorRegression()(implicit val logPaddingSize: Int = 0) extends LinearModelMember with PaddedLogging{
   override def name: String = "SupportVectorRegression " + super.name
 
 

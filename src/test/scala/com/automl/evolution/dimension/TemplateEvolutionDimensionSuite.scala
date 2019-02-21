@@ -19,6 +19,8 @@ class TemplateEvolutionDimensionSuite extends WordSpec with Matchers with SparkS
   trait Fixture {
 
     implicit val system = ActorSystem("AutoMLSuite-system")
+    implicit val logPaddingSize = 0
+
 
     val airlineDF = SparkMLUtils.loadParquet("src/test/resources/airline_allcolumns_sampled_100k_parquet")
       .select("DayOfWeek", "Distance", "DepTime", "CRSDepTime", "DepDelay")

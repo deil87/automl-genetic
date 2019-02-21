@@ -1,5 +1,6 @@
 package com.automl.template.simple
 
+import com.automl.PaddedLogging
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
@@ -11,7 +12,7 @@ import org.apache.spark.ml.linalg.Vector
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions.col
 
-case class NeuralNetwork(layers: Array[Int]) extends SimpleModelMember with LazyLogging{
+case class NeuralNetwork(layers: Array[Int])(implicit val logPaddingSize: Int = 0) extends SimpleModelMember with PaddedLogging{
   override def name: String = "NeuralNetwork " + super.name
 
 

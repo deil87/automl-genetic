@@ -11,7 +11,7 @@ class RandomSampling extends SamplingStrategy {
   override def sample(df: DataFrame, ratio: Double): Dataset[Row] = {
     import org.apache.spark.sql.functions.rand
     val sampleSize = df.count() * ratio
-    df.orderBy(rand()).limit(sampleSize.toInt)
+    df.orderBy(rand()).limit(sampleSize.toInt) // TODO Do we need to shuffle one more time here?
   }
 }
 

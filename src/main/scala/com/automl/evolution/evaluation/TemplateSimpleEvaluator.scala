@@ -9,7 +9,7 @@ import com.automl.helper.{FitnessResult, TemplateTreeHelper}
 import com.automl.problemtype.ProblemType
 import com.automl.route.UpdateWeb
 import com.automl.template.{TemplateMember, TemplateTree}
-import com.automl.{EvaluatedTemplateData, TPopulation}
+import com.automl.{EvaluatedTemplateData, PaddedLogging, TPopulation}
 import com.typesafe.scalalogging.LazyLogging
 import kamon.Kamon
 import org.apache.spark.sql.DataFrame
@@ -18,7 +18,7 @@ import scala.collection.mutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
-class TemplateSimpleEvaluator(implicit as: ActorSystem) extends PopulationEvaluator[TPopulation] with LazyLogging{
+class TemplateSimpleEvaluator(implicit as: ActorSystem, val logPaddingSize: Int) extends PopulationEvaluator[TPopulation, TemplateTree[TemplateMember], EvaluatedTemplateData] with PaddedLogging{
 
   private val cacheHitsCounterKamon = Kamon.counter("kamon.automl.cache_hits")
 
@@ -30,15 +30,17 @@ class TemplateSimpleEvaluator(implicit as: ActorSystem) extends PopulationEvalua
   }*/
 
 
+  override type CacheKeyType = (TemplateTree[TemplateMember], HyperParametersField, Long)
+
   override def evaluateIndividuals(population: TPopulation,
                                    workingDataSet: DataFrame,
-                                   hyperParamsField: HyperParametersField,
                                    problemType: ProblemType)
                                   (implicit cache: mutable.Map[(TemplateTree[TemplateMember], HyperParametersField, Long), FitnessResult]): Seq[EvaluatedTemplateData] = {
 
     //TODO make use of hyperParamsMap for templated/nodes/classifiers
 
-    population.individuals.zipWithIndex
+    //TODO to uncomment we will need hyperParamsField and we can get it from constructor. Pass HyperParameterDimension in there.
+    /*population.individuals.zipWithIndex
       .map { case (individualTemplate, idx) =>
 
         // TODO we don't use Wildcards and therefore no need in materialization. Should we use them ? It could be a variance regulator.
@@ -61,6 +63,8 @@ class TemplateSimpleEvaluator(implicit as: ActorSystem) extends PopulationEvalua
         val iad = EvaluatedTemplateData(idx.toString + ":" + individualTemplate.id, individualTemplate, materializedTemplate, fr, hyperParamsField = hyperParamsField)
         iad.sendMetric()
         iad
-      }
+      }*/
+
+    ???
   }
 }

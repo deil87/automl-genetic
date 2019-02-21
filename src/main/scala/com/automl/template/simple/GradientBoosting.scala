@@ -1,5 +1,6 @@
 package com.automl.template.simple
 
+import com.automl.PaddedLogging
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
@@ -12,7 +13,7 @@ import org.apache.spark.ml.feature.{IndexToString, StringIndexer, VectorIndexer}
 import org.apache.spark.ml.regression.GBTRegressor
 import org.apache.spark.sql._
 
-case class GradientBoosting() extends SimpleModelMember with LazyLogging{
+case class GradientBoosting()(implicit val logPaddingSize: Int = 0) extends SimpleModelMember with PaddedLogging{
   override def name: String = "Gradient boosting " + super.name
 
   override def canHandleProblemType: PartialFunction[ProblemType, Boolean] = {

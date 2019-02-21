@@ -1,14 +1,18 @@
 package com.automl.helper
 
 import com.automl.evolution.dimension.hparameter.HyperParametersField
-import com.automl.{Evaluated, EvaluatedTemplateData, TPopulation}
+import com.automl.{Evaluated, EvaluatedTemplateData, PaddedLogging, TPopulation}
 import com.automl.template.{TemplateMember, TemplateTree}
 import com.typesafe.scalalogging.LazyLogging
 
-object PopulationHelper extends LazyLogging{
+object PopulationHelper extends PaddedLogging{
+
+
+  override def logPaddingSize: Int = 0
+
   def print(population: TPopulation, prefix: String = ""): Unit = {
     val prefixToPrepend = if (prefix.nonEmpty) prefix + " : " else prefix
-    logger.info(prefixToPrepend  + renderIndividuals(population.individuals))
+    info(prefixToPrepend  + renderIndividuals(population.individuals))
   }
 
   def renderIndividuals(individuals: Seq[TemplateTree[TemplateMember]]): String = {

@@ -1,5 +1,6 @@
 package com.automl.template.simple
 
+import com.automl.PaddedLogging
 import com.automl.evolution.dimension.hparameter.{BayesianHPGroup, Smoothing}
 import com.automl.exception.SuspiciousPerformanceException
 import com.automl.helper.FitnessResult
@@ -20,7 +21,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.types.{DoubleType, StringType}
 import utils.SparkMLUtils
 
-case class Bayesian(hpGroup: BayesianHPGroup = BayesianHPGroup.default) extends SimpleModelMember with SparkSessionProvider with LazyLogging{
+case class Bayesian(hpGroup: BayesianHPGroup = BayesianHPGroup.default)(implicit val logPaddingSize: Int = 0) extends SimpleModelMember with SparkSessionProvider with PaddedLogging{
   override def name: String = "Bayesian " + super.name
 
   override def canHandleProblemType: PartialFunction[ProblemType, Boolean] = {
@@ -37,7 +38,7 @@ case class Bayesian(hpGroup: BayesianHPGroup = BayesianHPGroup.default) extends 
 
   override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType): FitnessResult = {
 
-    logger.debug(s"Evaluating $name ...")
+    debug(s"Evaluating $name ...")
 
 // TODO we can use   model.numClasses
 
@@ -58,7 +59,7 @@ case class Bayesian(hpGroup: BayesianHPGroup = BayesianHPGroup.default) extends 
         import ss.implicits._
         val rmse: Double = evaluator.evaluate(predictions.withColumnReplace("prediction", $"prediction".cast(DoubleType)))
 
-        logger.info(s"$name : RMSE = " + rmse)
+        info(s"$name : RMSE = " + rmse)
         FitnessResult(Map("rmse" -> rmse), problemType, predictions.drop("rawPrediction").drop("probability"))
 
       case MultiClassClassificationProblem | BinaryClassificationProblem => //TODO generalize to a common method of evaluation for this type of problem.
@@ -66,7 +67,7 @@ case class Bayesian(hpGroup: BayesianHPGroup = BayesianHPGroup.default) extends 
         val classes = trainDF.select("indexedLabel").distinct().collect().map(_.getDouble(0))
 
         require(classes contains(0.0), s"Bayesian labels should have all indexes ans zero-based but instead: ${classes.mkString(",")}")
-        require(classes.length == 6, s"For glass dataset there should be 5 classes but instead: ${classes.mkString(",")}")
+//        require(classes.length == 6, s"For glass dataset there should be 5 classes but instead: ${classes.mkString(",")}")
 
         val nb = new NaiveBayes()
           .setModelType("multinomial")
@@ -74,7 +75,7 @@ case class Bayesian(hpGroup: BayesianHPGroup = BayesianHPGroup.default) extends 
 
         val naiveBayesWithHP = hpGroup.hpParameters.foldLeft(nb)((res, next) => next match {
           case p@Smoothing() =>
-            logger.debug(s"Bayesian smoothing hyper-parameter was set to ${p.currentValue}")
+            debug(s"Bayesian smoothing hyper-parameter was set to ${p.currentValue}")
             res.setSmoothing(p.currentValue)
         })
 
@@ -99,7 +100,7 @@ case class Bayesian(hpGroup: BayesianHPGroup = BayesianHPGroup.default) extends 
 
         val model = naiveBayesWithHP.fit(trainDF)  //best out of grid's parameters will be returned based on averaged over `setNumFolds` folds validation
 
-//        logger.debug("Best Bayesian params: " + model.getEstimatorParamMaps.zip(model.avgMetrics).mkString(",").toString)
+//        debug("Best Bayesian params: " + model.getEstimatorParamMaps.zip(model.avgMetrics).mkString(",").toString)
 
         val predictions = model.transform(testDF)
 
@@ -110,7 +111,7 @@ case class Bayesian(hpGroup: BayesianHPGroup = BayesianHPGroup.default) extends 
         if(metrics.weightedFMeasure <= 0.1 )
           throw SuspiciousPerformanceException("Bayesian predictions are too low")
 
-        logger.info(s"Finished. $name : F1 metric = " + metrics.weightedFMeasure + s". Number of rows = ${trainDF.count()} / ${testDF.count()}")
+        info(s"Finished. $name : F1 metric = " + metrics.weightedFMeasure + s". Number of rows = ${trainDF.count()} / ${testDF.count()}")
         FitnessResult(Map("f1" -> metrics.weightedFMeasure, "weightedPrecision" -> metrics.weightedPrecision, "weightedRecall" -> metrics.weightedRecall), problemType, predictions)
 
     }

@@ -19,6 +19,9 @@ sealed trait TemplateTree[+A <: TemplateMember]{
 
   def member: A
 
+  var logPaddingSize: Int = 0
+  def setLogPadding(size: Int): Unit = logPaddingSize = size
+
   val id = RandomStringUtils.randomAlphanumeric(5) // NOTE: Do not use as unique key
 //  val orderNumber:Int No we don't want to keep track of the indexes as they will be changing all the time due to evolutions
 
@@ -39,6 +42,7 @@ case class LeafTemplate[+A <: SimpleModelMember](member: A) extends TemplateTree
 
     trainDF.cache()
     testDF.cache()
+    member.setLogPadding(logPaddingSize)
     member.fitnessError(trainDF, testDF, problemType)
   }
 

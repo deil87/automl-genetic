@@ -1,15 +1,15 @@
 package com.automl.evolution.dimension.hparameter
 
 
-import com.automl.Population
+import com.automl.{Evaluated, PaddedLogging, Population}
 import com.automl.problemtype.ProblemType
 import com.automl.template.simple.{Bayesian, DecisionTree, LogisticRegressionModel}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.DataFrame
-import com.automl.Evaluated
 import com.automl.dataset.StratifiedSampling
 import com.automl.evolution.dimension.{EvolutionDimension, TemplateEvolutionDimension}
+import com.automl.evolution.evaluation.HyperParameterPopulationEvaluator
 import com.automl.helper.PopulationHelper
 import utils.BenchmarkHelper
 
@@ -20,8 +20,8 @@ import scala.util.Random
 // it should be a HYPER DIMENSION. We want to find the best FIELD of hyper parameters here.
 //It is right thing that I have removed problemType from methods parameters of EvolutionDimension as not all dimensions are going to be dependant on this.
 //If we need dimension to depend we can pass parameter to a constructor of the dimension's class
-class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: TemplateEvolutionDimension, evolveEveryGenerations: Int = 1, problemType: ProblemType)
-  extends EvolutionDimension[HPPopulation, HyperParametersField, EvaluatedHyperParametersField] with LazyLogging{
+class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: TemplateEvolutionDimension, evolveEveryGenerations: Int = 1, problemType: ProblemType)(implicit val logPaddingSize: Int)
+  extends EvolutionDimension[HPPopulation, HyperParametersField, EvaluatedHyperParametersField] with PaddedLogging{
 
   override var _population: HPPopulation = new HPPopulation(Nil)
 
@@ -59,7 +59,7 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
       population.individuals.map { hpField => {
         val newField = HyperParametersField(modelsHParameterGroups = hpField.modelsHParameterGroups.map { hpGroup => hpGroup.mutate() })
         require(hpField.hashCode() != newField.hashCode(), "Hash codes should be different")
-        logger.debug(s"HyperParametersField mutated from $hpField to $newField")
+        debug(s"HyperParametersField mutated from $hpField to $newField")
         newField
       }
     })
@@ -68,65 +68,13 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
 
   override def showCurrentPopulation(): Unit = { // TODO generalize
       if(getEvaluatedPopulation.nonEmpty)
-        logger.debug(PopulationHelper.renderEvaluatedIndividuals(getEvaluatedPopulation))
+        debug(PopulationHelper.renderEvaluatedIndividuals(getEvaluatedPopulation))
       else {}
   }
 
-  // TODO we need last population of templates or pool of templates per model(we are evolving parameters for)
   override def evaluatePopulation(population: HPPopulation, workingDF: DataFrame): Seq[EvaluatedHyperParametersField] = {
 
-    val numberOfBestTemplates = 3
-    val samplingRatio = 0.5
-    val sampledWorkingDF = new StratifiedSampling().sample(workingDF, samplingRatio).cache() //TODO every time we will compute and therefore deal with different damples.
-    val sampledWorkingDFCount = sampledWorkingDF.count()
-    logger.debug(s"Sampling of the workingDF for hyper parameter evaluations ( $sampledWorkingDFCount out of ${workingDF.count()} )")
-    // Note: there are multiple strategies of evaluating hps for template population.
-    // 1) estimate base model/ building blocks of the templates(ensembles)
-    // 2) estimate on last survived population(part of it)
-    // 3) estimate on hallOfFame models (but we more conserned about population we are evolving at hands)
-    // 4) ideally we need tu estimate parameters for all possible positions of the models in the ensembles.... this is for the future versions.
-    // 5) mixture of 3) and 1)
-    BenchmarkHelper.time("Hyper-parameter evaluatePopulation ") {
-      val threeBestTemplates = parentTemplateEvDimension.getEvaluatedPopulation.sortWith((a, b) => a.fitness.orderTo(b.fitness)).map(_.template).take(numberOfBestTemplates)
-
-      val Array(trainingSplit, testSplit) = sampledWorkingDF.randomSplit(Array(0.67, 0.33), 11L) // TODO move to Config ratio
-      trainingSplit.cache()
-      testSplit.cache()
-      population.individuals.map { hpField =>
-        val cacheKey = (hpField, sampledWorkingDFCount)
-        val cacheKeyHashCode = cacheKey.hashCode()
-        if (individualsEvaluationCache.isDefinedAt(cacheKey)) {
-          logger.debug(s"Cache hit happened for individual: $hpField")
-          logger.debug(s"Retrieved value from the cache with hashCode = $cacheKeyHashCode : ${individualsEvaluationCache(cacheKey)}")
-        }
-        val fitness = individualsEvaluationCache.getOrElseUpdate(cacheKey, {
-          // Estimating 1) building blocks
-          logger.debug(s"Evaluating hpfield on base models:")
-          val metricsFromBaseModels = hpField.modelsHParameterGroups.map {
-            case hpGroup@BayesianHPGroup(_) =>
-              val metric = Bayesian(hpGroup).fitnessError(trainingSplit, testSplit, problemType).getCorrespondingMetric
-              // We should get last Best Population from the TemplateCoevolution and estimate on the whole population or representative sample
-              metric
-            case hpGroup@LogisticRegressionHPGroup(_) =>
-              val metric = LogisticRegressionModel(hpGroup).fitnessError(trainingSplit, testSplit, problemType).getCorrespondingMetric
-              metric
-            case hpGroup@DecisionTreeHPGroup(_) =>
-              val metric = DecisionTree(hpGroup).fitnessError(trainingSplit, testSplit, problemType).getCorrespondingMetric
-              metric
-            case _ => throw new IllegalStateException("Unmatched HPGroup found in HP's evaluatePopulation method")
-          }
-          //TODO make sure that when our corresponding metric is "the less the better" we properly compare results
-          // Estimating 2)
-          logger.debug(s"Evaluating hpfield on ${threeBestTemplates.size} best templates in current template population:")
-          val threeBestEvaluations = threeBestTemplates.map(template => template.evaluateFitness(trainingSplit, testSplit, problemType, hyperParamsMap = hpField).getCorrespondingMetric)
-          val totalSumMetric = metricsFromBaseModels.sum + threeBestEvaluations.sum // we sum all metrics from each ModelHPGroup inn the field so that we can later decide which Field is the best
-          logger.debug(s"Entry $hpField with hashCode = ${cacheKey.hashCode()} was added to the cache with score = $totalSumMetric")
-          totalSumMetric
-
-        })
-        EvaluatedHyperParametersField(hpField, fitness)
-      }
-    }
+    new HyperParameterPopulationEvaluator(parentTemplateEvDimension)(logPaddingSize + 4).evaluateIndividuals(population, workingDF, problemType)
   }
 
   override def getInitialPopulationFromMetaDB: HPPopulation = ???
@@ -152,7 +100,7 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
   override def getBestFromHallOfFame: HyperParametersField = hallOfFame.headOption.map(_.field).getOrElse{getInitialPopulation.individuals.randElement}
 
   override def getBestFromPopulation(workingDF: DataFrame): EvaluatedHyperParametersField = {
-    logger.debug("Getting best individual from population...")
+    debug("Getting best individual from population...")
     evaluatePopulation(getPopulation, workingDF).sortWith(_.score > _.score).head // TODO check that it might be stored already in a sorted way
   }
 }

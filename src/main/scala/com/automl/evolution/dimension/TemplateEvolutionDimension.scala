@@ -3,8 +3,8 @@ import akka.actor.{ActorRef, ActorSystem}
 import com.automl.EvaluatedTemplateData.logger
 import com.automl.evolution.dimension.hparameter.{EvaluatedHyperParametersField, HyperParametersField, TemplateHyperParametersEvolutionDimension}
 import com.automl.evolution.diversity.{DistinctDiversityStrategy, MisclassificationDistance}
-import com.automl.evolution.evaluation.{TemplateNSLCEvaluator, TemplateSimpleEvaluator}
-import com.automl.{EvaluatedTemplateData, Population, TPopulation}
+import com.automl.evolution.evaluation.{TemplateNSLCEvaluator}
+import com.automl.{EvaluatedTemplateData, PaddedLogging, Population, TPopulation}
 import com.automl.evolution.mutation.{DepthDependentTemplateMutationStrategy, MutationProbabilities}
 import com.automl.evolution.selection.RankSelectionStrategy
 import com.automl.helper.{FitnessResult, PopulationHelper}
@@ -23,9 +23,10 @@ import scala.collection.mutable
   * @param evolveEveryGenerations is not used for now
   * @param problemType We need to take into account which models we can mutate into filtered out by problemType
   */
-class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, evolveEveryGenerations: Int = 1, problemType: ProblemType)(implicit val as: ActorSystem)
+class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, evolveEveryGenerations: Int = 1, problemType: ProblemType)
+    (implicit val as: ActorSystem, val logPaddingSize: Int)
     extends EvolutionDimension[TPopulation, TemplateTree[TemplateMember], EvaluatedTemplateData]
-    with LazyLogging{
+    with PaddedLogging{
 
   val tdConfig = ConfigFactory.load().getConfig("evolution.templateDimension")
 
@@ -33,16 +34,16 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
   lazy val populationSize: Int = tdConfig.getInt("populationSize")
 
   val distinctStrategy = new DistinctDiversityStrategy()
-  val mutationStrategy = new DepthDependentTemplateMutationStrategy(distinctStrategy, problemType)
+  val mutationStrategy = new DepthDependentTemplateMutationStrategy(distinctStrategy, problemType)(logPaddingSize + 4)
   val rankSelectionStrategy = new RankSelectionStrategy
 
   // Dependencies on other dimensions. Hardcoded for now. Should come from AutoML.runEvolution method parameters.
-  val hyperParamsEvDim = new TemplateHyperParametersEvolutionDimension(this,problemType = problemType)
+  val hyperParamsEvDim = new TemplateHyperParametersEvolutionDimension(this,problemType = problemType)(logPaddingSize + 8)
 
   override var _population: TPopulation = new TPopulation(Nil)
 
   val evaluator = if(problemType == MultiClassClassificationProblem) {
-     new TemplateNSLCEvaluator(new MisclassificationDistance)
+     new TemplateNSLCEvaluator(new MisclassificationDistance, this, hyperParamsEvDim)(as, logPaddingSize + 4)
   } else ???
 
    // TODO make it faster with reference to value
@@ -69,7 +70,7 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
 
   override def showCurrentPopulation(): Unit = {
     if(getEvaluatedPopulation.nonEmpty)
-      logger.debug(PopulationHelper.renderEvaluatedIndividuals(getEvaluatedPopulation))
+      debug(PopulationHelper.renderEvaluatedIndividuals(getEvaluatedPopulation))
     else PopulationHelper.print(getPopulation, "Current population without evaluations")
   }
 
@@ -80,7 +81,7 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
     //TODO Control should be outside of Dimension concept
     //Maybe it is better to set up flag for corner case like 'always execute'
     if(skipEvolutionCountDown > 0) {
-      logger.debug(s"SKIPPING evolution. Next evolution in $skipEvolutionCountDown attempts")
+      debug(s"SKIPPING evolution. Next evolution in $skipEvolutionCountDown attempts")
       skipEvolutionCountDown -= 1
       return getPopulation
     }
@@ -92,21 +93,26 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
     //Need to decide where selecting neighbours should go. To evaluation or selection or to its own phase.
     val evaluatedOriginalPopulationWithNeighbours = evaluator.findNeighbours(evaluatedPopulation, evaluatedPopulation, population.size)
 
+    debug("Selecting parents:")
     val selectedParents = selectParents(evaluatedOriginalPopulationWithNeighbours)
 
     //Problem: initial ot on the way duplication of individuals. Are we allowed repetitions at all? For now lets keep try to force diversity on mutation phase.
     val populationForUpcomingMutation = extractIndividualsFromEvaluatedIndividuals(selectedParents)
 
+    debug("Mutating parents:")
     val offspring = mutateParentPopulation(populationForUpcomingMutation)
 
+    debug("Evaluating offspring:")
     val evaluatedOffspring = evaluatePopulation(offspring, workingDF)
 
+    debug("Updating hallOfFame:") // TODO maybe we don't need to update it here as we did it during evaluations in Evaluator
     updateHallOfFame(evaluatedOffspring)
 
     val evaluatedOffspringWithNeighbours = evaluator.findNeighbours(evaluatedOffspring, evaluatedOffspring ++ evaluatedOriginalPopulationWithNeighbours, population.size)
 
     val evaluationResultsForNewExpandedGeneration = evaluatedOffspringWithNeighbours ++ evaluatedOriginalPopulationWithNeighbours
 
+    debug("Selecting survivals:")
     val survivedForNextGenerationEvaluatedTemplates = selectSurvived(population.size, evaluationResultsForNewExpandedGeneration)
 
     _evaluatedPopulation = survivedForNextGenerationEvaluatedTemplates
@@ -131,7 +137,7 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
 
   override def selectParents(evaluated: Seq[EvaluatedTemplateData]): Seq[EvaluatedTemplateData] = {
     val selectedParents = rankSelectionStrategy.parentSelectionByShareWithLocalCompetitions(0.5, evaluated)
-    logger.debug(s"Selected parents: ${selectedParents.map(_.idShort).mkString(" , ")}")
+    debug(s"Selected parents: ${selectedParents.map(_.idShort).mkString(" , ")}")
     selectedParents
   }
 
@@ -145,16 +151,8 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
 
   override def evaluatePopulation(population: TPopulation, workingDF: DataFrame): Seq[EvaluatedTemplateData] = {
 
-    /* Template dimension depends on others dimensions and we need to get data from them first.
-    This could be implemented in a custom hardcoded evaluator or with dependencies tree */
-    //TODO  For how long we want to search for a hyperparameters? We can introduce HPSearchStepsPerGeneration parameter or we need to add logic that decides how often we need to evolve subdimensions
-    logger.debug("Before evaluation of Template population we want to get best individuals from coevolutions we depend on. Checking HP coevolution...")
-    if(hyperParamsEvDim.hallOfFame.isEmpty)
-      hyperParamsEvDim.evolveFromLastPopulation(workingDF) // TODO consider stratified sample for first iteration or maybe for all iterations
-    val bestHyperParametersField: HyperParametersField = hyperParamsEvDim.getBestFromHallOfFame
-
     if(problemType == MultiClassClassificationProblem) {
-      evaluator.evaluateIndividuals(population, workingDF, bestHyperParametersField, problemType)
+      evaluator.evaluateIndividuals(population, workingDF, problemType)
     }
     else {
       ???

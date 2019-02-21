@@ -34,13 +34,13 @@ class CsvVsParquetBenchmarkSuite extends FunSuite with Matchers with SparkSessio
       val airlineDF = SparkMLUtils.loadResourceDF("/airline_allcolumns_sampled_100k.csv")
         .select("DayOfWeek", "Distance", "DepTime", "CRSDepTime", "DepDelay").where($"DayOfWeek" === 2)
       airlineDF.count()
-    }
+    }(0)
 
     BenchmarkHelper.time("Loading parquet") {
       val airlineDF = SparkMLUtils.loadParquet("src/test/resources/airline_allcolumns_sampled_100k_parquet")
         .select("DayOfWeek", "Distance", "DepTime", "CRSDepTime", "DepDelay").where($"DayOfWeek" === 2)
       airlineDF.count()
-    }
+    }(0)
 
     deleteRecursively(new File("airline_sampled.parquet"))
     deleteRecursively(new File("airline_sampled"))

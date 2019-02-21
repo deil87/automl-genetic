@@ -1,6 +1,6 @@
 package com.automl.evolution.mutation
 
-import com.automl.{ConfigProvider, Population, TPopulation}
+import com.automl.{ConfigProvider, PaddedLogging, Population, TPopulation}
 import com.automl.evolution.diversity.DiversityStrategy
 import com.automl.evolution.selection.{RankBasedSelectionProbabilityAssigner, RouletteWheel}
 import com.automl.problemtype.ProblemType
@@ -25,7 +25,7 @@ import scala.collection.JavaConverters._
   *         2) Or we can mutate any node to anything.
   * @param diversityStrategy
   */
-class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrategy, problemType: ProblemType) extends LazyLogging {
+class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrategy, problemType: ProblemType)(implicit val logPaddingSize: Int) extends PaddedLogging {
 
   val tdConfig = ConfigProvider.config.getConfig("evolution.templateDimension")
 
@@ -37,7 +37,7 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
     */
   def mutate(population: TPopulation): TPopulation = {
 
-    logger.info(s"Starting new mutation phase for the population...")
+    info(s"Starting new mutation phase for the population...")
 
     def mutateIndividual(individual: TemplateTree[TemplateMember]) = {
 
@@ -73,17 +73,17 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
             if(pivot > 0.8 && currentLevel < maxEnsembleDepth - 1) {
               val numberOfNewChildren = new Random().nextInt(3)
               val randomEnsemblingMember = getRandomEnsemblingMember
-              logger.info(s"\t\t Mutation happened from leaf node $lt to ensembling of $numberOfNewChildren submembers - $randomEnsemblingMember , causing increasing of complexity.")
+              info(s"\t\t Mutation happened from leaf node $lt to ensembling of $numberOfNewChildren submembers - $randomEnsemblingMember , causing increasing of complexity.")
               NodeTemplate(getRandomEnsemblingMember, Seq(lt) ++ (1 to numberOfNewChildren).map(_ => LeafTemplate(getRandomBaseMemberBasedOnProblemType)))
             } else {
               val randomBaseMemberBasedOnProblemType = getRandomBaseMemberBasedOnProblemType
               // TODO rewrite so that we don't need to cast member to SimpleModelMember
-              logger.info(s"\t\t Mutation happened from leaf node $lt to another leaf node ${getRandomBaseMemberWithExclusion(Seq(member.asInstanceOf[SimpleModelMember]))}")
+              info(s"\t\t Mutation happened from leaf node $lt to another leaf node ${getRandomBaseMemberWithExclusion(Seq(member.asInstanceOf[SimpleModelMember]))}")
               LeafTemplate(randomBaseMemberBasedOnProblemType)
             }
           } else
             {
-              logger.info("Dead end. Lost an opportunity to mutate.")
+              info("Dead end. Lost an opportunity to mutate.")
               lt
             }
 
@@ -91,10 +91,10 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
           if(targetLevelOfMutation == currentLevel) {
             val pivot = new Random().nextDouble()
             if(pivot > 0.8) {
-              logger.info("\t\t Mutate ensembling node by adding new leaf template to its submembers")
+              info("\t\t Mutate ensembling node by adding new leaf template to its submembers")
               NodeTemplate(ensemblingMember, subMembers :+ LeafTemplate(getRandomBaseMemberBasedOnProblemType))
             } else {
-              logger.info("\t\t Mutate ensembling node by adding new ensembling node to its submembers")
+              info("\t\t Mutate ensembling node by adding new ensembling node to its submembers")
               //TODO not just add ensembling node but replace some of the sub members
               val numberOfNewChildren = new Random().nextInt(3)
               NodeTemplate(ensemblingMember, subMembers :+ NodeTemplate(getRandomEnsemblingMember,  (1 to numberOfNewChildren).map(_ => LeafTemplate(getRandomBaseMemberBasedOnProblemType))))

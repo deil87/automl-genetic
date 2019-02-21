@@ -1,5 +1,6 @@
 package com.automl.template.simple
 
+import com.automl.PaddedLogging
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
@@ -10,7 +11,7 @@ import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.ml.regression.LinearRegression
 import org.apache.spark.sql._
 
-case class LinearRegressionModel() extends LinearModelMember with LazyLogging{
+case class LinearRegressionModel()(implicit val logPaddingSize: Int = 0) extends LinearModelMember with PaddedLogging{
 
   override def name: String = "LinearRegressionModel " + super.name
 

@@ -130,7 +130,7 @@ class GenericStackingRegressionSuite extends FunSuite with Matchers with SparkSe
 
       fitnessResult.getCorrespondingMetric should be <= rmseFromGB
 
-    }
+    }(0)
   }
 }
 

@@ -12,6 +12,7 @@ import scala.collection.mutable
 
 class TemplateHyperParametersEvolutionDimensionTest extends FunSuite with Matchers with LazyLogging{
   implicit val system = ActorSystem("AutoMLSuite-system")
+  implicit val logPaddingSize = 0
 
   val problem = MultiClassClassificationProblem
   val templateEvolutionDimension = new TemplateEvolutionDimension(None,1, problem)

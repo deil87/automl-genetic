@@ -18,7 +18,7 @@
     </filter>-->
         <encoder>
             <!--<pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} %msg%n</pattern>-->
-            <pattern>%d{HH:mm:ss.SSS} %-5level TED %msg%n</pattern>
+            <pattern>%d{HH:mm:ss.SSS} %-5level %msg%n</pattern>
         </encoder>
     </appender>
     <appender name="STDOUT_L2" class="ch.qos.logback.core.ConsoleAppender">
@@ -47,7 +47,7 @@
     <logger name="breeze.optimize.OWLQN" level="ERROR"/>
     <logger name="com.automl" level="DEBUG"/>
     <logger name="com.automl.EvaluatedTemplateData" level="DEBUG"/>
-    <logger name="com.automl.AutoML" level="INFO"/>
+    <logger name="com.automl.AutoML" level="DEBUG"/>
     <logger name="com.automl.template" level="INFO" />
     <logger name="com.automl.template.simple" level="INFO" />
     <logger name="com.automl.template.simple.Bayesian" level="DEBUG" />
@@ -55,9 +55,9 @@
     <logger name="com.automl.evolution.evaluation" level="DEBUG"/>
     <logger name="com.automl.evolution.selection" level="DEBUG"/>
     <!--<logger name="com.automl.evolution.dimension.TemplateEvolutionDimensionSuite" level="DEBUG"/>-->
-    <logger name="com.automl.evolution.dimension.hparameter.TemplateHyperParametersEvolutionDimension" level="DEBUG" additivity="false">
-        <appender-ref ref="STDOUT_L2" />
-    </logger>
+    <!--<logger name="com.automl.evolution.dimension.hparameter.TemplateHyperParametersEvolutionDimension" level="DEBUG" additivity="false">-->
+        <!--<appender-ref ref="STDOUT_L2" />-->
+    <!--</logger>-->
     <!--<logger name="com.automl.spark" level="DEBUG"/>-->
     <logger name="utils" level="DEBUG"/>
     <logger name="org.apache.spark" level="ERROR"/>

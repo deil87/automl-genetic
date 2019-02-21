@@ -8,7 +8,7 @@ import org.apache.spark.sql.DataFrame
 
 import scala.util.Random
 
-case class Wildcard(members: Seq[TemplateMember] = SimpleModelMember.poolOfSimpleModels.randSubList)  extends SimpleModelMember {
+case class Wildcard(members: Seq[TemplateMember] = SimpleModelMember.poolOfSimpleModels.randSubList)(implicit val logPaddingSize: Int = 0)  extends SimpleModelMember with PaddedLogging {
 
   lazy val size = members.length
 

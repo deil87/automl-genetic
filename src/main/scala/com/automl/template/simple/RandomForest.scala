@@ -1,5 +1,6 @@
 package com.automl.template.simple
 
+import com.automl.PaddedLogging
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
@@ -11,7 +12,7 @@ import org.apache.spark.ml.feature.VectorIndexer
 import org.apache.spark.ml.regression.RandomForestRegressor
 import org.apache.spark.sql._
 
-case class RandomForest() extends SimpleModelMember with SparkSessionProvider{
+case class RandomForest()(implicit val logPaddingSize: Int = 0) extends SimpleModelMember with SparkSessionProvider with PaddedLogging{
   override def name: String = "Random forest " + super.name
 
 

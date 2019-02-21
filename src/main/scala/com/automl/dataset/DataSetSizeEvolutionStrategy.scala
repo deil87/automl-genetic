@@ -11,9 +11,10 @@ class RandomDataSetSizeEvolutionStrategy extends DataSetSizeEvolutionStrategy {
   override def evolve(currentDF: DataFrame, newSize: Long, maxNumberOfEvolutions: Int, wholeDF: DataFrame)
                      (implicit samplingStrategy: SamplingStrategy): DataFrame = {
     val totalDataSize = wholeDF.count()
-//    lazy val evolutionDataSizeFactor: Long = Math.max(totalDataSize / maxNumberOfEvolutions, 500)
+
     val evolveToThisSize = if (newSize >= totalDataSize) totalDataSize else newSize
-    samplingStrategy.sample(wholeDF, evolveToThisSize)
+    val ratio = evolveToThisSize.toDouble / totalDataSize
+    samplingStrategy.sample(wholeDF, ratio)
   }
 }
 

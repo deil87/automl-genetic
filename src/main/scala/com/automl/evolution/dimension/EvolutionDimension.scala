@@ -1,6 +1,6 @@
 package com.automl.evolution.dimension
 
-import com.automl.{Evaluated, EvaluatedTemplateData, Population}
+import com.automl.{Evaluated, EvaluatedTemplateData, PaddedLogging, Population}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.DataFrame
 
@@ -13,11 +13,13 @@ import scala.collection.mutable
   * @tparam T
   */
 //TODO problemType: ProblemType parameter might be moved somewhere to a field like `population`
-trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: Evaluated[EvaluatedResult]] extends LazyLogging{
+trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: Evaluated[EvaluatedResult]] { self: PaddedLogging =>
 
   var _population: PopulationType
 
   var _evaluatedPopulation: Seq[EvaluatedResult] = Nil
+
+  var currentWorkingDFSize:Long = 0
 
   //We should have best population and bestIndividual as a separate things
   def getInitialPopulation: PopulationType = {
@@ -43,29 +45,30 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
 
   def evolve(population: PopulationType, workingDF: DataFrame): PopulationType = {
     showCurrentPopulation()
-    logger.debug("Starting next evolution...")
+    debug("Starting next evolution...")
     val evaluatedOriginalPopulation = getLastEvaluatedPopulation(workingDF)
 
-    logger.debug("Selecting parents:")
+    debug("Selecting parents:")
     val selectedParents= selectParents(evaluatedOriginalPopulation)
 
     val selectedParentsPopulation = extractIndividualsFromEvaluatedIndividuals(selectedParents)
 
-    logger.debug("Mutating parents:")
+    debug("Mutating parents:")
     val offspring = mutateParentPopulation(selectedParentsPopulation)
 
-    logger.debug("Evaluating offspring:")
+    debug("Evaluating offspring:")
     val evaluatedOffspring = evaluatePopulation(offspring, workingDF)
 
+    debug("Updating hallOfFame:")
     updateHallOfFame(evaluatedOffspring)
 
-    logger.debug("Selecting survivals:")
+    debug("Selecting survivals:")
     val survivedForNextGenerationEvaluatedTemplates = selectSurvived(population.size, evaluatedOffspring)
 
     _evaluatedPopulation = survivedForNextGenerationEvaluatedTemplates
 
     val evolvedNewGeneration = extractIndividualsFromEvaluatedIndividuals(survivedForNextGenerationEvaluatedTemplates)
-    logger.debug("Evolution is finished.")
+    debug("Evolution is finished.")
 
     _population = evolvedNewGeneration
     _population
@@ -103,13 +106,22 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
   def getEvaluatedPopulation: Seq[EvaluatedResult] = _evaluatedPopulation
 
   def getLastEvaluatedPopulation(workingDF: DataFrame): Seq[EvaluatedResult] = {
-    if(getEvaluatedPopulation.nonEmpty) {
-      logger.debug("Taking evaluated population from previous generation.")
+    val newWorkingDFSize = workingDF.count()
+    val evaluated = if (getEvaluatedPopulation.nonEmpty && newWorkingDFSize == currentWorkingDFSize) {
+      debug("Taking evaluated population from previous generation.")
       getEvaluatedPopulation
     } else {
-      logger.debug("Evaluating population for the very first time.")
-      evaluatePopulation(getPopulation, workingDF)
+      if (newWorkingDFSize != currentWorkingDFSize && currentWorkingDFSize != 0) {
+        debug(s"Reevaluating population due to increased working dataset size from $currentWorkingDFSize to $newWorkingDFSize")
+        currentWorkingDFSize = newWorkingDFSize
+        evaluatePopulation(getPopulation, workingDF)
+      } else {
+        currentWorkingDFSize = newWorkingDFSize
+        debug("Evaluating population for the very first time.")
+        evaluatePopulation(getPopulation, workingDF)
+      }
     }
+    evaluated
   }
 
   def getBestFromPopulation(workingDF: DataFrame): EvaluatedResult
