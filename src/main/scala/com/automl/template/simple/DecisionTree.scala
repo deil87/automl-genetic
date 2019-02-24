@@ -17,7 +17,10 @@ import org.apache.spark.sql._
 import utils.SparkMLUtils
 
 
-case class DecisionTree(hpGroup: DecisionTreeHPGroup = DecisionTreeHPGroup.default)(implicit val logPaddingSize: Int = 0) extends SimpleModelMember with SparkSessionProvider with PaddedLogging{
+case class DecisionTree(hpGroup: DecisionTreeHPGroup = DecisionTreeHPGroup.default)(implicit val logPaddingSize: Int = 0)
+  extends SimpleModelMember
+  with SparkSessionProvider with PaddedLogging{
+
   override def name: String = "DecisionTree " + super.name
 
   override def canHandleProblemType: PartialFunction[ProblemType, Boolean] = {

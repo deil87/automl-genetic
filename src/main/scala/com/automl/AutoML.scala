@@ -91,7 +91,7 @@ class AutoML(data: DataFrame,
   /*Probably we need a tree of dimensions in order to predefine dependencies*/
   def runEvolution(implicit as: ActorSystem): Unit = {
 
-    val templateEvDim = new TemplateEvolutionDimension(initialPopulation = seedPopulation,problemType = problemType)(as, logPaddingSize + 0)
+    val templateEvDim = new TemplateEvolutionDimension(initialPopulation = seedPopulation, problemType = problemType)(as, logPaddingSize + 0)
 
     //TODO implement changing of dataset's size as SizeEvolution dimension.
     var workingDataSet: DataFrame = if(isDataBig) {

@@ -3,8 +3,8 @@ import akka.actor.{ActorRef, ActorSystem}
 import com.automl.EvaluatedTemplateData.logger
 import com.automl.evolution.dimension.hparameter.{EvaluatedHyperParametersField, HyperParametersField, TemplateHyperParametersEvolutionDimension}
 import com.automl.evolution.diversity.{DistinctDiversityStrategy, MisclassificationDistance}
-import com.automl.evolution.evaluation.{TemplateNSLCEvaluator}
-import com.automl.{EvaluatedTemplateData, PaddedLogging, Population, TPopulation}
+import com.automl.evolution.evaluation.{NeighboursFinder, TemplateNSLCEvaluator}
+import com.automl.{ConfigProvider, EvaluatedTemplateData, PaddedLogging, Population, TPopulation}
 import com.automl.evolution.mutation.{DepthDependentTemplateMutationStrategy, MutationProbabilities}
 import com.automl.evolution.selection.RankSelectionStrategy
 import com.automl.helper.{FitnessResult, PopulationHelper}
@@ -28,7 +28,10 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
     extends EvolutionDimension[TPopulation, TemplateTree[TemplateMember], EvaluatedTemplateData]
     with PaddedLogging{
 
-  val tdConfig = ConfigFactory.load().getConfig("evolution.templateDimension")
+
+  override def dimensionName: String = "TemplateDimension"
+
+  val tdConfig = ConfigProvider.config.getConfig("evolution.templateDimension")
 
   lazy val evolutionDimensionLabel: String = tdConfig.getString("name")
   lazy val populationSize: Int = tdConfig.getInt("populationSize")
@@ -43,8 +46,10 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
   override var _population: TPopulation = new TPopulation(Nil)
 
   val evaluator = if(problemType == MultiClassClassificationProblem) {
-     new TemplateNSLCEvaluator(new MisclassificationDistance, this, hyperParamsEvDim)(as, logPaddingSize + 4)
+     new TemplateNSLCEvaluator(this, hyperParamsEvDim)(as, logPaddingSize + 4)
   } else ???
+
+  val neighboursFinder = new NeighboursFinder(new MisclassificationDistance)(as, logPaddingSize + 8)
 
    // TODO make it faster with reference to value
   override implicit val individualsEvaluationCache = mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]()
@@ -90,8 +95,10 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
     showCurrentPopulation()
 
     val evaluatedPopulation = getLastEvaluatedPopulation(workingDF)
+
     //Need to decide where selecting neighbours should go. To evaluation or selection or to its own phase.
-    val evaluatedOriginalPopulationWithNeighbours = evaluator.findNeighbours(evaluatedPopulation, evaluatedPopulation, population.size)
+    debug("Finding neighbours for NSLC algorithm:")
+    val evaluatedOriginalPopulationWithNeighbours = neighboursFinder.findNeighbours(evaluatedPopulation, evaluatedPopulation, population.size)
 
     debug("Selecting parents:")
     val selectedParents = selectParents(evaluatedOriginalPopulationWithNeighbours)
@@ -108,7 +115,7 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
     debug("Updating hallOfFame:") // TODO maybe we don't need to update it here as we did it during evaluations in Evaluator
     updateHallOfFame(evaluatedOffspring)
 
-    val evaluatedOffspringWithNeighbours = evaluator.findNeighbours(evaluatedOffspring, evaluatedOffspring ++ evaluatedOriginalPopulationWithNeighbours, population.size)
+    val evaluatedOffspringWithNeighbours = neighboursFinder.findNeighbours(evaluatedOffspring, evaluatedOffspring ++ evaluatedOriginalPopulationWithNeighbours, population.size)
 
     val evaluationResultsForNewExpandedGeneration = evaluatedOffspringWithNeighbours ++ evaluatedOriginalPopulationWithNeighbours
 

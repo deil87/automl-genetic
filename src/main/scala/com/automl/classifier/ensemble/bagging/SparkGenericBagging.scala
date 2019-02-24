@@ -1,5 +1,7 @@
 package com.automl.classifier.ensemble.bagging
 
+import com.automl.{ConsistencyChecker, PaddedLogging}
+import com.automl.dataset.StratifiedSampling
 import com.automl.evolution.dimension.hparameter.HyperParametersField
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
@@ -18,7 +20,8 @@ import org.apache.spark.ml.linalg.{Vector => MLVector}
 import scala.collection.mutable
 
 //TODO consider moving closer to BaggingMember
-case class SparkGenericBagging() extends BaggingMember with LazyLogging{
+case class SparkGenericBagging()(implicit val logPaddingSize: Int = 0) extends BaggingMember
+  with PaddedLogging with ConsistencyChecker{
 
   import utils.SparkMLUtils._
 
@@ -36,17 +39,25 @@ case class SparkGenericBagging() extends BaggingMember with LazyLogging{
 
     import trainDF.sparkSession.implicits._
 
+    debug(s"Evaluating $name")
+    debug(s"Sampling(stratified) without replacement for submembers of $name")
+    val stratifiedSampler = new StratifiedSampling
     val trainingSamplesForSubmembers = subMembers.map { model =>
-      (model, trainDF.sample(withReplacement = false, 0.8)) // How to sample?
+      (model, stratifiedSampler.sample(trainDF,0.8))
     }
 
-    val results: Seq[(TemplateTree[A], FitnessResult)] = trainingSamplesForSubmembers.zipWithIndex.map{ case ((model, trainingSample), modelIdx) =>
-
-      //TODO  Should we keep aside testDF? Maybe we are computing just training error. We need to split trainingSample into (train,test)
-      //TODO We need to make sure that Indexers of submembers have the same sets of indexes ( sorting frame by `label`).
-      // But by sampling trainDF we can not guarantee that we will not miss some level
-      (model, model.evaluateFitness(trainingSample, testDF, problemType, hyperParamsMap))
+    consistencyCheck{
+      val numberOfLevels = trainingSamplesForSubmembers.map(_._2.select("indexedLabel").distinct().count())
+      if (!numberOfLevels.forall(_ == numberOfLevels.head)) {
+        throw new IllegalStateException("Number of levels should be preserved during stratified sampling for submemers of Bagging ensemble node.")
+      }
     }
+
+    val results: Seq[(TemplateTree[A], FitnessResult)] = trainingSamplesForSubmembers
+      .zipWithIndex
+      .map { case ((model, trainingSample), modelIdx) =>
+        (model, model.evaluateFitness(trainingSample, testDF, problemType, hyperParamsMap))
+      }
 
     val dfWithPredictionsFromBaseModels: Seq[DataFrame] = results
       .map(_._2.dfWithPredictions)
@@ -111,7 +122,7 @@ case class SparkGenericBagging() extends BaggingMember with LazyLogging{
         val f1 = evaluator
           .evaluate(mergedAndRegressedDF)
 
-        logger.info(s"$name : f1 = " + f1)
+        debug(s"$name : f1 = " + f1)
         FitnessResult(Map("f1" -> f1), problemType, mergedAndRegressedDF)
 
       case RegressionProblem =>

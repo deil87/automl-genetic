@@ -61,6 +61,7 @@
     <!--<logger name="com.automl.spark" level="DEBUG"/>-->
     <logger name="utils" level="DEBUG"/>
     <logger name="org.apache.spark" level="ERROR"/>
+    <logger name="breeze.optimize" level="ERROR"/>
     <!--<logger name="org.apache.spark.ml.classification" level="DEBUG"/>-->
     <logger name="com.github.fommil.jni.JniLoader" level="ERROR"/>
 

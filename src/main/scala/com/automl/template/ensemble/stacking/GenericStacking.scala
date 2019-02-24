@@ -1,5 +1,6 @@
 package com.automl.template.ensemble.stacking
 
+import com.automl.PaddedLogging
 import com.automl.helper.FitnessResult
 import com.automl.regressor.EnsemblingRegressor
 import com.automl.template.{EvaluationMagnet, TemplateMember, TemplateTree, TreeContext}
@@ -17,7 +18,8 @@ import org.apache.spark.sql.DataFrame
 import utils.SparkMLUtils._
 
 
-case class GenericStacking(unusedMetaLearner: PipelineStage = new LinearRegression()) extends StackingMember with LazyLogging {
+case class GenericStacking(unusedMetaLearner: PipelineStage = new LinearRegression())(implicit val logPaddingSize: Int = 0)
+  extends StackingMember with PaddedLogging {
   override def name: String = "SparkStacking " + super.name
 
 

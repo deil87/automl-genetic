@@ -1,6 +1,6 @@
 package com.automl.template.simple
 
-import com.automl.PaddedLogging
+import com.automl.{ConsistencyChecker, PaddedLogging}
 import com.automl.evolution.dimension.hparameter.{BayesianHPGroup, Smoothing}
 import com.automl.exception.SuspiciousPerformanceException
 import com.automl.helper.FitnessResult
@@ -21,7 +21,10 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.types.{DoubleType, StringType}
 import utils.SparkMLUtils
 
-case class Bayesian(hpGroup: BayesianHPGroup = BayesianHPGroup.default)(implicit val logPaddingSize: Int = 0) extends SimpleModelMember with SparkSessionProvider with PaddedLogging{
+case class Bayesian(hpGroup: BayesianHPGroup = BayesianHPGroup.default)(implicit val logPaddingSize: Int = 0)
+  extends SimpleModelMember
+  with SparkSessionProvider with PaddedLogging with ConsistencyChecker{
+
   override def name: String = "Bayesian " + super.name
 
   override def canHandleProblemType: PartialFunction[ProblemType, Boolean] = {
@@ -66,8 +69,10 @@ case class Bayesian(hpGroup: BayesianHPGroup = BayesianHPGroup.default)(implicit
 
         val classes = trainDF.select("indexedLabel").distinct().collect().map(_.getDouble(0))
 
-        require(classes contains(0.0), s"Bayesian labels should have all indexes ans zero-based but instead: ${classes.mkString(",")}")
-//        require(classes.length == 6, s"For glass dataset there should be 5 classes but instead: ${classes.mkString(",")}")
+        consistencyCheck {
+          require(classes contains (0.0), s"Bayesian labels should have all indexes ans zero-based but instead: ${classes.mkString(",")}")
+          //require(classes.length == 6, s"For glass dataset there should be 5 classes but instead: ${classes.mkString(",")}")
+        }
 
         val nb = new NaiveBayes()
           .setModelType("multinomial")

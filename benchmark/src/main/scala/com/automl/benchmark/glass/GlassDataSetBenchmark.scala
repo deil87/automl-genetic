@@ -50,7 +50,7 @@ class GlassDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvid
       maxTime = 5 * 60000,
       useMetaDB = false,
       initialPopulationSize = Some(7),
-      seedPopulation = Some(seedPopulation),
+      seedPopulation = Some(population),
       maxGenerations = 5)
 
     autoMl.runEvolution(as)

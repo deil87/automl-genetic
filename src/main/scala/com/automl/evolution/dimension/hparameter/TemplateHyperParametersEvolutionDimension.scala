@@ -1,7 +1,7 @@
 package com.automl.evolution.dimension.hparameter
 
 
-import com.automl.{Evaluated, PaddedLogging, Population}
+import com.automl.{ConfigProvider, Evaluated, PaddedLogging, Population}
 import com.automl.problemtype.ProblemType
 import com.automl.template.simple.{Bayesian, DecisionTree, LogisticRegressionModel}
 import com.typesafe.config.ConfigFactory
@@ -23,9 +23,12 @@ import scala.util.Random
 class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: TemplateEvolutionDimension, evolveEveryGenerations: Int = 1, problemType: ProblemType)(implicit val logPaddingSize: Int)
   extends EvolutionDimension[HPPopulation, HyperParametersField, EvaluatedHyperParametersField] with PaddedLogging{
 
+
+  override def dimensionName: String = "HyperparametersDimension"
+
   override var _population: HPPopulation = new HPPopulation(Nil)
 
-  val hpdConfig = ConfigFactory.load().getConfig("evolution.hyperParameterDimension")
+  val hpdConfig = ConfigProvider.config.getConfig("evolution.hyperParameterDimension")
 
   lazy val evolutionDimensionLabel: String = hpdConfig.getString("name")
 

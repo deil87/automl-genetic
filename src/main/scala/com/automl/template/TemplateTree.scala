@@ -2,11 +2,12 @@ package com.automl.template
 
 import java.util.UUID
 
+import com.automl.PaddedLogging
 import com.automl.evolution.dimension.hparameter.HyperParametersField
 import com.automl.template.ensemble.EnsemblingModelMember
 import com.automl.template.simple.SimpleModelMember
 import org.apache.spark.sql.DataFrame
-import com.automl.helper.FitnessResult
+import com.automl.helper.{FitnessResult, TemplateTreeHelper}
 import com.automl.problemtype.ProblemType
 import com.typesafe.scalalogging.LazyLogging
 import kamon.Kamon
@@ -20,9 +21,9 @@ sealed trait TemplateTree[+A <: TemplateMember]{
   def member: A
 
   var logPaddingSize: Int = 0
-  def setLogPadding(size: Int): Unit = logPaddingSize = size
+  def setLogPadding(size: Int): Unit  //We need to set padding first to TemplateTree and then propogate it to members of this tree
 
-  val id = RandomStringUtils.randomAlphanumeric(5) // NOTE: Do not use as unique key
+  val id: String = RandomStringUtils.randomAlphanumeric(5) // NOTE: Do not use as unique key
 //  val orderNumber:Int No we don't want to keep track of the indexes as they will be changing all the time due to evolutions
 
   def subMembers: Seq[TemplateTree[A]]
@@ -36,13 +37,14 @@ case class LeafTemplate[+A <: SimpleModelMember](member: A) extends TemplateTree
   override def subMembers: Seq[TemplateTree[A]] = throw new UnsupportedOperationException("Leaf template isn't supposed to have subMembers")
 
 
+  override def setLogPadding(size: Int): Unit = member.setLogPadding(size)
+
   override def evaluateFitness(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParamsMap: HyperParametersField)(implicit tc: TreeContext = TreeContext()): FitnessResult = {
 
-    TemplateTree.updateLeafTC(member.name, height,tc)
+    TemplateTree.updateLeafTC(member.name, height,tc)(logPaddingSize)
 
     trainDF.cache()
     testDF.cache()
-    member.setLogPadding(logPaddingSize)
     member.fitnessError(trainDF, testDF, problemType)
   }
 
@@ -54,39 +56,50 @@ case class LeafTemplate[+A <: SimpleModelMember](member: A) extends TemplateTree
 case class NodeTemplate[+A <: TemplateMember](member: A, subMembers: Seq[TemplateTree[A]] = Nil) extends TemplateTree[A] {
   require(member.isInstanceOf[EnsemblingModelMember], "NodeTemplates's member shoud be of ensembling type")
 
+  override def setLogPadding(size: Int): Unit = {
+    member.setLogPadding(size)
+    subMembers.foreach(_.setLogPadding(size + 4))
+  }
+
   //We delegating calculation to ensemble member as well
   override def evaluateFitness(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParamsField: HyperParametersField)(implicit tc: TreeContext = TreeContext()): FitnessResult = {
-    val updatedTC = TemplateTree.updateNodeTC(member.name, height, tc)
+    val updatedTC = TemplateTree.updateNodeTC(member.name, height, tc)(logPaddingSize)
     //member.fitnessError(trainDF, testDF, subMembers)
     //or
     member.asInstanceOf[EnsemblingModelMember].ensemblingFitnessError(trainDF, testDF, subMembers, problemType, hyperParamsField)(updatedTC)
   }
 }
 
-object TemplateTree extends LazyLogging{
+object TemplateTree extends PaddedLogging {
 
-  def updateLeafTC(memberName: String, currentHeight: Int, tc: TreeContext):Unit = {
+  override def logPaddingSize: Int = 0
+
+  def updateLeafTC(memberName: String, currentHeight: Int, tc: TreeContext)(implicit logPaddingSize: Int):Unit = {
     val updatedTC = if(tc.level.isDefined) {
-      logger.info(s"Evaluating LeafTemplate $memberName on the ${tc.level.get} level")
+      debugImpl(s"Evaluating LeafTemplate $memberName on the ${tc.level.get} level")
     }
     else
       tc.copy(level = Some(currentHeight))
   }
 
-  def updateNodeTC(memberName: String, currentHeight: Int, tc: TreeContext):TreeContext = {
+  def updateNodeTC(memberName: String, currentHeight: Int, tc: TreeContext)(implicit logPaddingSize: Int):TreeContext = {
     if(tc.level.isDefined) {
-      logger.info(s"Evaluating $memberName on the ${tc.level.get} level")
+      debugImpl(s"Evaluating $memberName on the ${tc.level.get} level")
       tc.copy(level = Some(tc.level.get - 1))
     }
     else
       tc.copy(level = Some(currentHeight))
   }
 
+  implicit def helper(templateTree: TemplateTree[TemplateMember]) = new {
+    def render: String = TemplateTreeHelper.renderAsString_v2(templateTree)
+  }
+
 }
 
 case class TreeContext(level: Option[Int] = None)
 
-trait TemplateMember {
+trait TemplateMember { self: PaddedLogging =>
   def name: String
 
   @Deprecated() //"Consider to remove if there is no way to improve flexibility of evaluation API"
@@ -97,4 +110,8 @@ trait TemplateMember {
   def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType): FitnessResult
 
   override def toString: String = name
+
+  def setLogPadding(size: Int): Unit = {
+    overrideTo = size
+  }
 }

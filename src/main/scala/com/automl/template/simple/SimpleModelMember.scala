@@ -1,14 +1,10 @@
 package com.automl.template.simple
 
-import com.automl.PaddedLogging
+import com.automl.{ConfigProvider, PaddedLogging}
 import com.automl.problemtype.ProblemType
 import com.automl.template._
-import com.automl.template.ensemble.EnsemblingModelMember
-import com.automl.template.ensemble.EnsemblingModelMember.poolOfEnsemblingModels
 import com.automl.template.simple.perceptron.LinearPerceptron
 import com.automl.teststrategy.TestStrategy
-import com.typesafe.config.ConfigFactory
-import org.apache.spark.sql._
 
 import scala.collection.JavaConverters._
 
@@ -20,9 +16,6 @@ trait SimpleModelMember extends TemplateMember { self: PaddedLogging =>
   def modelKey: ModelKey = ???
 
   def testStrategy: TestStrategy = ???
-
-  def setLogPadding(size: Int): Unit = overrideTo = size
-
 }
 
 object SimpleModelMember {
@@ -46,7 +39,7 @@ object SimpleModelMember {
     poolOfSimpleModels.filter(_.canHandleProblemType(problemType))
   }
 
-  val tdConfig = ConfigFactory.load().getConfig("evolution.templateDimension")
+  val tdConfig = ConfigProvider.config.getConfig("evolution.templateDimension")
   lazy val poolOfSimpleModelsNames: Seq[String] = tdConfig.getStringList("poolOfSimpleModels").asScala
 
   // Maybe it is better to specify names inside models so that we don't need to pattern match here and suplicate stringg ids

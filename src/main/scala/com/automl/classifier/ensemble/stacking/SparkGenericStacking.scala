@@ -166,7 +166,7 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) extends LazyLog
         .withColumnRenamed("probability", probabilityCol) // we can use here `rawPrediction` and `probability` columns.
         .withColumn(weightCol, lit(fitnessResultWithPredictions.getCorrespondingMetric))
         .withColumn(weightedProbCol, weightedProbability(col(probabilityCol), lit(fitnessResultWithPredictions.getCorrespondingMetric)))
-        .showN_AndContinue(500, "Splits predictions:")
+//        .showN_AndContinue(500, "Splits predictions:")
         .cache()
 
       holdoutFoldPredictions
@@ -289,7 +289,7 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) extends LazyLog
       .drop(metaFeatures:_*)
       .drop(metaFeaturesWP:_*)
 
-    trainAssembled.showN_AndContinue(500, "All combined with foldLeft metafeatures of the train dataset")
+    trainAssembled.showN_AndContinue(50, "All combined with foldLeft metafeatures of the train dataset")
 
     val testModelsPredictionsDFWithAccumulator = testModelsPredictionsDF.withColumn("weightedProbSoftVoted", emptyArray(lit(numClasses)))
     val combinedTestWeightedProabilities = metaFeaturesWP.foldLeft(testModelsPredictionsDFWithAccumulator)((res, next) =>
@@ -301,7 +301,7 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) extends LazyLog
       .drop(metaFeatures:_*)
       .drop(metaFeaturesWP:_*)
 
-    testAssembled.showN_AndContinue(500, "All weighted probabilities combined with foldLeft  of the test dataset")
+    testAssembled.showN_AndContinue(50, "All weighted probabilities combined with foldLeft  of the test dataset")
 
 
     val metaModel = metaPredictor match {

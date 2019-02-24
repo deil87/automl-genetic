@@ -1,23 +1,20 @@
 package com.automl.template.ensemble
 
+import com.automl.{ConfigProvider, PaddedLogging}
 import com.automl.evolution.dimension.hparameter.HyperParametersField
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
-import com.automl.regressor.{AverageRegressor, EnsemblingRegressor}
 import com.automl.template._
 import com.automl.template.ensemble.bagging.BaggingMember
-import com.automl.template.ensemble.boosting.BoostingMember
-import com.automl.template.ensemble.cascading.CascadingMember
 import com.automl.template.ensemble.stacking.{GenericStacking, StackingMember}
-import com.typesafe.config.ConfigFactory
 import org.apache.spark.sql._
 
 import scala.collection.JavaConverters._
 
-trait EnsemblingModelMember extends TemplateMember {
+trait EnsemblingModelMember extends TemplateMember { self: PaddedLogging =>
   override def name: String = "ensembling member"
 
-  //TODO maybe we can reuse the same name so that we can treat SImple and Ensempling nodes equally?
+  //TODO maybe we can reuse the same name so that we can treat Simple and Ensempling nodes equally?
   override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType): FitnessResult = {
     throw new IllegalStateException("We should call ensemblingFitnessError method for ensembling classifiers")
   }
@@ -36,7 +33,8 @@ object EnsemblingModelMember {
   val poolOfEnsemblingModels: Set[EnsemblingModelMember] =
     BaggingMember.poolOfBaggingModels + StackingMember.MyStackingImpl /*++ BoostingMember.poolOfBoostingModels + StackingMember.MyStackingImpl + CascadingMember.MyCascadingImpl*/
 
-  val tdConfig = ConfigFactory.load().getConfig("evolution.templateDimension")
+  val tdConfig = ConfigProvider.config.getConfig("evolution.templateDimension")
+
   lazy val poolOfEnsemblingModelsNames: Seq[String] = tdConfig.getStringList("poolOfEnsemblingModels").asScala
 
   def poolOfEnsemblingModelsByNames(names: Seq[String]): Seq[EnsemblingModelMember] = names.flatMap {

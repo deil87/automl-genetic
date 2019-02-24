@@ -15,6 +15,8 @@ import scala.collection.mutable
 //TODO problemType: ProblemType parameter might be moved somewhere to a field like `population`
 trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: Evaluated[EvaluatedResult]] { self: PaddedLogging =>
 
+  def dimensionName: String
+
   var _population: PopulationType
 
   var _evaluatedPopulation: Seq[EvaluatedResult] = Nil
@@ -45,11 +47,11 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
 
   def evolve(population: PopulationType, workingDF: DataFrame): PopulationType = {
     showCurrentPopulation()
-    debug("Starting next evolution...")
+    debug(s"Starting next $dimensionName evolution...")
     val evaluatedOriginalPopulation = getLastEvaluatedPopulation(workingDF)
 
     debug("Selecting parents:")
-    val selectedParents= selectParents(evaluatedOriginalPopulation)
+    val selectedParents = selectParents(evaluatedOriginalPopulation)
 
     val selectedParentsPopulation = extractIndividualsFromEvaluatedIndividuals(selectedParents)
 
@@ -108,16 +110,16 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
   def getLastEvaluatedPopulation(workingDF: DataFrame): Seq[EvaluatedResult] = {
     val newWorkingDFSize = workingDF.count()
     val evaluated = if (getEvaluatedPopulation.nonEmpty && newWorkingDFSize == currentWorkingDFSize) {
-      debug("Taking evaluated population from previous generation.")
+      debug(s"Taking $dimensionName evaluated population from previous generation.")
       getEvaluatedPopulation
     } else {
       if (newWorkingDFSize != currentWorkingDFSize && currentWorkingDFSize != 0) {
-        debug(s"Reevaluating population due to increased working dataset size from $currentWorkingDFSize to $newWorkingDFSize")
+        debug(s"Reevaluating $dimensionName population due to increased working dataset size from $currentWorkingDFSize to $newWorkingDFSize")
         currentWorkingDFSize = newWorkingDFSize
         evaluatePopulation(getPopulation, workingDF)
       } else {
         currentWorkingDFSize = newWorkingDFSize
-        debug("Evaluating population for the very first time.")
+        debug(s"Evaluating $dimensionName population for the very first time.")
         evaluatePopulation(getPopulation, workingDF)
       }
     }

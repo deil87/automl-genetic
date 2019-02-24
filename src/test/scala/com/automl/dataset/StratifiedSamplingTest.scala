@@ -1,8 +1,9 @@
 package com.automl.dataset
 
-import org.scalatest.{FunSuite, Matchers}
+import com.automl.spark.SparkSessionProvider
+import org.scalatest.{FunSuite, Matchers, Retries}
 
-class StratifiedSamplingTest extends FunSuite with Matchers{
+class StratifiedSamplingTest extends FunSuite with Matchers with SparkSessionProvider with Retries{
 
   test("Stratified should return ratio of the data per class") {
     val stratifier = new StratifiedSampling
@@ -15,4 +16,37 @@ class StratifiedSamplingTest extends FunSuite with Matchers{
 
     counts(0).toDouble / 2 shouldBe countsS(0).toDouble +- 5
   }
+
+  test("Stratified should preserve all levels") {
+    val stratifier = new StratifiedSampling
+    import utils.SparkMLUtils._
+    import ss.implicits._
+
+    val observations = ss.sparkContext.parallelize(
+      Seq(
+        (0.0),
+        (0.0),
+        (0.0),
+        (0.0),
+        (1.0),
+        (1.0),
+        (2.0),
+        (3.0),
+        (3.0),
+        (3.0)
+
+      )
+    ).toDF("grades")
+
+    val sampled = stratifier.sample(observations, 0.5, "grades").cache()
+
+    sampled.showAllAndContinue
+
+    sampled.filter($"grades" === 0.0).count().toDouble shouldBe 2.0
+    sampled.filter($"grades" === 1.0).count().toDouble shouldBe 1.0
+    sampled.filter($"grades" === 2.0).count() shouldBe 1
+    sampled.filter($"grades" === 3.0).count() shouldBe 2
+  }
+
+
 }
