@@ -9,11 +9,11 @@ import com.automl.template.{TemplateMember, TemplateTree}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.ml.classification.Classifier
 import org.apache.spark.ml.feature.VectorAssembler
-import org.apache.spark.ml.linalg.{Vector => MLVector}
+import org.apache.spark.ml.linalg.{DenseVector, Vector => MLVector}
 import org.apache.spark.ml.{PipelineStage, Predictor}
 import org.apache.spark.mllib.util.MLUtils
 import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.functions.lit
+import org.apache.spark.sql.functions.{col, lit}
 import org.apache.spark.sql.types.{IntegerType, LongType, StructField, StructType}
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration
 import org.deeplearning4j.earlystopping.saver.LocalFileModelSaver
@@ -136,9 +136,19 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) extends LazyLog
     testDataSet.cache()
     import utils.SparkMLUtils._
     import trainDataSet.sparkSession.implicits._
+    import org.apache.spark.ml.linalg.DenseVector
 
     val predictionCol: String = s"prediction$numberOfModels"
+    val weightCol: String = s"weight$numberOfModels"
+    val probabilityCol: String = s"probability$numberOfModels"
+    val weightedProbCol: String = s"weightedProb$numberOfModels"
 
+    def weightedProbability = {
+      import org.apache.spark.sql.functions.udf
+      udf { (components: DenseVector, weight: Double) =>
+        new DenseVector(components.values.map(v => v * weight))
+      }
+    }
     /*
     * First stage
     * */
@@ -152,17 +162,20 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) extends LazyLog
       val fitnessResultWithPredictions = member.evaluateFitness(trainingFold, holdoutFold, problemType, hyperParamsMap)
 
       val holdoutFoldPredictions = fitnessResultWithPredictions.dfWithPredictions
-        .withColumnRenamed("prediction", predictionCol)
+        .withColumnRenamed("prediction", predictionCol) // we can use here `rawPrediction` and `probability` columns.
+        .withColumnRenamed("probability", probabilityCol) // we can use here `rawPrediction` and `probability` columns.
+        .withColumn(weightCol, lit(fitnessResultWithPredictions.getCorrespondingMetric))
+        .withColumn(weightedProbCol, weightedProbability(col(probabilityCol), lit(fitnessResultWithPredictions.getCorrespondingMetric)))
+        .showN_AndContinue(500, "Splits predictions:")
         .cache()
-//      if(splitIndex == 1)
-//        holdoutFoldPredictions.withColumnReplace(predictionCol, $"$predictionCol" + new Random().nextDouble()*100)
-//      else
+
       holdoutFoldPredictions
     }
 
     val reunitedSplits: DataFrame = splitsWithPredictions
       .reduceLeft((reunitedDataFrame, next) => reunitedDataFrame.union(next))
-      .select("uniqueIdColumn", predictionCol)
+      .select("uniqueIdColumn", weightedProbCol)
+        .showAllAndContinue
 
     require(trainDataSet.count() == reunitedSplits.count(), "Reunited splits do not sum up to the original training dataset's size.")
 
@@ -174,31 +187,25 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) extends LazyLog
     * Second stage
     * */
 
-    logger.info(s"Predictions for test split are going to be calculateg by ${member.member.name} model trained on whole training dataset")
+    logger.info(s"Predictions for test split are going to be calculated by ${member.member.name} model trained on whole training dataset")
+
+    val fitnessResultOnWholeData = member
+      .evaluateFitness(trainDataSet, testDataSet, problemType, hyperParamsMap)
 
     val predictionsForTestSetDF: DataFrame =
-      member
-        .evaluateFitness(trainDataSet, testDataSet, problemType, hyperParamsMap)
+      fitnessResultOnWholeData
         .dfWithPredictions
         .withColumnRenamed("prediction", predictionCol)
-//      .showN_AndContinue(100, "Raw predictions")
-        .select("uniqueIdColumn", predictionCol)
+        .withColumn(weightedProbCol, weightedProbability(col("probability"), lit(fitnessResultOnWholeData.getCorrespondingMetric)))
+        .showN_AndContinue(500, "Test weighted probs")
+        .select("uniqueIdColumn", predictionCol, weightedProbCol)
 
     logger.info(s"Predictions based on the whole training dataset were calculated by ${member.member.name} and added to `testModelsPredictionsDF`")
 
     testModelsPredictionsDF = testModelsPredictionsDF.join(predictionsForTestSetDF, "uniqueIdColumn").cache()
 
-    import testDataSet.sparkSession.implicits._
-    import org.apache.spark.sql.functions._
-
-//    trainModelsPredictionsDF.select("uniqueIdColumn", predictionCol).join(trainDataSet.select("uniqueIdColumn", "indexedLabel").withColumnRenamed("indexedLabel", "indexedLabel_train"), "uniqueIdColumn")
-//        .withColumn("diff", when($"$predictionCol" === $"indexedLabel_train", 1).otherwise(0))
-//        .showN_AndContinue(100, "Diff show")
-
-
     numberOfModels += 1
     this
-
   }
 
     def addModel(predictor: PipelineStage,  trainDataSet: DataFrame, testDataSet: DataFrame, problemType: ProblemType) = {
@@ -252,14 +259,50 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) extends LazyLog
   def performStacking(metaPredictor: PipelineStage) = {
     import utils.SparkMLUtils._
     val metaFeatures = (0 until numberOfModels).toArray.map(idx => s"prediction$idx")
+    val metaFeaturesWP = (0 until numberOfModels).toArray.map(idx => s"weightedProb$idx")
     def featuresAssembler = new VectorAssembler()
       .setInputCols(metaFeatures)
       .setOutputCol("features")
 
-    val trainAssembled = featuresAssembler.transform(trainModelsPredictionsDF).drop(metaFeatures:_*)
-    val testAssembled = featuresAssembler.transform(testModelsPredictionsDF).drop(metaFeatures:_*)
+    def weightedProbabilityCombine = {
+      import org.apache.spark.sql.functions.udf
+      udf { (weightedProb1: DenseVector, weightedProb2: DenseVector) =>
+        new DenseVector(weightedProb1.toArray.zip(weightedProb2.toArray).map{case (a,b)=> a + b})
+      }
+    }
+    def emptyArray = {
+      import org.apache.spark.sql.functions.udf
+      udf { size: Int =>
+        new DenseVector(Array.fill(size)(0))
+      }
+    }
 
-//    trainAssembled.showN_AndContinue(trainAssembled.count().toInt, "Perform fitting of the metalearner")
+    val numClasses = trainModelsPredictionsDF.select("indexedLabel").distinct().count().toInt // TODO it might not be the case!!!! pass num of classes in another way
+    val trainModelsPredictionsDFWithAccumulator = trainModelsPredictionsDF.withColumn("weightedProbSoftVoted", emptyArray(lit(numClasses)))
+    val combinedTrainWeightedProabilities = metaFeaturesWP.foldLeft(trainModelsPredictionsDFWithAccumulator)((res, next) =>
+      res.withColumnReplace("weightedProbSoftVoted", weightedProbabilityCombine(col("weightedProbSoftVoted"), col(next)))
+    )
+
+
+    val trainAssembled = combinedTrainWeightedProabilities
+      .withColumnRenamed("weightedProbSoftVoted", "features") // we might need to divide each element by number of predictors
+      .drop(metaFeatures:_*)
+      .drop(metaFeaturesWP:_*)
+
+    trainAssembled.showN_AndContinue(500, "All combined with foldLeft metafeatures of the train dataset")
+
+    val testModelsPredictionsDFWithAccumulator = testModelsPredictionsDF.withColumn("weightedProbSoftVoted", emptyArray(lit(numClasses)))
+    val combinedTestWeightedProabilities = metaFeaturesWP.foldLeft(testModelsPredictionsDFWithAccumulator)((res, next) =>
+      res.withColumnReplace("weightedProbSoftVoted", weightedProbabilityCombine(col("weightedProbSoftVoted"), col(next)))
+    )
+
+    val testAssembled = combinedTestWeightedProabilities
+      .withColumnRenamed("weightedProbSoftVoted", "features")
+      .drop(metaFeatures:_*)
+      .drop(metaFeaturesWP:_*)
+
+    testAssembled.showN_AndContinue(500, "All weighted probabilities combined with foldLeft  of the test dataset")
+
 
     val metaModel = metaPredictor match {
       case pr: Predictor[_, _, _] => pr.fit(trainAssembled) // .setLabelCol("indexedLabel") is done on the caller's side

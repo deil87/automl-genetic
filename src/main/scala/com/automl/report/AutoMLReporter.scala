@@ -18,7 +18,7 @@ object AutoMLReporter {
 
       println("\n##############################################################")
       println("Best template: " + winner.render(problemType))
-      println("Other best individuals results:\n" + bestIndividuals.dequeueAll.map{fr => fr.render(problemType) }.mkString(",\n")
+      println("Other best individuals results:\n" + bestIndividuals.dequeueAll.map{etd => etd.render(problemType) }.mkString(",\n")
       )
 
     }

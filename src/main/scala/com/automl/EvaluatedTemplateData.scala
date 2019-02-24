@@ -63,7 +63,7 @@ object EvaluatedTemplateData extends LazyLogging {
 
   implicit def evaluatedHelper(individual: EvaluatedTemplateData) = new {
     def render(problemType: ProblemType): String = {
-        s"${TemplateTreeHelper.renderAsString_v2(individual.template)}  ${fitnessRetrieveFunction(problemType,individual.fitness)} ${individual.hyperParamsField.toString}"
+        s"${TemplateTreeHelper.renderAsString_v2(individual.template)} Score: ${individual.fitness.toString} Hyperparameters field: ${individual.hyperParamsField.toString}"
     }
 
     def fitnessRetrieveFunction(problemType: ProblemType, fitnessResult: FitnessResult) = problemType match {

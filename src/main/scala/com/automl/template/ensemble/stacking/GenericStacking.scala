@@ -9,6 +9,7 @@ import com.automl.evolution.dimension.hparameter.HyperParametersField
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
 import com.typesafe.scalalogging.LazyLogging
+import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.evaluation.{MulticlassClassificationEvaluator, RegressionEvaluator}
 import org.apache.spark.ml.regression.LinearRegression
 import org.apache.spark.ml.{Pipeline, PipelineStage, Predictor}
@@ -56,16 +57,22 @@ case class GenericStacking(unusedMetaLearner: PipelineStage = new LinearRegressi
         import testDF.sparkSession.implicits._
         import org.apache.spark.sql.functions.rint
 
-        val metaLearner = new LinearRegression().setFeaturesCol("features").setLabelCol("indexedLabel")
+//        val metaLearner = new LinearRegression().setFeaturesCol("features").setLabelCol("indexedLabel")
+        val metaLearner = new LogisticRegression()
+//          .setWeightCol("weight") //it controls how much faith to put into particular training instance. We need kind of weights for the features
+          .setFeaturesCol("features")
+          .setLabelCol("indexedLabel")
+          .setMaxIter(20)
 
         val finalPredictions = stacking.performStacking(metaLearner)
-//          .showN_AndContinue(100, "Before rounding predictions from GenericStacking")
-          .withColumnReplace("prediction", rint($"prediction")) //NOTE we need to round because LinearRegression metalearner returns raw predictions
+//          .showN_AndContinue(100, "Before rounding predictions from GenericStacking's metalearner")
+//          .withColumnReplace("prediction", rint($"prediction")) //NOTE we need to round because LinearRegression metalearner returns raw predictions
+          .showN_AndContinue(500, "predictions from GenericStacking's metalearner")
           .select("uniqueIdColumn", "features", "prediction") //TODO make sure that performStacking is returning predictions for testDF
           .cache()
 
         val predictionsReunitedWithLabels = finalPredictions.join(testDF.select("indexedLabel", "uniqueIdColumn"), "uniqueIdColumn")
-//          .showN_AndContinue(100, "GenericStacking predictions")
+          .showN_AndContinue(500, "GenericStacking predictions")
           .cache()
 
         val evaluator = new MulticlassClassificationEvaluator()

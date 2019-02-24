@@ -71,10 +71,10 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
             val pivot = new Random().nextDouble()
             // Note currentLevel is zero-based
             if(pivot > 0.8 && currentLevel < maxEnsembleDepth - 1) {
-              val numberOfNewChildren = new Random().nextInt(3)
+              val numberOfNewChildren = new Random().nextInt(2) + 1
               val randomEnsemblingMember = getRandomEnsemblingMember
               info(s"\t\t Mutation happened from leaf node $lt to ensembling of $numberOfNewChildren submembers - $randomEnsemblingMember , causing increasing of complexity.")
-              NodeTemplate(getRandomEnsemblingMember, Seq(lt) ++ (1 to numberOfNewChildren).map(_ => LeafTemplate(getRandomBaseMemberBasedOnProblemType)))
+              NodeTemplate(getRandomEnsemblingMember, Seq(lt) ++ (0 until numberOfNewChildren).map(_ => LeafTemplate(getRandomBaseMemberBasedOnProblemType)))
             } else {
               val randomBaseMemberBasedOnProblemType = getRandomBaseMemberBasedOnProblemType
               // TODO rewrite so that we don't need to cast member to SimpleModelMember

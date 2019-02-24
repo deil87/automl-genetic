@@ -68,6 +68,8 @@ class GenericStackingClassificationSuite extends FunSuite with Matchers with Bef
 
     val genericStacking = GenericStacking(unusedMetaLearner = new GBTRegressor())
 
+    trainDF.showN_AndContinue(30, "Preprocessed Wine dataset")
+    trainDF.describe("indexedLabel").showN_AndContinue(50, "Describe of the label column")
     val models = Seq(
       LeafTemplate(DecisionTree()),
       LeafTemplate(Bayesian())

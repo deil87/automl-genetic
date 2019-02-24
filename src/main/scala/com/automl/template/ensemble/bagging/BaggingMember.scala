@@ -6,7 +6,7 @@ import com.automl.regressor.{AverageRegressor, EnsemblingRegressor}
 import com.automl.template.ensemble.EnsemblingModelMember
 
 trait BaggingMember extends EnsemblingModelMember {
-  override def name: String = "bagging " + super.name
+  override def name: String = "Bagging " + super.name
 
   def ensemblingRegressor[_](problemType: ProblemType): EnsemblingRegressor[_]
 
