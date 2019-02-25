@@ -73,12 +73,13 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
             if(pivot > 0.8 && currentLevel < maxEnsembleDepth - 1) {
               val numberOfNewChildren = new Random().nextInt(2) + 1
               val randomEnsemblingMember = getRandomEnsemblingMember
-              info(s"\t\t Mutation happened from leaf node $lt to ensembling of $numberOfNewChildren submembers - $randomEnsemblingMember , causing increasing of complexity.")
-              NodeTemplate(getRandomEnsemblingMember, Seq(lt) ++ (0 until numberOfNewChildren).map(_ => LeafTemplate(getRandomBaseMemberBasedOnProblemType)))
+              val oneForOriginalTemplate = 1
+              info(s"\t\t Mutation happened from leaf node $lt to ensembling of ${numberOfNewChildren + oneForOriginalTemplate} submembers - $randomEnsemblingMember , causing increasing of complexity.")
+              NodeTemplate(randomEnsemblingMember, Seq(lt) ++ (0 until numberOfNewChildren).map(_ => LeafTemplate(getRandomBaseMemberBasedOnProblemType)))
             } else {
-              val randomBaseMemberBasedOnProblemType = getRandomBaseMemberBasedOnProblemType
+              val randomBaseMemberBasedOnProblemType:SimpleModelMember = getRandomBaseMemberWithExclusion(Seq(member.asInstanceOf[SimpleModelMember])).asInstanceOf[SimpleModelMember]
               // TODO rewrite so that we don't need to cast member to SimpleModelMember
-              info(s"\t\t Mutation happened from leaf node $lt to another leaf node ${getRandomBaseMemberWithExclusion(Seq(member.asInstanceOf[SimpleModelMember]))}")
+              info(s"\t\t Mutation happened from leaf node $lt to another leaf node ${randomBaseMemberBasedOnProblemType}")
               LeafTemplate(randomBaseMemberBasedOnProblemType)
             }
           } else
@@ -90,18 +91,20 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
         case nt@NodeTemplate(ensemblingMember, subMembers) =>
           if(targetLevelOfMutation == currentLevel) {
             val pivot = new Random().nextDouble()
-            if(pivot > 0.8) {
-              info("\t\t Mutate ensembling node by adding new leaf template to its submembers")
-              NodeTemplate(ensemblingMember, subMembers :+ LeafTemplate(getRandomBaseMemberBasedOnProblemType))
-            } else {
+            if(currentLevel < maxEnsembleDepth - 1 && pivot > 0.7) {
               info("\t\t Mutate ensembling node by adding new ensembling node to its submembers")
               //TODO not just add ensembling node but replace some of the sub members
-              val numberOfNewChildren = new Random().nextInt(3)
-              NodeTemplate(ensemblingMember, subMembers :+ NodeTemplate(getRandomEnsemblingMember,  (1 to numberOfNewChildren).map(_ => LeafTemplate(getRandomBaseMemberBasedOnProblemType))))
+              val numberOfNewChildren = new Random().nextInt(2) + 1
+              val randomEnsemblingMember = getRandomEnsemblingMember
+              NodeTemplate(ensemblingMember, subMembers :+ NodeTemplate(randomEnsemblingMember,  (0 until numberOfNewChildren).map(_ => LeafTemplate(getRandomBaseMemberBasedOnProblemType))))
             }
-
+            else {
+              info("\t\t Mutate ensembling node by adding new leaf template to its submembers")
+              NodeTemplate(ensemblingMember, subMembers :+ LeafTemplate(getRandomBaseMemberBasedOnProblemType))
+            }
           } else {
-            traverseAndMutate(subMembers.randElement, currentLevel + 1, targetLevelOfMutation)
+            val randSubmember = subMembers.randElement
+            NodeTemplate(ensemblingMember, subMembers.diff(Seq(randSubmember)) :+ traverseAndMutate(randSubmember, currentLevel + 1, targetLevelOfMutation))
           }
 
       }
