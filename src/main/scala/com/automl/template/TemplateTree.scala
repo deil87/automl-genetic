@@ -93,6 +93,15 @@ object TemplateTree extends PaddedLogging {
 
   implicit def helper(templateTree: TemplateTree[TemplateMember]) = new {
     def render: String = TemplateTreeHelper.renderAsString_v2(templateTree)
+
+    //it is kind of NodeTemplate traversal as we don't have function to check on Leaf nodes
+    def traverseAndCheck(fun: TemplateTree[_] => Boolean): Boolean = {
+      def traverseAndCheck(template: TemplateTree[_], fun: TemplateTree[_] => Boolean):Boolean = template match {
+        case lt@LeafTemplate(_) => true
+        case nt@NodeTemplate(_, subMembers) => fun(nt) && subMembers.forall(t => traverseAndCheck(t, fun))
+      }
+      traverseAndCheck(templateTree, fun)
+    }
   }
 
 }

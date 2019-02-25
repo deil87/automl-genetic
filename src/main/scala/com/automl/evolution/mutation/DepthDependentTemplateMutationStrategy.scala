@@ -122,4 +122,17 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
     new TPopulation(population.individuals.map(mutateIndividual), population.mutationProbabilities)
 
   }
+
+  def mutateNTimes(population: TPopulation, times: Int): TPopulation = {
+    def mutationHelper(population: TPopulation, countdown: Int): TPopulation = {
+      if(countdown == 0) population
+      else {
+        val mutatedPopulation = mutate(population)
+        mutatedPopulation.individuals.foreach(template => print(template.render))
+        mutationHelper(mutatedPopulation, countdown - 1)
+      }
+    }
+
+    mutationHelper(population, times)
+  }
 }
