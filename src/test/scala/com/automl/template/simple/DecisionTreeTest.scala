@@ -1,10 +1,82 @@
 package com.automl.template.simple
 
+import com.automl.ConfigProvider
+import com.automl.dataset.Datasets
+import com.automl.helper.FitnessResult
+import com.automl.problemtype.ProblemType
 import com.automl.spark.SparkSessionProvider
+import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.spark.ml.feature.StringIndexer
 import org.scalatest.{FunSuite, Matchers}
 
+import scala.util.Random
+
 class DecisionTreeTest extends FunSuite with SparkSessionProvider with Matchers{
+
+  test("grid search over hyperparameters helps") {
+
+    def getFitnessForBaselineModel(seed: Long) = {
+      val testOverride: Config = ConfigFactory.parseString(
+        """
+          |evolution {
+          |  hpGridSearch = false
+          |  hyperParameterDimension {
+          |     enabled = false
+          |  }
+          |}
+        """.stripMargin)
+      ConfigProvider.clearOverride.addOverride(testOverride)
+
+      val dt = DecisionTree(null)
+
+      val preparedGlassDF = Datasets.getGlassDataFrame(seed)
+
+      val Array(trainingSplit, testSplit) = preparedGlassDF.randomSplit(Array(0.67, 0.33), seed)
+      val f1 = dt.fitnessError(trainingSplit, testSplit, ProblemType.MultiClassClassificationProblem)
+      f1
+    }
+
+
+    def getFitnessWithRGS(seed: Long) = {
+      val testOverride: Config = ConfigFactory.parseString(
+        """
+          |evolution {
+          |  hpGridSearch = true
+          |}
+        """.stripMargin)
+      ConfigProvider.clearOverride.addOverride(testOverride)
+
+      val dt = DecisionTree(null)
+      val preparedGlassDF = Datasets.getGlassDataFrame(seed)
+
+      val Array(trainingSplit, testSplit) = preparedGlassDF.randomSplit(Array(0.67, 0.33), seed)
+      val f1 = dt.fitnessError(trainingSplit, testSplit, ProblemType.MultiClassClassificationProblem)
+      f1
+    }
+
+    var avgWithRGS = 0.0
+    var avgBaseline = 0.0
+
+    val numberOfRestarts = 2
+    for(i <- 0 until numberOfRestarts) {
+      val seed = new Random().nextLong()
+
+      val f1: FitnessResult = getFitnessWithRGS(seed)
+      avgWithRGS += f1.getCorrespondingMetric
+
+      val f1Baseline: FitnessResult = getFitnessForBaselineModel(seed)
+
+      avgBaseline += f1Baseline.getCorrespondingMetric
+    }
+
+    avgWithRGS /= numberOfRestarts
+    avgBaseline /= numberOfRestarts
+    println(s"avgWithRGS = $avgWithRGS ; avgBaseline = $avgBaseline")
+    avgWithRGS should be > avgBaseline
+
+  }
+
+
 
   ignore("testFitnessError") {
     //TODO

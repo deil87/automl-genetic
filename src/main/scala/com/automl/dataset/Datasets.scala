@@ -36,7 +36,7 @@ object Datasets extends SparkSessionProvider {
       .setInputCol("features")
       .setOutputCol("scaledFeatures")
       .setWithStd(true)
-      .setWithMean(false)
+      .setWithMean(false) // or true?
 
     // We are selecting only 1 and 3 classes to make it binary classification problem
     val preparedWineDF = wineDF
@@ -88,7 +88,7 @@ object Datasets extends SparkSessionProvider {
       .withColumnRenamed("Id", "uniqueIdColumn")
       .applyIndexer(labelIndexer)
 //      .toDouble("indexedLabel")
-      .showN_AndContinue(10)
+      .showAllAndContinue
       .cache()
     preparedGlassDF
   }

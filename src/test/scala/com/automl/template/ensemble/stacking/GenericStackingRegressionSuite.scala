@@ -36,8 +36,8 @@ class GenericStackingRegressionSuite extends FunSuite with Matchers with SparkSe
   val scaler = new StandardScaler()
     .setInputCol("features")
     .setOutputCol("scaledFeatures")
-    .setWithStd(false)
-    .setWithMean(true)
+    .setWithStd(true)
+    .setWithMean(false)
 
   import org.apache.spark.sql.functions.monotonically_increasing_id
 
