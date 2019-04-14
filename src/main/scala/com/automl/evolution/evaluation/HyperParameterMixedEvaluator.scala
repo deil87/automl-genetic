@@ -1,19 +1,20 @@
 package com.automl.evolution.evaluation
 
-import com.automl.{EvaluatedTemplateData, PaddedLogging}
 import com.automl.dataset.StratifiedSampling
 import com.automl.evolution.dimension.TemplateEvolutionDimension
 import com.automl.evolution.dimension.hparameter._
-import com.automl.helper.FitnessResult
+import com.automl.population.HPPopulation
 import com.automl.problemtype.ProblemType
 import com.automl.template.simple.{Bayesian, DecisionTree, LogisticRegressionModel}
-import com.automl.template.{TemplateMember, TemplateTree}
+import com.automl.{ConfigProvider, PaddedLogging}
 import org.apache.spark.sql.DataFrame
-import utils.BenchmarkHelper
 
 import scala.collection.mutable
 
-class HyperParameterPopulationEvaluator(parentTemplateEvDimension: TemplateEvolutionDimension)(implicit val logPaddingSize: Int)
+/**
+  * It combines evaluation on base models and N best templates from template dimension.
+  */
+class HyperParameterMixedEvaluator(parentTemplateEvDimension: TemplateEvolutionDimension)(implicit val logPaddingSize: Int)
   extends PopulationEvaluator[HPPopulation, HyperParametersField, EvaluatedHyperParametersField] with PaddedLogging{
 
   override type CacheKeyType = ( HyperParametersField, Long)
@@ -21,7 +22,8 @@ class HyperParameterPopulationEvaluator(parentTemplateEvDimension: TemplateEvolu
   override def evaluateIndividuals(population: HPPopulation, workingDF: DataFrame, problemType: ProblemType)
                                   (implicit cache: mutable.Map[( HyperParametersField, Long), Double]): Seq[EvaluatedHyperParametersField] = {
     val numberOfBestTemplates = 3
-    val samplingRatio = 0.5
+    val hpdConfig = ConfigProvider.config.getConfig("evolution.hyperParameterDimension")
+    val samplingRatio = hpdConfig.getDouble("evaluationSamplingRatio")
     val sampledWorkingDF = new StratifiedSampling().sample(workingDF, samplingRatio).cache() //TODO every time we will compute and therefore deal with different damples.
     val sampledWorkingDFCount = sampledWorkingDF.count()
     debug(s"Sampling of the workingDF for hyper parameter evaluations ( $sampledWorkingDFCount out of ${workingDF.count()} )")

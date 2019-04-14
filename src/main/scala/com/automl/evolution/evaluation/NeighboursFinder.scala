@@ -7,7 +7,7 @@ import com.automl.evolution.diversity.{DistanceStrategy, MultidimensionalDistanc
 import com.automl.helper.{FitnessResult, TemplateTreeHelper}
 import com.automl.problemtype.ProblemType
 import com.automl.template.{TemplateMember, TemplateTree}
-import com.automl.{ConsistencyChecker, EvaluatedTemplateData, PaddedLogging, TPopulation}
+import com.automl.{ConsistencyChecker, EvaluatedTemplateData, PaddedLogging}
 import org.apache.spark.sql.DataFrame
 import utils.BenchmarkHelper
 import utils.SparkMLUtils._

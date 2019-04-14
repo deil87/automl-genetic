@@ -1,7 +1,7 @@
 package com.automl.evolution.mutation
 
-import com.automl.TPopulation
 import com.automl.evolution.diversity.DiversityStrategy
+import com.automl.population.TPopulation
 import com.automl.template.ensemble.EnsemblingModelMember
 import com.automl.template.simple.SimpleModelMember
 import com.automl.template.{LeafTemplate, NodeTemplate, TemplateMember, TemplateTree}
@@ -91,7 +91,7 @@ class PopulationWideProbabilityDrivenTMStrategy(diversityStrategy: DiversityStra
 
       }
 
-      val mutationProbabilitiesPopWide: MutationProbabilities = population.mutationProbabilities
+      val mutationProbabilitiesPopWide: MutationProbabilities = ??? // population.mutationProbabilities
       val (nextModel, _) = mutationProbabilitiesPopWide.getNextMember // TODO we need somehow update novelty section before we will get feedback from evaluation process. Otherwise all the individuals will mutate from novelty sections
       //TODO we can probably move it to the experience section straight away....and later update it with experience and recalculate all distribution for Experience section.
       // We reestimate probabilities on the generation level - at the end of every generation.
@@ -105,7 +105,7 @@ class PopulationWideProbabilityDrivenTMStrategy(diversityStrategy: DiversityStra
     // If we restrinct duplicates or similar indeviduals than we are risking to not searching around the optimal ensemble.
     // We would have to compensate this restriction with more search-time for best individuals
     ////val res = diversityStrategy.apply(population, mutateIndividual)
-    new TPopulation(population.individuals.map(mutateIndividual), population.mutationProbabilities)
+    new TPopulation(population.individuals.map(mutateIndividual))
 
   }
 }

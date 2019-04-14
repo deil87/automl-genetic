@@ -3,6 +3,7 @@ package com.automl.evolution.dimension.hparameter
 import akka.actor.ActorSystem
 import com.automl.dataset.Datasets
 import com.automl.evolution.dimension.TemplateEvolutionDimension
+import com.automl.population.HPPopulation
 import com.automl.problemtype.ProblemType.MultiClassClassificationProblem
 import com.typesafe.scalalogging.LazyLogging
 import org.scalatest.{FunSuite, Matchers}

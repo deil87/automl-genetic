@@ -19,6 +19,20 @@ class GlassConsistencyAutoMLSuite extends WordSpec with Matchers with BeforeAndA
 
 
     }
+
+    "consistently find similar ensembles D2 with specific set of hyper-parameters as a winner" in {
+
+      val benchmark = new GlassDataSetConsistencyBenchmark().depthTwoRun()
+
+
+    }
+
+    "consistently find similar ensembles D3 with specific set of hyper-parameters as a winner" in {
+
+      val benchmark = new GlassDataSetConsistencyBenchmark().depthThreeRun()
+
+
+    }
   }
 
 }

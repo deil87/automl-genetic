@@ -5,9 +5,10 @@ import com.automl.evolution.dimension.TemplateEvolutionDimension
 import com.automl.evolution.dimension.hparameter.{HyperParametersField, TemplateHyperParametersEvolutionDimension}
 import com.automl.evolution.diversity.{CosineSimilarityAssistant, DistanceMetric, DistanceStrategy, MultidimensionalDistanceMetric}
 import com.automl.helper.{FitnessResult, TemplateTreeHelper}
+import com.automl.population.TPopulation
 import com.automl.problemtype.ProblemType
 import com.automl.template.{TemplateMember, TemplateTree}
-import com.automl.{ConsistencyChecker, EvaluatedTemplateData, PaddedLogging, TPopulation}
+import com.automl.{ConsistencyChecker, EvaluatedTemplateData, PaddedLogging}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.DataFrame
 import utils.BenchmarkHelper

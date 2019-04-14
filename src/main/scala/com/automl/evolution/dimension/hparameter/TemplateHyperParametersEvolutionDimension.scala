@@ -1,17 +1,13 @@
 package com.automl.evolution.dimension.hparameter
 
 
-import com.automl.{ConfigProvider, Evaluated, PaddedLogging, Population}
+import com.automl.{ConfigProvider, Evaluated, PaddedLogging}
 import com.automl.problemtype.ProblemType
-import com.automl.template.simple.{Bayesian, DecisionTree, LogisticRegressionModel}
-import com.typesafe.config.ConfigFactory
-import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.DataFrame
-import com.automl.dataset.StratifiedSampling
 import com.automl.evolution.dimension.{EvolutionDimension, TemplateEvolutionDimension}
-import com.automl.evolution.evaluation.HyperParameterPopulationEvaluator
+import com.automl.evolution.evaluation.{HyperParameterContemporaryPopulationEvaluator, HyperParameterMixedEvaluator}
 import com.automl.helper.PopulationHelper
-import utils.BenchmarkHelper
+import com.automl.population.{GenericPopulationBuilder, HPPopulation}
 
 import scala.collection.mutable
 import scala.math.BigDecimal.RoundingMode
@@ -33,6 +29,7 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
   lazy val evolutionDimensionLabel: String = hpdConfig.getString("name")
 
   lazy val numberOfHPEvolutionsPerGeneration: Int = hpdConfig.getInt("numOfEvolutionsPerGen")
+  lazy val populationSize: Int = hpdConfig.getInt("populationSize")
 
   override implicit val individualsEvaluationCache: mutable.Map[(HyperParametersField, Long), Double] = mutable.Map[(HyperParametersField, Long), Double]()
 
@@ -77,13 +74,16 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
 
   override def evaluatePopulation(population: HPPopulation, workingDF: DataFrame): Seq[EvaluatedHyperParametersField] = {
 
-    new HyperParameterPopulationEvaluator(parentTemplateEvDimension)(logPaddingSize + 4).evaluateIndividuals(population, workingDF, problemType)
+    new HyperParameterContemporaryPopulationEvaluator(parentTemplateEvDimension)(logPaddingSize + 4).evaluateIndividuals(population, workingDF, problemType)
+//    new HyperParameterMixedEvaluator(parentTemplateEvDimension)(logPaddingSize + 4).evaluateIndividuals(population, workingDF, problemType)
   }
 
   override def getInitialPopulationFromMetaDB: HPPopulation = ???
 
   override def getInitialColdStartPopulation: HPPopulation = {
-    new HPPopulation(Seq(
+    //    initialPopulation.map{population => TODO for now we have hardcoded initialPopulationm but might want to pass a parameter from TemplateDimension
+
+    val initialPopulation = new HPPopulation(Seq(
       HyperParametersField(
         Seq(
           BayesianHPGroup(), LogisticRegressionHPGroup(), DecisionTreeHPGroup()
@@ -94,6 +94,10 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
         )
       )
     ))
+    val population = GenericPopulationBuilder.fromSeedPopulation(initialPopulation)
+      .withSize(populationSize)
+      .build
+    population
   }
 
   //Note: if we don't have hallOfFame filled up then we want to just take any HyperParametersField field to start with ( we don't have hyper parameters evaluated yet)
@@ -108,30 +112,6 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
   }
 }
 
-//We need to evolve population of parameters for every model individually. So we will span multiple coevolutions (each one per Model).
-
-//case class HyperParametersField[T  <: MutableHParameter[Double, T]](modelsHParameterGroups: Seq[HyperParametersGroup[ T]]) {
-//case class HyperParametersField(modelsHParameterGroups: Seq[HyperParametersGroup[MutableHParameter[Double, _]]]) {
-//case class HyperParametersField(modelsHParameterGroups: Seq[HyperParametersGroup[ExT] forSome { type Ext <: MutableHParameter[Double, _]}] ) {
-// Existential Types - I love you guys!
-case class HyperParametersField(modelsHParameterGroups: Seq[HyperParametersGroup[_ <: MutableHParameter[Double, _]]] ) {
-
-  override def hashCode(): Int = {
-    modelsHParameterGroups.map(_.hpParameters.map(_.currentValue.hashCode()).sum).sum
-  }
-
-  def getLogisticRegressionHPGroup: HyperParametersGroup[_ <: MutableHParameter[Double, _]] = {
-    modelsHParameterGroups.find{
-      case LogisticRegressionHPGroup(_) => true
-    }.get
-  }
-
-  override def toString: String = modelsHParameterGroups.map(group => group.hpParameters.map(parameter => s"$parameter").mkString(" , ")).mkString(" | ")
-}
-
-object HyperParametersField {
-  def default = HyperParametersField(Seq(BayesianHPGroup(), LogisticRegressionHPGroup()))
-}
 
 //Подумать над тем чтобы использовать обычный Map
 trait HyperParametersGroup[HPModelBoundedType <: MutableHParameter[Double, HPModelBoundedType]]{
@@ -166,9 +146,6 @@ trait MutableHParameter[+T, V <: MutableHParameter[T, V]] extends HParameter[T] 
   def currentValue: T
   def mutate(): V
 }
-
-
-class HPPopulation(val individuals: Seq[ HyperParametersField]) extends Population[HyperParametersField]
 
 case class EvaluatedHyperParametersField(field: HyperParametersField, score:Double) extends Evaluated[EvaluatedHyperParametersField] {
   override type ItemType = HyperParametersField

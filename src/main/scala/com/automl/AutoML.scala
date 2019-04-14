@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import com.automl.dataset._
 import com.automl.evolution.dimension.TemplateEvolutionDimension
 import com.automl.helper._
+import com.automl.population.TPopulation
 import com.automl.problemtype.ProblemType.BinaryClassificationProblem
 import com.automl.problemtype.{ProblemType, ProblemTypeThresholdEstimator}
 import com.automl.report.AutoMLReporter

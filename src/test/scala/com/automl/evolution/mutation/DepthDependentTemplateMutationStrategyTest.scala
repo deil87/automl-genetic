@@ -1,8 +1,9 @@
 package com.automl.evolution.mutation
 
-import com.automl.{ConfigProvider, TPopulation}
+import com.automl.ConfigProvider
 import com.automl.classifier.ensemble.bagging.SparkGenericBagging
 import com.automl.evolution.diversity.DistinctDiversityStrategy
+import com.automl.population.TPopulation
 import com.automl.problemtype.ProblemType.MultiClassClassificationProblem
 import com.automl.template.{LeafTemplate, NodeTemplate, TemplateTree}
 import com.automl.template.simple.{Bayesian, DecisionTree, LogisticRegressionModel}

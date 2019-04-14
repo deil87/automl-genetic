@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import com.automl.evolution.diversity.DistinctDiversityStrategy
 import com.automl.evolution.mutation.DepthDependentTemplateMutationStrategy
 import com.automl.helper.{FitnessResult, PopulationHelper}
+import com.automl.population.{GenericPopulationBuilder, TPopulation}
 import com.automl.problemtype.ProblemType.RegressionProblem
 import com.automl.spark.SparkSessionProvider
 import com.automl.template._
@@ -32,7 +33,7 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
 
       val seedPopulation = new TPopulation(seed)
 
-      val population = TPopulation.fromSeedPopulation(seedPopulation).withSize(10).build
+      val population = GenericPopulationBuilder.fromSeedPopulation(seedPopulation).withSize(10).build
 
       val autoMl = new AutoML(null, maxTime = 50000, useMetaDB = false, initialPopulationSize = Some(10))
 
@@ -71,7 +72,7 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
 
       val seedPopulation = new TPopulation(seed)
 
-      val population = TPopulation.fromSeedPopulation(seedPopulation).withSize(10).build
+      val population = GenericPopulationBuilder.fromSeedPopulation(seedPopulation).withSize(10).build
 
       val airlineDF = SparkMLUtils.loadParquet("src/test/resources/airline_allcolumns_sampled_100k_parquet")
         .select("DayOfWeek", "Distance", "DepTime", "CRSDepTime", "DepDelay")

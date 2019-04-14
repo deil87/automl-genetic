@@ -4,16 +4,14 @@ import com.automl.EvaluatedTemplateData.logger
 import com.automl.evolution.dimension.hparameter.{EvaluatedHyperParametersField, HyperParametersField, TemplateHyperParametersEvolutionDimension}
 import com.automl.evolution.diversity.{DistinctDiversityStrategy, MisclassificationDistance}
 import com.automl.evolution.evaluation.{NeighboursFinder, TemplateNSLCEvaluator}
-import com.automl.{ConfigProvider, EvaluatedTemplateData, PaddedLogging, Population, TPopulation}
+import com.automl.{ConfigProvider, EvaluatedTemplateData, PaddedLogging}
 import com.automl.evolution.mutation.{DepthDependentTemplateMutationStrategy, MutationProbabilities}
 import com.automl.evolution.selection.RankSelectionStrategy
 import com.automl.helper.{FitnessResult, PopulationHelper}
+import com.automl.population.{GenericPopulationBuilder, TPopulation}
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
 import com.automl.template.{TemplateMember, TemplateTree}
-import com.typesafe.config.ConfigFactory
-import com.typesafe.scalalogging.LazyLogging
-import org.apache.spark.ml.param.Params
 import org.apache.spark.sql.DataFrame
 
 import scala.collection.mutable
@@ -63,9 +61,8 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
 
   override def getInitialColdStartPopulation: TPopulation = {
     initialPopulation.map{population =>
-      TPopulation.fromSeedPopulation(population)
+      GenericPopulationBuilder.fromSeedPopulation(population)
         .withSize(populationSize)
-        .withDefaultMutationProbs
         .build
     }.getOrElse(throw new IllegalStateException("Initial population was not specified")) // TODO we should provide default populatin here
   }
@@ -124,7 +121,7 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
 
     _evaluatedPopulation = survivedForNextGenerationEvaluatedTemplates
 
-    val evolvedPopulation = new TPopulation(survivedForNextGenerationEvaluatedTemplates.map(_.template), offspring.mutationProbabilities)
+    val evolvedPopulation = new TPopulation(survivedForNextGenerationEvaluatedTemplates.map(_.template))
 
     // Do backpropagation of fitness. Evolve other dimensions by using new evaluations/best templates
     hyperParamsEvDim.evolveFromLastPopulation(workingDF)
@@ -139,7 +136,7 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
 
 
   override def extractIndividualsFromEvaluatedIndividuals(evaluatedIndividuals: Seq[EvaluatedTemplateData]): TPopulation = {
-    new TPopulation(evaluatedIndividuals.map(_.template), null) // population.mutationProbabilities
+    new TPopulation(evaluatedIndividuals.map(_.template))
   }
 
   override def selectParents(evaluated: Seq[EvaluatedTemplateData]): Seq[EvaluatedTemplateData] = {

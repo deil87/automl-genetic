@@ -1,12 +1,13 @@
 package com.automl.dataset
 
-import com.automl.TPopulation
+import com.automl.population.TPopulation
 import com.automl.spark.SparkSessionProvider
 import com.automl.template.LeafTemplate
 import com.automl.template.simple.{Bayesian, DecisionTree, LogisticRegressionModel}
 import org.apache.spark.ml.feature.{StandardScaler, StringIndexer, VectorAssembler}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.functions.{monotonically_increasing_id, rand}
+import org.apache.spark.sql.types.{IntegerType, StringType}
 import utils.SparkMLUtils
 
 object Datasets extends SparkSessionProvider {

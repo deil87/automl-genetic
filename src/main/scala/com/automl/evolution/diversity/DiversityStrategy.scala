@@ -1,6 +1,6 @@
 package com.automl.evolution.diversity
 
-import com.automl.TPopulation
+import com.automl.population.TPopulation
 import com.automl.template.{TemplateMember, TemplateTree}
 
 trait DiversityStrategy {

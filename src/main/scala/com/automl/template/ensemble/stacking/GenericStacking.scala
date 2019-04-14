@@ -69,12 +69,12 @@ case class GenericStacking(unusedMetaLearner: PipelineStage = new LinearRegressi
         val finalPredictions = stacking.performStacking(metaLearner)
 //          .showN_AndContinue(100, "Before rounding predictions from GenericStacking's metalearner")
 //          .withColumnReplace("prediction", rint($"prediction")) //NOTE we need to round because LinearRegression metalearner returns raw predictions
-          .showN_AndContinue(500, "predictions from GenericStacking's metalearner")
+//          .showN_AndContinue(500, "predictions from GenericStacking's metalearner")
           .select("uniqueIdColumn", "features", "prediction") //TODO make sure that performStacking is returning predictions for testDF
           .cache()
 
         val predictionsReunitedWithLabels = finalPredictions.join(testDF.select("indexedLabel", "uniqueIdColumn"), "uniqueIdColumn")
-          .showN_AndContinue(500, "GenericStacking predictions")
+//          .showN_AndContinue(500, "GenericStacking predictions")
           .cache()
 
         val evaluator = new MulticlassClassificationEvaluator()

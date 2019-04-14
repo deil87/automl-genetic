@@ -1,7 +1,7 @@
 package com.automl.evolution.diversity
 
-import com.automl.TPopulation
 import com.automl.helper.PopulationHelper
+import com.automl.population.{GenericPopulationBuilder, TPopulation}
 import com.automl.template.simple._
 import com.automl.template.{LeafTemplate, TemplateMember, TemplateTree}
 import org.scalatest.{Matchers, WordSpec}
@@ -24,7 +24,7 @@ class DistinctDiversityStrategyTest extends WordSpec with Matchers{
 
       val seedPopulation = new TPopulation(seed)
 
-      val population = TPopulation.fromSeedPopulation(seedPopulation).withSize(6).build
+      val population = GenericPopulationBuilder.fromSeedPopulation(seedPopulation).withSize(6).build
 
       def getRandomEnsemblingMember(input: TemplateTree[TemplateMember]) = LeafTemplate(poolOfSimpleModels.randElement)
 

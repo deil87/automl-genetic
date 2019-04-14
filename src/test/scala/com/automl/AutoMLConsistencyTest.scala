@@ -3,6 +3,7 @@ package com.automl
 import akka.actor.ActorSystem
 import com.automl.classifier.ensemble.bagging.SparkGenericBagging
 import com.automl.dataset.Datasets
+import com.automl.population.TPopulation
 import com.automl.spark.SparkSessionProvider
 import com.automl.template._
 import com.automl.template.simple._

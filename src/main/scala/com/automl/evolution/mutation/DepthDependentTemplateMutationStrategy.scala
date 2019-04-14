@@ -1,8 +1,9 @@
 package com.automl.evolution.mutation
 
-import com.automl.{ConfigProvider, PaddedLogging, Population, TPopulation}
+import com.automl.{ConfigProvider, PaddedLogging}
 import com.automl.evolution.diversity.DiversityStrategy
 import com.automl.evolution.selection.{RankBasedSelectionProbabilityAssigner, RouletteWheel}
+import com.automl.population.TPopulation
 import com.automl.problemtype.ProblemType
 import com.automl.template.ensemble.EnsemblingModelMember
 import com.automl.template.simple.SimpleModelMember
@@ -119,7 +120,7 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
     // If we restrinct duplicates or similar indeviduals than we are risking to not searching around the optimal ensemble.
     // We would have to compensate this restriction with more search-time for best individuals
     ////val res = diversityStrategy.apply(population, mutateIndividual)
-    new TPopulation(population.individuals.map(mutateIndividual), population.mutationProbabilities)
+    new TPopulation(population.individuals.map(mutateIndividual))
 
   }
 

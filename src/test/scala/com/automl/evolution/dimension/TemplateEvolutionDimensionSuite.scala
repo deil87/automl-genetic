@@ -4,7 +4,8 @@ import akka.actor.ActorSystem
 import com.automl.classifier.ensemble.bagging.SparkGenericBagging
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.RegressionProblem
-import com.automl.{AutoML, TPopulation}
+import com.automl.AutoML
+import com.automl.population.TPopulation
 import com.automl.spark.SparkSessionProvider
 import com.automl.template.{LeafTemplate, NodeTemplate}
 import com.automl.template.simple.{Bayesian, DecisionTree, LinearRegressionModel, SimpleModelMember}

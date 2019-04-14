@@ -1,9 +1,10 @@
 package com.automl.evolution.selection
 
 import com.automl.helper.{FitnessResult, PopulationHelper}
+import com.automl.population.{GenericPopulationBuilder, TPopulation}
 import com.automl.problemtype.ProblemType.{MultiClassClassificationProblem, RegressionProblem}
 import com.automl.template.LeafTemplate
-import com.automl.{AutoML, EvaluatedTemplateData, TPopulation}
+import com.automl.{AutoML, EvaluatedTemplateData}
 import com.automl.template.simple.{DecisionTree, LinearRegressionModel, SimpleModelMember}
 import org.scalatest.{Matchers, WordSpec}
 
@@ -22,7 +23,7 @@ class RankSelectionStrategyTest extends WordSpec with Matchers{
       val populationSize = 10
       val selectionShare = 0.5
 
-      val individualsSpanned = TPopulation.fromSeedPopulation(new TPopulation(individuals)).withSize(populationSize).build.individuals
+      val individualsSpanned = GenericPopulationBuilder.fromSeedPopulation(new TPopulation(individuals)).withSize(populationSize).build.individuals
 
       val selectionStrategy = new RankSelectionStrategy
       val evaluatedTemplateDatas = individualsSpanned.zipWithIndex.map { case (inds, idx) =>
@@ -57,7 +58,7 @@ class RankSelectionStrategyTest extends WordSpec with Matchers{
       val populationSize = 10
       val selectionShare = 0.5
 
-      val individualsSpanned = TPopulation.fromSeedPopulation(new TPopulation(individuals)).withSize(populationSize).build.individuals
+      val individualsSpanned = GenericPopulationBuilder.fromSeedPopulation(new TPopulation(individuals)).withSize(populationSize).build.individuals
 
       val selectionStrategy = new RankSelectionStrategy
       val evaluatedTemplateData = individualsSpanned.zipWithIndex.map { case (individual, idx) =>
@@ -85,7 +86,7 @@ class RankSelectionStrategyTest extends WordSpec with Matchers{
 
       val populationSize = 10
 
-      val individualsSpanned = TPopulation.fromSeedPopulation(new TPopulation(individuals)).withSize(populationSize).build.individuals
+      val individualsSpanned = GenericPopulationBuilder.fromSeedPopulation(new TPopulation(individuals)).withSize(populationSize).build.individuals
 
       val selectionStrategy = new RankSelectionStrategy
       val evaluatedTemplateData = individualsSpanned.zipWithIndex.map { case (individual, idx) =>

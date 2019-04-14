@@ -6,10 +6,11 @@ import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
 import com.automl.evolution.dimension.hparameter.HyperParametersField
 import com.automl.helper.{FitnessResult, TemplateTreeHelper}
+import com.automl.population.TPopulation
 import com.automl.problemtype.ProblemType
 import com.automl.route.UpdateWeb
 import com.automl.template.{TemplateMember, TemplateTree}
-import com.automl.{EvaluatedTemplateData, PaddedLogging, TPopulation}
+import com.automl.{EvaluatedTemplateData, PaddedLogging}
 import com.typesafe.scalalogging.LazyLogging
 import kamon.Kamon
 import org.apache.spark.sql.DataFrame

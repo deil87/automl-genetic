@@ -1,6 +1,7 @@
 package com.automl.evolution.dimension
 
-import com.automl.{Evaluated, EvaluatedTemplateData, PaddedLogging, Population}
+import com.automl.population.Population
+import com.automl.{Evaluated, EvaluatedTemplateData, PaddedLogging}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.DataFrame
 

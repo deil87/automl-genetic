@@ -1,7 +1,8 @@
 package com.automl.helper
 
 import com.automl.evolution.dimension.hparameter.HyperParametersField
-import com.automl.{Evaluated, EvaluatedTemplateData, PaddedLogging, TPopulation}
+import com.automl.population.TPopulation
+import com.automl.{Evaluated, EvaluatedTemplateData, PaddedLogging}
 import com.automl.template.{TemplateMember, TemplateTree}
 import com.typesafe.scalalogging.LazyLogging
 

@@ -3,6 +3,7 @@ package com.automl.evolution.dimension
 import akka.actor.ActorSystem
 import com.automl.dataset.Datasets
 import com.automl.evolution.dimension.hparameter._
+import com.automl.population.HPPopulation
 import com.automl.problemtype.ProblemType.MultiClassClassificationProblem
 import com.automl.template.simple.Bayesian
 import com.typesafe.scalalogging.LazyLogging
