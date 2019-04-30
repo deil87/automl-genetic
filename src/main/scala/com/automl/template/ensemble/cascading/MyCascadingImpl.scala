@@ -15,7 +15,7 @@ case class MyCascadingImpl()(implicit val logPaddingSize: Int = 0) extends Casca
                                                            testDF: DataFrame,
                                                            subMembers: Seq[TemplateTree[A]],
                                                            problemType: ProblemType,
-                                                           hyperParamsMap: HyperParametersField,
+                                                           hyperParamsMap: Option[HyperParametersField],
                                                            seed: Long)
                                                           (implicit tc: TreeContext = TreeContext()): FitnessResult = ???
 

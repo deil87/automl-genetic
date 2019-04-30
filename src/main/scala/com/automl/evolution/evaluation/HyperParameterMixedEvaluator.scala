@@ -69,7 +69,7 @@ class HyperParameterMixedEvaluator(parentTemplateEvDimension: TemplateEvolutionD
           //TODO make sure that when our corresponding metric is "the less the better" we properly compare results
           // Estimating 2)
           debug(s"Evaluating 2nd term for hpfield  on ${threeBestTemplates.size} best templates in current template population:")
-          val threeBestEvaluations = threeBestTemplates.map(template => template.evaluateFitness(trainingSplit, testSplit, problemType, hyperParamsMap = hpField).getCorrespondingMetric)
+          val threeBestEvaluations = threeBestTemplates.map(template => template.evaluateFitness(trainingSplit, testSplit, problemType, hyperParamsMap = Some(hpField)).getCorrespondingMetric)
           val totalSumMetric = metricsFromBaseModels.sum + threeBestEvaluations.sum // we sum all metrics from each ModelHPGroup inn the field so that we can later decide which Field is the best
           debug(s"Entry $hpField with hashCode = ${cacheKey.hashCode()} was added to the cache with score = $totalSumMetric")
           totalSumMetric

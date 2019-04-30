@@ -47,7 +47,7 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
 
       def getRandomBaseMemberBasedOnProblemType = SimpleModelMember.randomMember(problemType)
 
-      def getRandomBaseMemberWithExclusion(exclude: Seq[SimpleModelMember]): TemplateMember =
+      def getRandomBaseMemberWithExclusion(exclude: Seq[SimpleModelMember]): Option[TemplateMember] =
         SimpleModelMember.randomMemberWithExclusion(problemType, exclude)
 
       /**
@@ -64,6 +64,14 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
         levelOfMutation
       }
 
+      def mutateLeafToNode(lt: LeafTemplate[SimpleModelMember]) = {
+        val numberOfNewChildren = new Random().nextInt(2) + 1
+        val randomEnsemblingMember = getRandomEnsemblingMember
+        val oneForOriginalTemplate = 1
+        info(s"\t\t Mutation happened from leaf node $lt to ensembling of ${numberOfNewChildren + oneForOriginalTemplate} submembers - $randomEnsemblingMember , causing increasing of complexity.")
+        NodeTemplate(randomEnsemblingMember, Seq(lt) ++ (0 until numberOfNewChildren).map(_ => LeafTemplate(getRandomBaseMemberBasedOnProblemType)))
+      }
+
       // We should perform one action of mutation per template. Somewhere in the tree. TODO probably it is more efficient to store level in nodes
       def traverseAndMutate(individual: TemplateTree[TemplateMember], currentLevel: Int,
                             targetLevelOfMutation: Int): TemplateTree[TemplateMember] = individual match {
@@ -72,16 +80,17 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
             val pivot = new Random().nextDouble()
             // Note currentLevel is zero-based
             if(pivot > 0.8 && currentLevel < maxEnsembleDepth - 1) {
-              val numberOfNewChildren = new Random().nextInt(2) + 1
-              val randomEnsemblingMember = getRandomEnsemblingMember
-              val oneForOriginalTemplate = 1
-              info(s"\t\t Mutation happened from leaf node $lt to ensembling of ${numberOfNewChildren + oneForOriginalTemplate} submembers - $randomEnsemblingMember , causing increasing of complexity.")
-              NodeTemplate(randomEnsemblingMember, Seq(lt) ++ (0 until numberOfNewChildren).map(_ => LeafTemplate(getRandomBaseMemberBasedOnProblemType)))
+              mutateLeafToNode(lt.asInstanceOf[LeafTemplate[SimpleModelMember]])
             } else {
-              val randomBaseMemberBasedOnProblemType:SimpleModelMember = getRandomBaseMemberWithExclusion(Seq(member.asInstanceOf[SimpleModelMember])).asInstanceOf[SimpleModelMember]
+              val randomBaseMemberBasedOnProblemType = getRandomBaseMemberWithExclusion(Seq(member.asInstanceOf[SimpleModelMember])).asInstanceOf[Option[SimpleModelMember]]
               // TODO rewrite so that we don't need to cast member to SimpleModelMember
-              info(s"\t\t Mutation happened from leaf node $lt to another leaf node ${randomBaseMemberBasedOnProblemType}")
-              LeafTemplate(randomBaseMemberBasedOnProblemType)
+              randomBaseMemberBasedOnProblemType match {
+                case Some(randomBaseMember) =>
+                  info(s"\t\t Mutation happened from leaf node $lt to another leaf node ${randomBaseMemberBasedOnProblemType}")
+                  LeafTemplate(randomBaseMember)
+                case None =>
+                  mutateLeafToNode(lt.asInstanceOf[LeafTemplate[SimpleModelMember]])
+              }
             }
           } else
             {
@@ -105,7 +114,8 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
             }
           } else {
             val randSubmember = subMembers.randElement
-            NodeTemplate(ensemblingMember, subMembers.diff(Seq(randSubmember)) :+ traverseAndMutate(randSubmember, currentLevel + 1, targetLevelOfMutation))
+            //TODO we are changing order here and it might change representation that we will be using as a key for caching
+            NodeTemplate(ensemblingMember, subMembers.diff(Seq(randSubmember)) :+ traverseAndMutate(randSubmember.get, currentLevel + 1, targetLevelOfMutation))
           }
 
       }

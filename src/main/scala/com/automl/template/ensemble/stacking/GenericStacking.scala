@@ -27,7 +27,7 @@ case class GenericStacking(unusedMetaLearner: PipelineStage = new LinearRegressi
                                                            testDF: DataFrame,
                                                            subMembers: Seq[TemplateTree[A]],
                                                            problemType: ProblemType,
-                                                           hyperParamsField: HyperParametersField,
+                                                           hyperParamsField: Option[HyperParametersField],
                                                            seed: Long)
                                                           (implicit tc: TreeContext = TreeContext()): FitnessResult = {
     val stackingNumberOfFolds = 3

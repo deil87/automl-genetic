@@ -7,7 +7,7 @@ trait Evaluated[T <: Evaluated[T]] {
 
   def item: ItemType
   def result: FitnessType
-  def params: ParamsType
+  def params: Option[ParamsType]
 
   def compare(other: T): Boolean
 

@@ -34,7 +34,7 @@ case class SparkGenericBagging()(implicit val logPaddingSize: Int = 0) extends B
                                                            testDF: DataFrame,
                                                            subMembers: Seq[TemplateTree[A]],
                                                            problemType: ProblemType,
-                                                           hyperParamsMap: HyperParametersField,
+                                                           hyperParamsMap: Option[HyperParametersField],
                                                            seed: Long)
                                                           (implicit tc: TreeContext): FitnessResult = {
 

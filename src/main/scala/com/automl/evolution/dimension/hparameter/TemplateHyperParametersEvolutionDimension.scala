@@ -19,7 +19,6 @@ import scala.util.Random
 class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: TemplateEvolutionDimension, evolveEveryGenerations: Int = 1, problemType: ProblemType, seed: Long)(implicit val logPaddingSize: Int)
   extends EvolutionDimension[HPPopulation, HyperParametersField, EvaluatedHyperParametersField] with PaddedLogging{
 
-
   override def dimensionName: String = "HyperparametersDimension"
 
   override var _population: HPPopulation = new HPPopulation(Nil)
@@ -153,7 +152,7 @@ case class EvaluatedHyperParametersField(field: HyperParametersField, score:Doub
 
   override type ParamsType = AnyVal //Unused
 
-  override def params:ParamsType = 42
+  override def params: Option[ParamsType] = None
 
   override def item: HyperParametersField = field
   override def result: Double = score

@@ -90,7 +90,7 @@ class GenericStackingRegressionSuite extends FunSuite with Matchers with SparkSe
 
     val seed = new Random().nextLong()
 
-    val fitnessResult = genericStacking.ensemblingFitnessError(trainingSplit, testSplit, models, problemType, hyperParamsField = HyperParametersField.default, seed = seed)
+    val fitnessResult = genericStacking.ensemblingFitnessError(trainingSplit, testSplit, models, problemType, hyperParamsField = Some(HyperParametersField.default), seed = seed)
 
     val rmseFromLR = LinearRegressionModel().fitnessError(trainingSplit, testSplit).getCorrespondingMetric
     println(s"RMSE computed for Linear regression model $rmseFromLR")
@@ -126,7 +126,7 @@ class GenericStackingRegressionSuite extends FunSuite with Matchers with SparkSe
 
       val seed = new Random().nextLong()
 
-      val fitnessResult = genericStacking.ensemblingFitnessError(trainingSplit, testSplit, models, problemType, hyperParamsField = HyperParametersField.default, seed = seed)
+      val fitnessResult = genericStacking.ensemblingFitnessError(trainingSplit, testSplit, models, problemType, hyperParamsField = Some(HyperParametersField.default), seed = seed)
 
       val rmseFromLR = LinearRegressionModel().fitnessError(trainingSplit, testSplit, problemType).getCorrespondingMetric
       println(s"RMSE computed for Linear regression model $rmseFromLR")

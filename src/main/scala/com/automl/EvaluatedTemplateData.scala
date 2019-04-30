@@ -15,7 +15,7 @@ case class EvaluatedTemplateData(id: String,
                                  rank: Long = -1,
                                  probability: Double = -1,
                                  neighbours: Seq[EvaluatedTemplateData] = Nil,
-                                 hyperParamsField: HyperParametersField = null) extends Evaluated[EvaluatedTemplateData] {
+                                 hyperParamsField: Option[HyperParametersField] = None) extends Evaluated[EvaluatedTemplateData] {
 
   type ItemType = TemplateTree[TemplateMember]
   type FitnessType = FitnessResult
@@ -25,7 +25,7 @@ case class EvaluatedTemplateData(id: String,
 
   override def item: TemplateTree[TemplateMember] = template
   override def result: FitnessResult = fitness
-  override def params: HyperParametersField = hyperParamsField
+  override def params: Option[HyperParametersField] = hyperParamsField
 
 
   override def compare(other: EvaluatedTemplateData): Boolean = fitness.orderTo(other.fitness)

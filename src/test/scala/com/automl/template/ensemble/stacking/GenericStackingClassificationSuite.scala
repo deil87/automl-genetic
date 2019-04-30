@@ -37,7 +37,7 @@ class GenericStackingClassificationSuite extends FunSuite with Matchers with Bef
     val seed = new Random().nextLong()
 
     val problemType = ProblemType.MultiClassClassificationProblem
-    val fitnessResult = genericStacking.ensemblingFitnessError(trainDF, testDF, models, problemType, hyperParamsField = HyperParametersField.default, seed = seed)
+    val fitnessResult = genericStacking.ensemblingFitnessError(trainDF, testDF, models, problemType, hyperParamsField = Some(HyperParametersField.default), seed = seed)
 
 
     val gsf1 = fitnessResult.getCorrespondingMetric
@@ -62,7 +62,7 @@ class GenericStackingClassificationSuite extends FunSuite with Matchers with Bef
 
     val seed = new Random().nextLong()
 
-    val fitnessResult = genericStacking.ensemblingFitnessError(trainDF, testDF, models, problemType, hyperParamsField = HyperParametersField.default, seed = seed)
+    val fitnessResult = genericStacking.ensemblingFitnessError(trainDF, testDF, models, problemType, hyperParamsField = Some(HyperParametersField.default), seed = seed)
 
 
     val gsf1 = fitnessResult.getCorrespondingMetric
@@ -86,7 +86,7 @@ class GenericStackingClassificationSuite extends FunSuite with Matchers with Bef
 
     val seed = new Random().nextLong()
 
-    val fitnessResult = genericStacking.ensemblingFitnessError(trainDF, testDF, models, problemType, hyperParamsField = HyperParametersField.default, seed = seed)
+    val fitnessResult = genericStacking.ensemblingFitnessError(trainDF, testDF, models, problemType, hyperParamsField = Some(HyperParametersField.default), seed = seed)
 
 
     val gsf1 = fitnessResult.getCorrespondingMetric

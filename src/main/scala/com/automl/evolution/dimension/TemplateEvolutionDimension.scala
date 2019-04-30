@@ -27,7 +27,6 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
     extends EvolutionDimension[TPopulation, TemplateTree[TemplateMember], EvaluatedTemplateData]
     with PaddedLogging{
 
-
   override def dimensionName: String = "TemplateDimension"
 
   val tdConfig = ConfigProvider.config.getConfig("evolution.templateDimension")
@@ -40,7 +39,9 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
   val rankSelectionStrategy = new RankSelectionStrategy
 
   // Dependencies on other dimensions. Hardcoded for now. Should come from AutoML.runEvolution method parameters.
-  val hyperParamsEvDim = new TemplateHyperParametersEvolutionDimension(this,problemType = problemType, seed = seed)(logPaddingSize + 8)
+  val hyperParamsEvDim = if( ConfigProvider.config.getBoolean("evolution.hyperParameterDimension.enabled"))
+    Some(new TemplateHyperParametersEvolutionDimension(this,problemType = problemType, seed = seed)(logPaddingSize + 8))
+  else None
 
   override var _population: TPopulation = new TPopulation(Nil)
 
@@ -53,7 +54,7 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
    // TODO make it faster with reference to value
   override implicit val individualsEvaluationCache = mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]()
 
-  implicit val individualsEvaluationCacheExtended = mutable.Map[(TemplateTree[TemplateMember], HyperParametersField, Long), FitnessResult]()
+  implicit val individualsEvaluationCacheExtended = mutable.Map[(TemplateTree[TemplateMember], Option[HyperParametersField], Long), FitnessResult]()
 
   override val hallOfFame: mutable.PriorityQueue[EvaluatedTemplateData] = collection.mutable.PriorityQueue[EvaluatedTemplateData]()
 
@@ -125,7 +126,7 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
     val evolvedPopulation = new TPopulation(survivedForNextGenerationEvaluatedTemplates.map(_.template))
 
     // Do backpropagation of fitness. Evolve other dimensions by using new evaluations/best templates
-    hyperParamsEvDim.evolveFromLastPopulation(workingDF)
+    hyperParamsEvDim.foreach(_.evolveFromLastPopulation(workingDF))
 
     _population = evolvedPopulation
     evolvedPopulation

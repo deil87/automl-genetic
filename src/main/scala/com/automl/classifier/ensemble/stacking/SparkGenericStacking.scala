@@ -131,7 +131,7 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) extends LazyLog
   /**
     * Adding TemplateMember to the ensemble
     */
-  def addModel[A <: TemplateMember](member: TemplateTree[A], trainDataSet: DataFrame, testDataSet: DataFrame, problemType: ProblemType, hyperParamsMap: HyperParametersField): SparkGenericStacking = {
+  def addModel[A <: TemplateMember](member: TemplateTree[A], trainDataSet: DataFrame, testDataSet: DataFrame, problemType: ProblemType, hyperParamsMap: Option[HyperParametersField]): SparkGenericStacking = {
     trainDataSet.cache()
     testDataSet.cache()
     import utils.SparkMLUtils._

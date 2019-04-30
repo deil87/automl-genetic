@@ -94,6 +94,7 @@ class AutoML(data: DataFrame,
   /*Probably we need a tree of dimensions in order to predefine dependencies*/
   def runEvolution(implicit as: ActorSystem): Unit = {
 
+    // TODO instead of using Option for any disabled dimension we should use Map with keys( dimensionName as a key) to be able to depend on arbitrary number of coevolutions.
     val templateEvDim = new TemplateEvolutionDimension(initialPopulation = seedPopulation, problemType = problemType)(as, logPaddingSize + 0)
 
     //TODO implement changing of dataset's size as SizeEvolution dimension.

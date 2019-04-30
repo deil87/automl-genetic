@@ -66,7 +66,7 @@ class SparkGenericBaggingSuite extends FunSuite with Matchers with SparkSessionP
 
     val Array(trainingSplit, testSplit) = prepairedAirlineDF.randomSplit(Array(0.8, 0.2))
 
-    ensemb.evaluateFitness(trainingSplit, testSplit, ProblemType.RegressionProblem, hyperParamsField = HyperParametersField.default)
+    ensemb.evaluateFitness(trainingSplit, testSplit, ProblemType.RegressionProblem, hyperParamsField = Some(HyperParametersField.default))
   }
 
   test("Spark Bagging should sample training dataset for submembers in appropriate way )") {
@@ -126,7 +126,7 @@ class SparkGenericBaggingSuite extends FunSuite with Matchers with SparkSessionP
 
     val problemType = ProblemType.MultiClassClassificationProblem
 
-    val baggingF1 = ensemb.evaluateFitness(trainingSplit, testSplit, problemType, hyperParamsField = HyperParametersField.default).getCorrespondingMetric
+    val baggingF1 = ensemb.evaluateFitness(trainingSplit, testSplit, problemType, hyperParamsField = Some(HyperParametersField.default)).getCorrespondingMetric
 
     val dtF1 = DecisionTree().fitnessError(trainingSplit, testSplit, problemType).getMetricByName("f1")
 
@@ -181,7 +181,7 @@ class SparkGenericBaggingSuite extends FunSuite with Matchers with SparkSessionP
 
     val problemType = ProblemType.MultiClassClassificationProblem
 
-    val baggingF1 = ensemb.evaluateFitness(trainingSplit, testSplit, problemType, hyperParamsField = HyperParametersField.default).getCorrespondingMetric
+    val baggingF1 = ensemb.evaluateFitness(trainingSplit, testSplit, problemType, hyperParamsField = Some(HyperParametersField.default)).getCorrespondingMetric
 
     val dtF1 = DecisionTree().fitnessError(trainingSplit, testSplit, problemType).getMetricByName("f1")
 
