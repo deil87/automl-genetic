@@ -77,7 +77,7 @@ case class DecisionTree(hpGroup: DecisionTreeHPGroup = DecisionTreeHPGroup.defau
          val model = if(performGridSearch) {
            val paramGrid = new ParamGridBuilder()
              .addGrid(dtr.maxDepth, Array(3, 5, 7, 10))
-             .addGrid(dtr.maxBins, Array(32, 48, 64))
+//             .addGrid(dtr.maxBins, Array(32, 48, 64))
              .build()
 
            val cv = new CrossValidator()
@@ -89,7 +89,7 @@ case class DecisionTree(hpGroup: DecisionTreeHPGroup = DecisionTreeHPGroup.defau
            cv.fit(trainDF)
 
          } else {
-           val evaluator = if (hpCoevolutionIsEnabled) {
+           val classifier = if (hpCoevolutionIsEnabled) {
              hpGroup.hpParameters.foldLeft(dtr)((res, next) => next match {
                case p@MaxDepth(_) =>
                  debug(s"DecisionTree max_depth hyper-parameter was set to ${p.currentValue}")
@@ -98,7 +98,7 @@ case class DecisionTree(hpGroup: DecisionTreeHPGroup = DecisionTreeHPGroup.defau
            } else dtr
 
            val pipeline = new Pipeline()
-             .setStages(Array(evaluator))
+             .setStages(Array(classifier))
 
 
            pipeline.fit(trainDF)

@@ -6,6 +6,8 @@ import org.apache.spark.sql.functions.monotonically_increasing_id
 import org.scalatest.{Matchers, WordSpec}
 import utils.SparkMLUtils
 
+import scala.util.Random
+
 class DataSetSizeEvolutionStrategyTest extends WordSpec  with Matchers with SparkSessionProvider{
 
   val total = 1000
@@ -18,6 +20,7 @@ class DataSetSizeEvolutionStrategyTest extends WordSpec  with Matchers with Spar
   "Dataset size should" should {
 
     "evolve with AppendDataSetSizeEvolutionStrategy preserving previous rows" in {
+      val seed = new Random().nextLong()
       val currentSubSet = testDF.sample(false, 0.2)
       val currentSize: Long = currentSubSet.count()
       val nextSize = total / 2
@@ -25,7 +28,7 @@ class DataSetSizeEvolutionStrategyTest extends WordSpec  with Matchers with Spar
       val anySamplingStrategy = new RandomSampling()
 
       val evolutionStrategy = new AppendDataSetSizeEvolutionStrategy()
-      val evolvedDF =  evolutionStrategy.evolve(currentSubSet, nextSize, 5, testDF)(anySamplingStrategy)
+      val evolvedDF =  evolutionStrategy.evolve(currentSubSet, nextSize, 5, testDF, seed = seed)(anySamplingStrategy)
 
       evolvedDF.cache()
 
@@ -35,14 +38,16 @@ class DataSetSizeEvolutionStrategyTest extends WordSpec  with Matchers with Spar
     }
 
     "evolve with RandomDataSetSizeEvolutionStrategy preserving previous rows" in {
-      val currentSubSet = testDF.sample(false, 0.2)
+      val seed = new Random().nextLong()
+
+      val currentSubSet = testDF.sample(false, 0.2, seed)
       val currentSize: Long = currentSubSet.count()
       val nextSize = total / 2
 
       val anySamplingStrategy = new RandomSampling()
 
       val evolutionStrategy = new RandomDataSetSizeEvolutionStrategy()
-      val evolvedDF =  evolutionStrategy.evolve(currentSubSet, nextSize, 5, testDF)(anySamplingStrategy)
+      val evolvedDF =  evolutionStrategy.evolve(currentSubSet, nextSize, 5, testDF, seed = seed)(anySamplingStrategy)
 
       evolvedDF.cache()
 

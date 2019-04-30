@@ -3,13 +3,17 @@ package com.automl.dataset
 import com.automl.spark.SparkSessionProvider
 import org.scalatest.{FunSuite, Matchers, Retries}
 
+import scala.util.Random
+
 class StratifiedSamplingTest extends FunSuite with Matchers with SparkSessionProvider with Retries{
 
   test("Stratified should return ratio of the data per class") {
     val stratifier = new StratifiedSampling
 
+    val seed = new Random().nextLong()
+
     val glassDF = Datasets.getGlassDataFrame(1234)
-    val sampled = stratifier.sample(glassDF, 0.5)
+    val sampled = stratifier.sample(glassDF, 0.5, seed)
 
     val (startValues, counts) = glassDF.select("indexedLabel").rdd.map(value => value.getDouble(0)).histogram(6)
     val (startValuesS, countsS) = sampled.select("indexedLabel").rdd.map(value => value.getDouble(0)).histogram(6)
@@ -18,6 +22,8 @@ class StratifiedSamplingTest extends FunSuite with Matchers with SparkSessionPro
   }
 
   test("Stratified should preserve all levels") {
+    val seed = new Random().nextLong()
+
     val stratifier = new StratifiedSampling
     import utils.SparkMLUtils._
     import ss.implicits._
@@ -38,7 +44,7 @@ class StratifiedSamplingTest extends FunSuite with Matchers with SparkSessionPro
       )
     ).toDF("grades")
 
-    val sampled = stratifier.sample(observations, 0.5, "grades").cache()
+    val sampled = stratifier.sample(observations, 0.5, seed, "grades").cache()
 
     sampled.showAllAndContinue
 

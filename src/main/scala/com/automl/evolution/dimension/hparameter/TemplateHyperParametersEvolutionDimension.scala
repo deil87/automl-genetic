@@ -16,7 +16,7 @@ import scala.util.Random
 // it should be a HYPER DIMENSION. We want to find the best FIELD of hyper parameters here.
 //It is right thing that I have removed problemType from methods parameters of EvolutionDimension as not all dimensions are going to be dependant on this.
 //If we need dimension to depend we can pass parameter to a constructor of the dimension's class
-class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: TemplateEvolutionDimension, evolveEveryGenerations: Int = 1, problemType: ProblemType)(implicit val logPaddingSize: Int)
+class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: TemplateEvolutionDimension, evolveEveryGenerations: Int = 1, problemType: ProblemType, seed: Long)(implicit val logPaddingSize: Int)
   extends EvolutionDimension[HPPopulation, HyperParametersField, EvaluatedHyperParametersField] with PaddedLogging{
 
 
@@ -74,7 +74,7 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
 
   override def evaluatePopulation(population: HPPopulation, workingDF: DataFrame): Seq[EvaluatedHyperParametersField] = {
 
-    new HyperParameterContemporaryPopulationEvaluator(parentTemplateEvDimension)(logPaddingSize + 4).evaluateIndividuals(population, workingDF, problemType)
+    new HyperParameterContemporaryPopulationEvaluator(parentTemplateEvDimension)(logPaddingSize + 4).evaluateIndividuals(population, workingDF, problemType, seed)
 //    new HyperParameterMixedEvaluator(parentTemplateEvDimension)(logPaddingSize + 4).evaluateIndividuals(population, workingDF, problemType)
   }
 

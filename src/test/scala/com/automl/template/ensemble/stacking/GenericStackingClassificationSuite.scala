@@ -12,6 +12,8 @@ import org.apache.spark.sql.functions.{monotonically_increasing_id, rand}
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Matchers}
 import utils.SparkMLUtils
 
+import scala.util.Random
+
 class GenericStackingClassificationSuite extends FunSuite with Matchers with BeforeAndAfterAll with SparkSessionProvider {
 
   ss.sparkContext.setLogLevel("ERROR")
@@ -32,8 +34,10 @@ class GenericStackingClassificationSuite extends FunSuite with Matchers with Bef
       LeafTemplate(LogisticRegressionModel())
     )
 
+    val seed = new Random().nextLong()
+
     val problemType = ProblemType.MultiClassClassificationProblem
-    val fitnessResult = genericStacking.ensemblingFitnessError(trainDF, testDF, models, problemType, hyperParamsField = HyperParametersField.default)
+    val fitnessResult = genericStacking.ensemblingFitnessError(trainDF, testDF, models, problemType, hyperParamsField = HyperParametersField.default, seed = seed)
 
 
     val gsf1 = fitnessResult.getCorrespondingMetric
@@ -55,7 +59,10 @@ class GenericStackingClassificationSuite extends FunSuite with Matchers with Bef
     )
 
     val problemType = ProblemType.MultiClassClassificationProblem
-    val fitnessResult = genericStacking.ensemblingFitnessError(trainDF, testDF, models, problemType, hyperParamsField = HyperParametersField.default)
+
+    val seed = new Random().nextLong()
+
+    val fitnessResult = genericStacking.ensemblingFitnessError(trainDF, testDF, models, problemType, hyperParamsField = HyperParametersField.default, seed = seed)
 
 
     val gsf1 = fitnessResult.getCorrespondingMetric
@@ -76,7 +83,10 @@ class GenericStackingClassificationSuite extends FunSuite with Matchers with Bef
     )
 
     val problemType = ProblemType.MultiClassClassificationProblem
-    val fitnessResult = genericStacking.ensemblingFitnessError(trainDF, testDF, models, problemType, hyperParamsField = HyperParametersField.default)
+
+    val seed = new Random().nextLong()
+
+    val fitnessResult = genericStacking.ensemblingFitnessError(trainDF, testDF, models, problemType, hyperParamsField = HyperParametersField.default, seed = seed)
 
 
     val gsf1 = fitnessResult.getCorrespondingMetric

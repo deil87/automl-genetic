@@ -88,7 +88,7 @@ object Datasets extends SparkSessionProvider {
       .withColumnRenamed("Id", "uniqueIdColumn")
       .applyIndexer(labelIndexer)
 //      .toDouble("indexedLabel")
-      .showAllAndContinue
+//      .showAllAndContinue
       .cache()
     preparedGlassDF
   }

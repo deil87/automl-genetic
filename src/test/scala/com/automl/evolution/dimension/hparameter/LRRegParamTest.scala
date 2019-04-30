@@ -20,8 +20,9 @@ class LRRegParamTest extends FunSuite with Matchers with LazyLogging{
   val templateEvolutionDimension = new TemplateEvolutionDimension(None,1, problem)
 
   test("that evolution process will converge with regularisation param ") {
+    val seed = new Random().nextLong()
 
-    val dimension = new TemplateHyperParametersEvolutionDimension(templateEvolutionDimension, problemType = problem)
+    val dimension = new TemplateHyperParametersEvolutionDimension(templateEvolutionDimension, problemType = problem, seed = seed)
     val initialPopulation = new HPPopulation(Seq(
       HyperParametersField(Seq(LogisticRegressionHPGroup())),
       HyperParametersField(Seq(LogisticRegressionHPGroup())),

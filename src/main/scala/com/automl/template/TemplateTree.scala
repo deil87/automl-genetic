@@ -14,6 +14,8 @@ import kamon.Kamon
 import kamon.metric.MeasurementUnit
 import org.apache.commons.lang3.RandomStringUtils
 
+import scala.util.Random
+
 
 //TODO rename to TemplateTreeNode
 sealed trait TemplateTree[+A <: TemplateMember]{
@@ -28,7 +30,7 @@ sealed trait TemplateTree[+A <: TemplateMember]{
 
   def subMembers: Seq[TemplateTree[A]]
 
-  def evaluateFitness(trainingDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParamsMap: HyperParametersField)(implicit tc: TreeContext = TreeContext()): FitnessResult
+  def evaluateFitness(trainingDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParamsMap: HyperParametersField, seed: Long = new Random().nextLong())(implicit tc: TreeContext = TreeContext()): FitnessResult
 
   def height: Int = 1 + subMembers.foldLeft(1){ case (h, subMember) => Math.max(h, subMember.height)}
 }
@@ -39,7 +41,7 @@ case class LeafTemplate[+A <: SimpleModelMember](member: A) extends TemplateTree
 
   override def setLogPadding(size: Int): Unit = member.setLogPadding(size)
 
-  override def evaluateFitness(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParamsMap: HyperParametersField)(implicit tc: TreeContext = TreeContext()): FitnessResult = {
+  override def evaluateFitness(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParamsMap: HyperParametersField, seed: Long)(implicit tc: TreeContext = TreeContext()): FitnessResult = {
 
     TemplateTree.updateLeafTC(member.name, height,tc)(logPaddingSize)
 
@@ -62,11 +64,11 @@ case class NodeTemplate[+A <: TemplateMember](member: A, subMembers: Seq[Templat
   }
 
   //We delegating calculation to ensemble member as well
-  override def evaluateFitness(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParamsField: HyperParametersField)(implicit tc: TreeContext = TreeContext()): FitnessResult = {
+  override def evaluateFitness(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParamsField: HyperParametersField, seed: Long)(implicit tc: TreeContext = TreeContext()): FitnessResult = {
     val updatedTC = TemplateTree.updateNodeTC(member.name, height, tc)(logPaddingSize)
     //member.fitnessError(trainDF, testDF, subMembers)
     //or
-    member.asInstanceOf[EnsemblingModelMember].ensemblingFitnessError(trainDF, testDF, subMembers, problemType, hyperParamsField)(updatedTC)
+    member.asInstanceOf[EnsemblingModelMember].ensemblingFitnessError(trainDF, testDF, subMembers, problemType, hyperParamsField, seed)(updatedTC)
   }
 }
 

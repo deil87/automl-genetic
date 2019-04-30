@@ -8,6 +8,7 @@ import com.automl.spark.SparkSessionProvider
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.spark.ml.feature.StringIndexer
 import org.scalatest.{FunSuite, Matchers}
+import utils.SparkMLUtils._
 
 import scala.util.Random
 
@@ -29,9 +30,11 @@ class DecisionTreeTest extends FunSuite with SparkSessionProvider with Matchers{
 
       val dt = DecisionTree(null)
 
-      val preparedGlassDF = Datasets.getGlassDataFrame(seed)
+      val preparedGlassDF = Datasets.getGlassDataFrame(seed).sampleRand(50, seed)
+      preparedGlassDF.showAllAndContinue
 
       val Array(trainingSplit, testSplit) = preparedGlassDF.randomSplit(Array(0.67, 0.33), seed)
+      println("Fitness baseline:")
       val f1 = dt.fitnessError(trainingSplit, testSplit, ProblemType.MultiClassClassificationProblem)
       f1
     }
@@ -47,9 +50,11 @@ class DecisionTreeTest extends FunSuite with SparkSessionProvider with Matchers{
       ConfigProvider.clearOverride.addOverride(testOverride)
 
       val dt = DecisionTree(null)
-      val preparedGlassDF = Datasets.getGlassDataFrame(seed)
+      val preparedGlassDF = Datasets.getGlassDataFrame(seed).sampleRand(50, seed)
+      preparedGlassDF.showAllAndContinue
 
       val Array(trainingSplit, testSplit) = preparedGlassDF.randomSplit(Array(0.67, 0.33), seed)
+      println("Fitness with RGS:")
       val f1 = dt.fitnessError(trainingSplit, testSplit, ProblemType.MultiClassClassificationProblem)
       f1
     }
@@ -57,7 +62,7 @@ class DecisionTreeTest extends FunSuite with SparkSessionProvider with Matchers{
     var avgWithRGS = 0.0
     var avgBaseline = 0.0
 
-    val numberOfRestarts = 2
+    val numberOfRestarts = 20
     for(i <- 0 until numberOfRestarts) {
       val seed = new Random().nextLong()
 

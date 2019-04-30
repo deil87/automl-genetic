@@ -10,6 +10,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.scalatest.{FunSuite, Matchers}
 
 import scala.collection.mutable
+import scala.util.Random
 
 class TemplateHyperParametersEvolutionDimensionTest extends FunSuite with Matchers with LazyLogging{
   implicit val system = ActorSystem("AutoMLSuite-system")
@@ -30,9 +31,9 @@ class TemplateHyperParametersEvolutionDimensionTest extends FunSuite with Matche
   }
 
   test("every evolution should improve performance") {
+    val seed = new Random().nextLong()
 
-
-    val dimension = new TemplateHyperParametersEvolutionDimension(templateEvolutionDimension, problemType = problem)
+    val dimension = new TemplateHyperParametersEvolutionDimension(templateEvolutionDimension, problemType = problem, seed = seed)
     val initialPopulation = new HPPopulation(Seq(
       HyperParametersField(Seq(BayesianHPGroup())),
       HyperParametersField(Seq(BayesianHPGroup()))
@@ -58,8 +59,9 @@ class TemplateHyperParametersEvolutionDimensionTest extends FunSuite with Matche
   }
 
   test("that evolution process will converge with smoothing == 1.0 ") {
+    val seed = new Random().nextLong()
 
-    val dimension = new TemplateHyperParametersEvolutionDimension(templateEvolutionDimension, problemType = problem)
+    val dimension = new TemplateHyperParametersEvolutionDimension(templateEvolutionDimension, problemType = problem, seed = seed)
     val initialPopulation = new HPPopulation(Seq(
       HyperParametersField(Seq(BayesianHPGroup())),
       HyperParametersField(Seq(BayesianHPGroup()))

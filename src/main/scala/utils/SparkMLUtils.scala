@@ -324,6 +324,10 @@ object SparkMLUtils {
       df
     }
 
+    def sampleRand(number: Int, seed: Long) = {
+      df.orderBy(rand(seed)).limit(number)
+    }
+
     def printSchema_AndContinue = {
        df.printSchema(); df.schema.fields.find(field => field.name == "label").map(_.metadata).foreach(println); df
     }

@@ -16,12 +16,12 @@ class HyperParameterContemporaryPopulationEvaluator(parentTemplateEvDimension: T
 
   override type CacheKeyType = ( HyperParametersField, Long)
 
-  override def evaluateIndividuals(population: HPPopulation, workingDF: DataFrame, problemType: ProblemType)
+  override def evaluateIndividuals(population: HPPopulation, workingDF: DataFrame, problemType: ProblemType, seed: Long)
                                   (implicit cache: mutable.Map[( HyperParametersField, Long), Double]): Seq[EvaluatedHyperParametersField] = {
     val numberOfBestTemplates = 3
     val hpdConfig = ConfigProvider.config.getConfig("evolution.hyperParameterDimension")
     val samplingRatio = hpdConfig.getDouble("evaluationSamplingRatio")
-    val sampledWorkingDF = new StratifiedSampling().sample(workingDF, samplingRatio).cache() //TODO every time we will compute and therefore deal with different damples.
+    val sampledWorkingDF = new StratifiedSampling().sample(workingDF, samplingRatio, seed).cache() //TODO every time we will compute and therefore deal with different samples.
     val sampledWorkingDFCount = sampledWorkingDF.count()
     debug(s"Sampling of the workingDF for hyper parameter evaluations ( $sampledWorkingDFCount out of ${workingDF.count()} )")
 
@@ -31,7 +31,7 @@ class HyperParameterContemporaryPopulationEvaluator(parentTemplateEvDimension: T
 
     tPopulation.individuals.foreach(template => template.setLogPadding(currentLogPadding))
 
-      val Array(trainingSplit, testSplit) = sampledWorkingDF.randomSplit(Array(0.67, 0.33), 11L) // TODO move to Config ratio
+      val Array(trainingSplit, testSplit) = sampledWorkingDF.randomSplit(Array(0.67, 0.33), seed) // TODO move to Config ratio
       trainingSplit.cache()
       testSplit.cache()
       population.individuals.map { hpField =>

@@ -15,6 +15,7 @@ import org.apache.spark.sql.DataFrame
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future, _}
+import scala.util.Random
 
 class MetaDB() {
   def getPopulationOfTemplates = ???  // Population of base models?
@@ -38,7 +39,8 @@ class AutoML(data: DataFrame,
              isBigSizeThreshold: Long = 500,
              isBigDimensionsThreshold: Long = 200,
              initialSampleSize: Long = 500,
-             dataSetSizeEvolutionStrategy: DataSetSizeEvolutionStrategy = new RandomDataSetSizeEvolutionStrategy()
+             dataSetSizeEvolutionStrategy: DataSetSizeEvolutionStrategy = new RandomDataSetSizeEvolutionStrategy(),
+             seed: Long = new Random().nextLong()
             ) extends LazyLogging {
 
   implicit val logPaddingSize: Int = 0
@@ -98,7 +100,7 @@ class AutoML(data: DataFrame,
     var workingDataSet: DataFrame = if(isDataBig) {
       val initialSamplingRatio = initialSampleSize.toDouble / totalDataSize.toDouble
       //TODO maybe we can start using EvolutionStrategy even here?
-      samplingStrategy.sample(data, initialSamplingRatio).cache()
+      samplingStrategy.sample(data, initialSamplingRatio, seed).cache()
     } else data
 
 
@@ -155,7 +157,7 @@ class AutoML(data: DataFrame,
           logger.debug(infoMessage + ex.getMessage)
           if (currentDataSize < totalDataSize) {
             val newDataSize = currentDataSize + evolutionDataSizeFactor
-            workingDataSet = dataSetSizeEvolutionStrategy.evolve(workingDataSet, newSize = newDataSize, maxEvolutions, data)
+            workingDataSet = dataSetSizeEvolutionStrategy.evolve(workingDataSet, newSize = newDataSize, maxEvolutions, data, seed)
             evolutionNumber += 1
           }
       }

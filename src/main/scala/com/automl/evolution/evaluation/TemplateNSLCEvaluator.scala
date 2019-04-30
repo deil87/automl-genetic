@@ -31,7 +31,8 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
 
   override def evaluateIndividuals(population: TPopulation,
                                    workingDF: DataFrame,
-                                   problemType: ProblemType)
+                                   problemType: ProblemType,
+                                   seed: Long)
                                   (implicit cache: mutable.Map[(TemplateTree[TemplateMember], HyperParametersField, Long), FitnessResult]): Seq[EvaluatedTemplateData] = {
 
     debug("TemplateNSLCEvaluator. Evaluation of templates have started.")

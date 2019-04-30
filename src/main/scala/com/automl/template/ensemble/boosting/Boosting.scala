@@ -16,7 +16,8 @@ case class Boosting()(implicit val logPaddingSize: Int = 0) extends BoostingMemb
                                                            testDF: DataFrame,
                                                            subMembers: Seq[TemplateTree[A]],
                                                            problemType: ProblemType,
-                                                           hyperParamsMap: HyperParametersField)
+                                                           hyperParamsMap: HyperParametersField,
+                                                           seed: Long)
                                                           (implicit tc: TreeContext = TreeContext()): FitnessResult = ???
 
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???

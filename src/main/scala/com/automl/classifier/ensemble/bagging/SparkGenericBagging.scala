@@ -34,7 +34,8 @@ case class SparkGenericBagging()(implicit val logPaddingSize: Int = 0) extends B
                                                            testDF: DataFrame,
                                                            subMembers: Seq[TemplateTree[A]],
                                                            problemType: ProblemType,
-                                                           hyperParamsMap: HyperParametersField)
+                                                           hyperParamsMap: HyperParametersField,
+                                                           seed: Long)
                                                           (implicit tc: TreeContext): FitnessResult = {
 
     import trainDF.sparkSession.implicits._
@@ -43,7 +44,7 @@ case class SparkGenericBagging()(implicit val logPaddingSize: Int = 0) extends B
     debug(s"Sampling(stratified) without replacement for submembers of $name")
     val stratifiedSampler = new StratifiedSampling
     val trainingSamplesForSubmembers = subMembers.map { model =>
-      (model, stratifiedSampler.sample(trainDF,0.8))
+      (model, stratifiedSampler.sample(trainDF,0.8, seed))
     }
 
     consistencyCheck{

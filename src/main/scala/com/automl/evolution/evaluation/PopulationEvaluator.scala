@@ -16,6 +16,7 @@ trait PopulationEvaluator[PopulationType <: Population[IndividualType], Individu
 
   def evaluateIndividuals(population: PopulationType,
                           workingDF: DataFrame,
-                          problemType: ProblemType)
+                          problemType: ProblemType,
+                          seed: Long)
                          (implicit cache: mutable.Map[CacheKeyType, EvaluatedResult#FitnessType]): Seq[EvaluatedResult]
 }

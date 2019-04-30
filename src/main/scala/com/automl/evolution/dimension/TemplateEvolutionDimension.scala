@@ -15,13 +15,14 @@ import com.automl.template.{TemplateMember, TemplateTree}
 import org.apache.spark.sql.DataFrame
 
 import scala.collection.mutable
+import scala.util.Random
 
 /**
   *
   * @param evolveEveryGenerations is not used for now
   * @param problemType We need to take into account which models we can mutate into filtered out by problemType
   */
-class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, evolveEveryGenerations: Int = 1, problemType: ProblemType)
+class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, evolveEveryGenerations: Int = 1, problemType: ProblemType, seed: Long = new Random().nextLong())
     (implicit val as: ActorSystem, val logPaddingSize: Int)
     extends EvolutionDimension[TPopulation, TemplateTree[TemplateMember], EvaluatedTemplateData]
     with PaddedLogging{
@@ -39,7 +40,7 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
   val rankSelectionStrategy = new RankSelectionStrategy
 
   // Dependencies on other dimensions. Hardcoded for now. Should come from AutoML.runEvolution method parameters.
-  val hyperParamsEvDim = new TemplateHyperParametersEvolutionDimension(this,problemType = problemType)(logPaddingSize + 8)
+  val hyperParamsEvDim = new TemplateHyperParametersEvolutionDimension(this,problemType = problemType, seed = seed)(logPaddingSize + 8)
 
   override var _population: TPopulation = new TPopulation(Nil)
 
@@ -156,7 +157,7 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
   override def evaluatePopulation(population: TPopulation, workingDF: DataFrame): Seq[EvaluatedTemplateData] = {
 
     if(problemType == MultiClassClassificationProblem) {
-      evaluator.evaluateIndividuals(population, workingDF, problemType)
+      evaluator.evaluateIndividuals(population, workingDF, problemType, seed)
     }
     else {
       ???

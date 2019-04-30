@@ -4,20 +4,20 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Dataset, Row}
 
 trait SamplingStrategy {
-  def sample(df: DataFrame, ratio: Double, byColumn: String = "indexedLabel"): DataFrame
+  def sample(df: DataFrame, ratio: Double, seed: Long, byColumn: String = "indexedLabel"): DataFrame
 }
 
 class RandomSampling extends SamplingStrategy {
-  override def sample(df: DataFrame, ratio: Double, byColumn: String = "indexedLabel"): Dataset[Row] = {
+  override def sample(df: DataFrame, ratio: Double, seed: Long, byColumn: String = "indexedLabel"): Dataset[Row] = {
     import org.apache.spark.sql.functions.rand
     val sampleSize = df.count() * ratio
-    df.orderBy(rand()).limit(sampleSize.toInt) // TODO Do we need to shuffle one more time here?
+    df.orderBy(rand(seed)).limit(sampleSize.toInt) // TODO Do we need to shuffle one more time here?
   }
 }
 
 class StratifiedSampling extends SamplingStrategy {
   import utils.SparkMLUtils._
-  override def sample(df: DataFrame, ratio: Double, byColumn: String = "indexedLabel"): Dataset[Row] = {
+  override def sample(df: DataFrame, ratio: Double, seed: Long, byColumn: String = "indexedLabel"): Dataset[Row] = {
     import df.sparkSession.implicits._
     import org.apache.spark.rdd.PairRDDFunctions
     import org.apache.spark.sql.functions._
@@ -30,7 +30,7 @@ class StratifiedSampling extends SamplingStrategy {
       .collectAsMap
 
     val sampleData = data
-      .sampleByKeyExact(withReplacement = false, fractions, 2L)
+      .sampleByKeyExact(withReplacement = false, fractions, seed)
       .values
 
 
