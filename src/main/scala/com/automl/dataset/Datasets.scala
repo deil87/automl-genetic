@@ -92,4 +92,27 @@ object Datasets extends SparkSessionProvider {
       .cache()
     preparedGlassDF
   }
+
+  def getIrisDataFrame(shufflingSeed: Long): DataFrame = {
+
+    val data = SparkMLUtils.loadResourceDF("/iris.csv")
+
+    val labelIndexer = new StringIndexer()
+      .setInputCol("fl_class")
+      .setOutputCol("indexedLabel")
+      .setStringOrderType("alphabetAsc")
+
+    def basePredictorsFeaturesAssembler = new VectorAssembler()
+      .setInputCols(Array("s_length", "s_width", "p_length", "p_width"))
+      .setOutputCol("features")
+
+    val preparedData = data
+      .orderBy(rand(shufflingSeed))
+      .applyIndexer(labelIndexer)
+      .withColumn("uniqueIdColumn", monotonically_increasing_id)
+        .applyTransformation(basePredictorsFeaturesAssembler)
+
+    preparedData.showAllAndContinue
+
+  }
 }

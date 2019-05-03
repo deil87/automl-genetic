@@ -1,5 +1,6 @@
 package com.automl.classifier.ensemble.bagging
 
+import com.automl.dataset.Datasets
 import com.automl.evolution.dimension.hparameter.HyperParametersField
 import com.automl.helper.TemplateTreeHelper
 import com.automl.problemtype.ProblemType
@@ -11,6 +12,8 @@ import org.apache.spark.sql.{DataFrame, Dataset, Row}
 import org.bytedeco.javacpp.opencv_ml.LogisticRegression
 import org.scalatest.{FunSuite, Matchers}
 import utils.SparkMLUtils
+
+import scala.util.Random
 
 
 class SparkGenericBaggingSuite extends FunSuite with Matchers with SparkSessionProvider{
@@ -96,12 +99,18 @@ class SparkGenericBaggingSuite extends FunSuite with Matchers with SparkSessionP
     }
   }
 
+  // We have the same test but in benchmarking
   test("Spark Bagging should calculate over multiple decision trees( Classification problem )") {
 
     val models = Seq(
       LeafTemplate(DecisionTree()), //TODO We need n-classes +2 base models to be able to find majority
       LeafTemplate(DecisionTree()),
       LeafTemplate(DecisionTree()),
+      LeafTemplate(DecisionTree()),
+//      LeafTemplate(DecisionTree()),
+//      LeafTemplate(DecisionTree()),
+//      LeafTemplate(DecisionTree()),
+//      LeafTemplate(DecisionTree()),
       LeafTemplate(DecisionTree()),
       LeafTemplate(DecisionTree())
     )
@@ -110,23 +119,16 @@ class SparkGenericBaggingSuite extends FunSuite with Matchers with SparkSessionP
 
     println(TemplateTreeHelper.renderAsString_v2(ensemb))
 
-    val data = SparkMLUtils.loadResourceDF("/iris.csv")
+    val seed = new Random().nextLong()
+    println(s"Seed for current test: $seed")
 
-    val preparedData = data
-      .withColumnRenamed("fl_class", "label")
-      .withColumn("uniqueIdColumn", monotonically_increasing_id)
+    val data = Datasets.getIrisDataFrame(seed)
 
-    def basePredictorsFeaturesAssembler = new VectorAssembler()
-      .setInputCols(Array("s_length", "s_width", "p_length", "p_width"))
-      .setOutputCol("features")
-
-    val featuresAssembled = basePredictorsFeaturesAssembler.transform(preparedData)
-
-    val Array(trainingSplit, testSplit) = featuresAssembled.randomSplit(Array(0.67, 0.33), 11L)
+    val Array(trainingSplit, testSplit) = data.randomSplit(Array(0.67, 0.33), seed)
 
     val problemType = ProblemType.MultiClassClassificationProblem
 
-    val baggingF1 = ensemb.evaluateFitness(trainingSplit, testSplit, problemType, hyperParamsField = Some(HyperParametersField.default)).getCorrespondingMetric
+    val baggingF1 = ensemb.evaluateFitness(trainingSplit, testSplit, problemType, hyperParamsField = Some(HyperParametersField.default), seed = seed).getCorrespondingMetric
 
     val dtF1 = DecisionTree().fitnessError(trainingSplit, testSplit, problemType).getMetricByName("f1")
 

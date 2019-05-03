@@ -1,7 +1,7 @@
 package com.automl.benchmark.glass
 
 import akka.actor.ActorSystem
-import com.automl.dataset.Datasets
+import com.automl.dataset.{Datasets, StratifiedSampling}
 import com.automl.population.{GenericPopulationBuilder, TPopulation}
 import com.automl.spark.SparkSessionProvider
 import com.automl.template.LeafTemplate
@@ -36,7 +36,6 @@ class GlassOnlyDecisionTreesEnsembleRuns(implicit as: ActorSystem) extends Spark
 
     val seedPopulation = new TPopulation(individuals)
 
-    val population = GenericPopulationBuilder.fromSeedPopulation(seedPopulation).withSize(7).build
     val seed = 1234
     val preparedGlassDF = Datasets.getGlassDataFrame(seed)
 
@@ -44,7 +43,7 @@ class GlassOnlyDecisionTreesEnsembleRuns(implicit as: ActorSystem) extends Spark
     val autoMl = new AutoML(
       data = preparedGlassDF,
       responseColumn = "indexedLabel",
-      maxTime = 6 * 60000,
+      maxTime = 10 * 60000,
       useMetaDB = false,
       initialPopulationSize = Some(7),
       seedPopulation = Some(seedPopulation),
@@ -60,7 +59,7 @@ class GlassOnlyDecisionTreesEnsembleRuns(implicit as: ActorSystem) extends Spark
       """
         |evolution {
         |  templateDimension {
-        |    populationSize = 7
+        |    populationSize = 5
         |    poolOfSimpleModels = ["decision_tree"]
         |    poolOfEnsemblingModels = ["bagging", "stacking"]
         |    maxEnsembleDepth = 2
@@ -79,15 +78,16 @@ class GlassOnlyDecisionTreesEnsembleRuns(implicit as: ActorSystem) extends Spark
 
     val seedPopulation = new TPopulation(individuals)
 
-    val population = GenericPopulationBuilder.fromSeedPopulation(seedPopulation).withSize(7).build
     val seed = 1234
     val preparedGlassDF = Datasets.getGlassDataFrame(seed)
 
+    val sample = new StratifiedSampling().sampleExact(preparedGlassDF, 0.15,seed = seed)
+
     //Note we are passing whole dataset and inside it is being splitted as train/test. Maybe it is a good idea to hold test split for a final examination.
     val autoMl = new AutoML(
-      data = preparedGlassDF,
+      data = sample,
       responseColumn = "indexedLabel",
-      maxTime = 6 * 60000,
+      maxTime = 10 * 60000,
       useMetaDB = false,
       initialPopulationSize = Some(7),
       seedPopulation = Some(seedPopulation),
@@ -121,7 +121,6 @@ class GlassOnlyDecisionTreesEnsembleRuns(implicit as: ActorSystem) extends Spark
 
     val seedPopulation = new TPopulation(individuals)
 
-    val population = GenericPopulationBuilder.fromSeedPopulation(seedPopulation).withSize(7).build
     val seed = 1234
     val preparedGlassDF = Datasets.getGlassDataFrame(seed)
 

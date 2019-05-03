@@ -112,5 +112,38 @@ class RankSelectionStrategyTest extends WordSpec with Matchers{
 
     }
 
+    "when scores are equals we should not count them as winners over the same neighbours" in {
+      val individuals: Seq[LeafTemplate[SimpleModelMember]] = Seq(
+        LeafTemplate(LinearRegressionModel()),
+        LeafTemplate(LinearRegressionModel()),
+        LeafTemplate(DecisionTree())
+      )
+
+      val populationSize = 10
+
+      val individualsSpanned = GenericPopulationBuilder.fromSeedPopulation(new TPopulation(individuals)).withSize(populationSize).build.individuals
+
+      val selectionStrategy = new RankSelectionStrategy
+      val evaluatedTemplateData = individualsSpanned.zipWithIndex.map { case (individual, idx) =>
+
+        val sameScoreEveryThirdIndex = if (idx % 3 == 0) 42 else 100
+        // For population size = 10 we expect 4 members to have same `42` score.
+
+        EvaluatedTemplateData(idx.toString, individual, null,
+          FitnessResult(Map("f1" -> sameScoreEveryThirdIndex ), MultiClassClassificationProblem, null)
+        )
+      }
+
+      val evaluatedTemplateDataWithNeighbours = evaluatedTemplateData.map(etd => etd.copy(neighbours = evaluatedTemplateData.diff(Seq(etd))))
+
+      val sizeOfSample = 10
+      val selectedParents = selectionStrategy.parentSelectionBySizeWithLocalCompetitions(sizeOfSample, evaluatedTemplateDataWithNeighbours)
+
+      PopulationHelper.print(new TPopulation(selectedParents.map(_.template)))
+
+      // It is difficult to check right now that we are getting members with 0 scores as their neighbours have same fitness values
+
+    }
+
   }
 }

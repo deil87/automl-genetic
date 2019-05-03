@@ -101,7 +101,7 @@ class AutoML(data: DataFrame,
     var workingDataSet: DataFrame = if(isDataBig) {
       val initialSamplingRatio = initialSampleSize.toDouble / totalDataSize.toDouble
       //TODO maybe we can start using EvolutionStrategy even here?
-      samplingStrategy.sample(data, initialSamplingRatio, seed).cache()
+      samplingStrategy.sampleExact(data, initialSamplingRatio, seed).cache()
     } else data
 
 

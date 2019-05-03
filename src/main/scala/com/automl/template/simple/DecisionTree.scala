@@ -40,7 +40,7 @@ case class DecisionTree(hpGroup: DecisionTreeHPGroup = DecisionTreeHPGroup.defau
 
     trainDF.cache()
     testDF.cache()
-    debug(s"Started evaluating $name ...")
+    info(s"Started evaluating $name ...")
     import  SparkMLUtils._
 
     import ss.implicits._

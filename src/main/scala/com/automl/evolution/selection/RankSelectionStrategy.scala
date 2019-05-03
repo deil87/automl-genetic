@@ -4,6 +4,7 @@ import com.automl.{EvaluatedTemplateData, PaddedLogging}
 import com.automl.helper.LinearRankingProbabilityStrategy
 import com.typesafe.scalalogging.LazyLogging
 
+import scala.collection.immutable
 import scala.util.Random
 
 // TODO make selection strategy generic and suitable for different coevolutions
@@ -19,10 +20,14 @@ class RankSelectionStrategy()(implicit val logPaddingSize: Int = 0) extends Padd
 
     debug(s"Parent selection ( task is to select $numberOfParentsToSelect out of ${individuals.length}):")
     val localScores = individuals.map{ individual =>
-      val countOFNeighboursThatAreWorse = individual.neighbours.count(_.fitness.filterFun(individual.fitness))
+//      import collection.breakOut
+//      val value = individual.neighbours.groupBy(_.fitness).map(_._2.head)//(breakOut)
+      val value = individual.neighbours.filterNot(_.fitness == individual.fitness)
+      val countOFNeighboursThatAreWorse = value.count(_.fitness.filterFun(individual.fitness))
       (individual, countOFNeighboursThatAreWorse)
     }
 
+    // To display whole list in asc order
     val sortedBasedOnLocalScores = localScores.sortWith(_._2 < _._2)
     debug("Local competitions performances: " + sortedBasedOnLocalScores.map{case (template, score) => template.idShort + " has beaten -> " + score + " neighbours"}.mkString("\n\t\t\t\t\t", "\n\t\t\t\t\t", ""))
 

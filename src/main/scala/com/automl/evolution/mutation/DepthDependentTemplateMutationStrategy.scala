@@ -115,7 +115,7 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
           } else {
             val randSubmember = subMembers.randElement
             //TODO we are changing order here and it might change representation that we will be using as a key for caching
-            NodeTemplate(ensemblingMember, subMembers.diff(Seq(randSubmember)) :+ traverseAndMutate(randSubmember.get, currentLevel + 1, targetLevelOfMutation))
+            NodeTemplate(ensemblingMember, subMembers.diff(Seq(randSubmember)) :+ traverseAndMutate(randSubmember, currentLevel + 1, targetLevelOfMutation))
           }
 
       }

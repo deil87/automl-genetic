@@ -1,7 +1,7 @@
 package com.automl.classifier.ensemble.bagging
 
 import com.automl.{ConsistencyChecker, PaddedLogging}
-import com.automl.dataset.StratifiedSampling
+import com.automl.dataset.{RandomSampling, StratifiedSampling}
 import com.automl.evolution.dimension.hparameter.HyperParametersField
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
@@ -14,10 +14,11 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.ml.evaluation.{MulticlassClassificationEvaluator, RegressionEvaluator}
 import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.sql._
-import utils.SparkMLUtils
-import org.apache.spark.ml.linalg.{Vector => MLVector}
+import utils.{BenchmarkHelper, SparkMLUtils}
+import org.apache.spark.ml.linalg.{DenseVector, Vector => MLVector}
 
 import scala.collection.mutable
+import scala.util.Random
 
 //TODO consider moving closer to BaggingMember
 case class SparkGenericBagging()(implicit val logPaddingSize: Int = 0) extends BaggingMember
@@ -39,18 +40,24 @@ case class SparkGenericBagging()(implicit val logPaddingSize: Int = 0) extends B
                                                           (implicit tc: TreeContext): FitnessResult = {
 
     import trainDF.sparkSession.implicits._
+    import org.apache.spark.sql.functions._
+
 
     debug(s"Evaluating $name")
-    debug(s"Sampling(stratified) without replacement for submembers of $name")
-    val stratifiedSampler = new StratifiedSampling
-    val trainingSamplesForSubmembers = subMembers.map { model =>
-      (model, stratifiedSampler.sample(trainDF,0.8, seed))
+    debug(s"Sampling(stratified/random) without replacement for submembers of $name")
+    val sampler = new RandomSampling
+    val trainingSamplesForSubmembers = subMembers.zipWithIndex.map { case (model, idx) =>
+//      val samplingSeed = new Random(seed).nextLong()//seed + idx
+      val sample = sampler.sample(trainDF, 0.8, seed + idx)
+      (model, sample)
     }
 
-    consistencyCheck{
-      val numberOfLevels = trainingSamplesForSubmembers.map(_._2.select("indexedLabel").distinct().count())
-      if (!numberOfLevels.forall(_ == numberOfLevels.head)) {
-        throw new IllegalStateException("Number of levels should be preserved during stratified sampling for submemers of Bagging ensemble node.")
+    BenchmarkHelper.time("SparkBagging consistency check") {
+      consistencyCheck {
+        val numberOfLevels = trainingSamplesForSubmembers.map(_._2.select("indexedLabel").distinct().count())
+        if (!numberOfLevels.forall(_ == numberOfLevels.head)) {
+          throw new IllegalStateException("Number of levels should be preserved during stratified sampling for submemers of Bagging ensemble node.")
+        }
       }
     }
 
@@ -60,58 +67,116 @@ case class SparkGenericBagging()(implicit val logPaddingSize: Int = 0) extends B
         (model, model.evaluateFitness(trainingSample, testDF, problemType, hyperParamsMap))
       }
 
+    val fitnessWeightColName = "fitness_weight"
+
     val dfWithPredictionsFromBaseModels: Seq[DataFrame] = results
-      .map(_._2.dfWithPredictions)
+      .map{r => r._2.dfWithPredictions.withColumn(fitnessWeightColName, lit(r._2.getCorrespondingMetric))}
 
     import SparkMLUtils._
 
     val joinedPredictions: Dataset[Row] =
       dfWithPredictionsFromBaseModels
-//        .map(_.showN_AndContinue(20))
+        .map(_.showN_AndContinue(20))
         .zipWithIndex
         .map{case (df, idx) =>
-          df.select($"uniqueIdColumn", $"prediction")
+          df.select($"uniqueIdColumn", $"prediction", $"$fitnessWeightColName")
             .withColumnRenamed("prediction", s"prediction$idx")
+            .withColumnRenamed(fitnessWeightColName, s"$fitnessWeightColName$idx")
         }
         .reduce((a, b) => {
           a.join(b, "uniqueIdColumn")
         }).cache()
-//        .showN_AndContinue(10, "After joining predictions")
+        .showN_AndContinue(1000, "After joining predictions and weights")
 
     def generateMajorityVoteUDF = {
       import org.apache.spark.sql.functions.udf
+      udf { (preds: MLVector, weights: MLVector) =>
+        val weightedOccurances: mutable.Map[Double, Double] = mutable.Map.empty
+        preds.toArray.zipWithIndex.foreach { case (x, basePredictorIdx) =>
+          // Calculating ranks of weights
+          val rankCoef: Map[Int, Int] = weights.toArray.zipWithIndex.sortWith(_._1 < _._1).zipWithIndex
+            .map{case ((weight, idx), rank) => (idx, rank + 1)}.toMap
+
+          val adjustedRankCoef = rankCoef(basePredictorIdx).toDouble / 2
+          val weightedAddition: Double = weights.apply(basePredictorIdx) * adjustedRankCoef
+          val before: Double = weightedOccurances.getOrElse(x, 0)
+          val newWeightedSum = before + weightedAddition
+          weightedOccurances.update(x, newWeightedSum)
+        }
+        weightedOccurances.toArray.sortWith(_._2 > _._2).head._1  // rewrite with just finding argmax
+      }
+    }
+
+    def generateVotesUDF = {
+      import org.apache.spark.sql.functions.udf
+      udf { (preds: MLVector, weights: MLVector) =>
+        val weightedOccurances: mutable.Map[Double, Double] = mutable.Map.empty
+        new DenseVector(preds.toArray.zipWithIndex.map { case (x, basePredictorIdx) =>
+          // Calculating ranks of weights
+          val rankCoef: Map[Int, Int] = weights.toArray.zipWithIndex.sortWith(_._1 < _._1).zipWithIndex
+            .map{case ((weight, idx), rank) => (idx, rank + 1)}.toMap
+
+          val adjustedRankCoef = rankCoef(basePredictorIdx).toDouble / 2
+          val weightedAddition: Double = weights.apply(basePredictorIdx) * adjustedRankCoef
+          weightedAddition
+//          val before: Double = weightedOccurances.getOrElse(x, 0)
+//          val newWeightedSum = before + weightedAddition
+//          weightedOccurances.update(x, newWeightedSum)
+        })
+      }
+    }
+
+    def markDisputableInstanceUDF = {
+      import org.apache.spark.sql.functions.udf
       udf { v: MLVector =>
         val occurrences = mutable.Map.empty[Double, Int]
-        v.toArray.foreach { x =>
-          occurrences.update(x, occurrences.getOrElse(x, 0) + 1)
-        }
-        occurrences.toArray.sortWith(_._2 > _._2).head._1
+        if(v.toArray.distinct.length > 1) 1 else 0
       }
     }
 
     problemType match {
       case MultiClassClassificationProblem | BinaryClassificationProblem =>
 
-        checkThatWeHaveSameSetsOfCategoricalLevelsForAllSubmembers(trainingSamplesForSubmembers)(trainDF.sparkSession)
+        BenchmarkHelper.time("checkThatWeHaveSameSetsOfCategoricalLevelsForAllSubmembers") {
+          checkThatWeHaveSameSetsOfCategoricalLevelsForAllSubmembers(trainingSamplesForSubmembers)(trainDF.sparkSession)
+        }
 
         import org.apache.spark.sql.functions.col
         val predictionColumns: Array[Column] = dfWithPredictionsFromBaseModels.indices.toArray.map{ idx => col(s"prediction$idx")}
 
+        val baseModelsPredictionsColName = "baseModelsPredictionsColName"
+
         def predictionsAssembler = new VectorAssembler()
           .setInputCols(predictionColumns.map(_.toString))
-          .setOutputCol("base_models_predictions")
+          .setOutputCol(baseModelsPredictionsColName)
+
+        val fitnessWeightColumns: Array[Column] = dfWithPredictionsFromBaseModels.indices.toArray.map{ idx => col(s"fitness_weight$idx")}
+
+        val baseModelsFitnessWeights = "base_models_fitness_weights"
+
+        def fitnessWeightsAssembler = new VectorAssembler()
+          .setInputCols(fitnessWeightColumns.map(_.toString))
+          .setOutputCol(baseModelsFitnessWeights)
 
         val mergedAndRegressedDF =
             joinedPredictions
               .applyTransformation(predictionsAssembler)
-//              .showN_AndContinue(10)
-              .withColumn("majority_prediction", generateMajorityVoteUDF($"base_models_predictions"))
+              .applyTransformation(fitnessWeightsAssembler)
+              .showN_AndContinue(1000, "After predictions assembler")
+              .withColumn("majority_prediction", generateMajorityVoteUDF($"$baseModelsPredictionsColName", $"$baseModelsFitnessWeights"))
+              .withColumn("weighted_preds", generateVotesUDF($"$baseModelsPredictionsColName", $"$baseModelsFitnessWeights"))
+              .withColumn("isDisputable", markDisputableInstanceUDF($"$baseModelsPredictionsColName")) // TODO this is for debug purposes
               .withColumnRenamed("majority_prediction", "prediction")
               //            .drop(predictionColumns.map(_.toString): _*)
               .join(dfWithPredictionsFromBaseModels.head.drop("prediction"), Seq("uniqueIdColumn"), joinType = "left_outer")
+              .withColumn("misclassified", $"prediction" =!= $"indexedLabel") // TODO this is for debug purposes
+              .showN_AndContinue(1000, "With majority prediction")
               .cache()
 
-//        mergedAndRegressedDF.select(predictionColumns :+ $"indexedLabel" :+ $"prediction" :_*).showN_AndContinue(100)
+        // TODO remove or disable as it is only for debugging purposes
+        mergedAndRegressedDF
+          .select($"$baseModelsPredictionsColName", $"indexedLabel", $"prediction", $"isDisputable", $"misclassified", $"$baseModelsFitnessWeights")
+          .showN_AndContinue(1000, "With majority prediction")
 
         results.foreach(_._2.dfWithPredictions.unpersist()) //TODO doubling see below
 

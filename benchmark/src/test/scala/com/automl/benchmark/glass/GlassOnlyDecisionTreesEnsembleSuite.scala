@@ -13,21 +13,21 @@ class GlassOnlyDecisionTreesEnsembleSuite extends WordSpec with Matchers with Be
   "AutoML on glass dataset" should {
 
 
-    "consistently find decision trees with specific set of hyper-parameters as a winner" in {
+    "consistently find decision trees D1 with specific set of hyper-parameters as a winner" in {
 
       val benchmark = new GlassOnlyDecisionTreesEnsembleRuns().depthOneRun()
 
 
     }
 
-    "consistently find similar ensembles D2 with specific set of hyper-parameters as a winner" ignore {
+    "consistently find similar ensembles D2 with specific set of hyper-parameters as a winner" in {
 
       val benchmark = new GlassOnlyDecisionTreesEnsembleRuns().depthTwoRun()
 
 
     }
 
-    "consistently find similar ensembles D3 with specific set of hyper-parameters as a winner" ignore {
+    "consistently find similar ensembles D3 with specific set of hyper-parameters as a winner" in {
 
       val benchmark = new GlassOnlyDecisionTreesEnsembleRuns().depthThreeRun()
 
