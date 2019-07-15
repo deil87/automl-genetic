@@ -10,6 +10,7 @@ import com.automl.problemtype.ProblemType
 import com.automl.spark.SparkSessionProvider
 import com.automl.template.{LeafTemplate, NodeTemplate}
 import com.automl.template.simple.DecisionTree
+import org.apache.spark.sql.DataFrame
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Matchers, WordSpec}
 
 import scala.util.Random
@@ -19,17 +20,53 @@ class BaggingOnlyDecisionTreesEnsembleSuite extends FunSuite with Matchers with 
 
   implicit val system = ActorSystem("AutoML-system")
 
-  test("Spark Bagging should calculate over multiple decision trees( Classification problem )") {
+  test("Iris dataset - Spark Bagging should calculate over multiple decision trees( Classification problem ) and berform on average better than single decision tree") {
 
+    val seed = new Random().nextLong()
+    println(s"Seed for current test: $seed")
+    val data = Datasets.getIrisDataFrame(seed)
+    performTestOn(data, seed)
+
+  }
+
+  test("Glass dataset - Spark Bagging should calculate over multiple decision trees( Classification problem ) and berform on average better than single decision tree") {
+
+    val seed = new Random().nextLong()
+    println(s"Seed for current test: $seed")
+    val data = Datasets.getGlassDataFrame(seed)
+    performTestOn(data, seed)
+
+  }
+
+  private def performTestOn(data: DataFrame, seed: Long) = {
     val models = Seq(
       LeafTemplate(DecisionTree()), //TODO We need n-classes +2 base models to be able to find majority
       LeafTemplate(DecisionTree()),
       LeafTemplate(DecisionTree()),
       LeafTemplate(DecisionTree()),
-//      LeafTemplate(DecisionTree()),
-//      LeafTemplate(DecisionTree()),
-//      LeafTemplate(DecisionTree()),
-//      LeafTemplate(DecisionTree()),
+      LeafTemplate(DecisionTree()),
+      LeafTemplate(DecisionTree()),
+      LeafTemplate(DecisionTree()),
+      LeafTemplate(DecisionTree()),
+      LeafTemplate(DecisionTree()),
+      LeafTemplate(DecisionTree()),
+      LeafTemplate(DecisionTree()),
+      LeafTemplate(DecisionTree()),
+      LeafTemplate(DecisionTree()),
+      LeafTemplate(DecisionTree()),
+      LeafTemplate(DecisionTree()),
+      LeafTemplate(DecisionTree()),
+      LeafTemplate(DecisionTree()),
+      LeafTemplate(DecisionTree()),
+      LeafTemplate(DecisionTree()),
+      LeafTemplate(DecisionTree()),
+      LeafTemplate(DecisionTree()),
+      LeafTemplate(DecisionTree()),
+      LeafTemplate(DecisionTree()),
+      LeafTemplate(DecisionTree()),
+      LeafTemplate(DecisionTree()),
+      LeafTemplate(DecisionTree()),
+      LeafTemplate(DecisionTree()),
       LeafTemplate(DecisionTree()),
       LeafTemplate(DecisionTree())
     )
@@ -38,12 +75,7 @@ class BaggingOnlyDecisionTreesEnsembleSuite extends FunSuite with Matchers with 
 
     println(TemplateTreeHelper.renderAsString_v2(ensemb))
 
-    val bm = MultiRestartBenchmarker(numberOfRestarts = 1) { benchmarker: MultiRestartBenchmarker[_] =>
-
-      val seed = new Random().nextLong()
-      println(s"Seed for current test: $seed")
-
-      val data = Datasets.getIrisDataFrame(seed)
+    val bm = MultiRestartBenchmarker(numberOfRestarts = 5) { benchmarker: MultiRestartBenchmarker[_] =>
 
       val Array(trainingSplit, testSplit) = data.randomSplit(Array(0.67, 0.33), seed)
 
@@ -60,9 +92,7 @@ class BaggingOnlyDecisionTreesEnsembleSuite extends FunSuite with Matchers with 
     }
 
     bm.avgSuccessRate should be > 0.6
-
   }
-
 }
 
 

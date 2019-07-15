@@ -48,7 +48,7 @@ case class SparkGenericBagging()(implicit val logPaddingSize: Int = 0) extends B
     val sampler = new RandomSampling
     val trainingSamplesForSubmembers = subMembers.zipWithIndex.map { case (model, idx) =>
 //      val samplingSeed = new Random(seed).nextLong()//seed + idx
-      val sample = sampler.sample(trainDF, 0.8, seed + idx)
+      val sample = sampler.sample(trainDF, 0.5, seed + idx)
       (model, sample)
     }
 
