@@ -33,6 +33,12 @@ sealed trait TemplateTree[+A <: TemplateMember]{
   def evaluateFitness(trainingDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParamsMap: Option[HyperParametersField], seed: Long = new Random().nextLong())(implicit tc: TreeContext = TreeContext()): FitnessResult
 
   def height: Int = 1 + subMembers.foldLeft(1){ case (h, subMember) => Math.max(h, subMember.height)}
+
+  override def equals(obj: Any): Boolean = {
+    require(obj.isInstanceOf[TemplateTree[A]])
+    val another = obj.asInstanceOf[TemplateTree[A]]
+    TemplateTreeComparator.compare(this, another)
+  }
 }
 
 case class LeafTemplate[+A <: SimpleModelMember](member: A) extends TemplateTree[A] {

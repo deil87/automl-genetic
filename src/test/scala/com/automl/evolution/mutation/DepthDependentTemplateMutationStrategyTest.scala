@@ -4,9 +4,10 @@ import com.automl.ConfigProvider
 import com.automl.classifier.ensemble.bagging.SparkGenericBagging
 import com.automl.evolution.diversity.DistinctDiversityStrategy
 import com.automl.population.TPopulation
+import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.MultiClassClassificationProblem
-import com.automl.template.{LeafTemplate, NodeTemplate, TemplateTree}
-import com.automl.template.simple.{Bayesian, DecisionTree, LogisticRegressionModel}
+import com.automl.template.simple.{Bayesian, DecisionTree, RandomForest}
+import com.automl.template.{LeafTemplate, NodeTemplate, TemplateMember, TemplateTree}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -126,6 +127,29 @@ class DepthDependentTemplateMutationStrategyTest extends FunSuite with Matchers{
   test("that we don't get into dead end as we compute level of mutation based on tree height") {
 
     //TODO
+  }
+
+  test("that we will receive new individual") {
+
+    implicit val padding: Int = 0
+    val strategy = new DepthDependentTemplateMutationStrategy(null, ProblemType.MultiClassClassificationProblem)
+
+    val individual: TemplateTree[TemplateMember] =
+      NodeTemplate(SparkGenericBagging(),
+        Seq(
+          LeafTemplate(DecisionTree()),
+          LeafTemplate(RandomForest()),
+          LeafTemplate(Bayesian())
+        )
+      )
+
+    val newIndividual = strategy.mutateIndividual(individual)
+
+    println(individual.render)
+    println(newIndividual.render)
+
+    individual should not equal newIndividual
+    individual shouldEqual individual
   }
 
 }
