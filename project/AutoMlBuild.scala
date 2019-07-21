@@ -55,6 +55,7 @@ object AutoMlBuild extends Build {
     "org.deeplearning4j" % "deeplearning4j-core" % Version.deeplearning4jVersion,
     "org.deeplearning4j" % "deeplearning4j-nn" % Version.deeplearning4jVersion,
     "org.deeplearning4j" % "deeplearning4j-ui-components" % Version.deeplearning4jVersion ,
+//    "org.scalaz" %% "scalaz-core" % "7.2.28",
 
     // h2o
     "ai.h2o" % "sparkling-water-core_2.11" % "2.2.0",

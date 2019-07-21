@@ -6,7 +6,10 @@ object TemplateTreeComparator {
   def compare[A <: TemplateMember](left: TemplateTree[A], right: TemplateTree[A]): Boolean = {
     left match {
       case l: LeafTemplate[A] => {
-        l.member == right.member
+        val hpFieldsAreDefined = l.internalHyperParamsMap.isDefined && right.internalHyperParamsMap.isDefined
+        val hpFieldsAreEqual = l.internalHyperParamsMap.get == right.internalHyperParamsMap.get
+        val membersAreEqual = l.member == right.member
+        membersAreEqual && hpFieldsAreDefined && hpFieldsAreEqual
       }
       case l: NodeTemplate[A] if right.isInstanceOf[NodeTemplate[A]] => {
         calculateDiffAndCheck(l, right)
@@ -16,7 +19,9 @@ object TemplateTreeComparator {
   }
 
   private def calculateDiffAndCheck[A <: TemplateMember](left: TemplateTree[A], right: TemplateTree[A]): Boolean = {
-    val subtractionResult = (left.subMembers.toSet /: right.subMembers.toSet.seq) { case (set, elem) =>
+    val leftMembersSet = left.subMembers.toSet
+    val rightMembersSet = right.subMembers.toSet
+    val subtractionResult = (leftMembersSet /: rightMembersSet) { case (set, elem) =>
       if (set.contains(elem)) set - elem
       else {
         return false

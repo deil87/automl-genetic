@@ -131,27 +131,40 @@ class DepthDependentTemplateMutationStrategyTest extends FunSuite with Matchers{
     //TODO
   }
 
-  test("that we will receive new individual by applying mutateIndividual method ") {
+  test("that we will receive new individual by applying mutateIndividual method(multi rerun setup)") {
 
     implicit val padding: Int = 0
     val strategy = new DepthDependentTemplateMutationStrategy(null, ProblemType.MultiClassClassificationProblem)
 
-    val individual: TemplateTree[TemplateMember] =
-      NodeTemplate(SparkGenericBagging(),
-        Seq(
-          LeafTemplate(DecisionTree()),
-          LeafTemplate(RandomForest()),
-          LeafTemplate(Bayesian())
+    val numberOfMutationIterations = 50
+    (1 to numberOfMutationIterations).foreach{ _ =>
+      val individual: NodeTemplate[TemplateMember] =
+        NodeTemplate(SparkGenericBagging(),
+          Seq(
+            LeafTemplate(DecisionTree()),
+            LeafTemplate(RandomForest()),
+            LeafTemplate(Bayesian())
+          )
         )
-      )
 
-    val newIndividual = strategy.mutateIndividual(individual)
+      val copyOfIndividual = ??? //individual
+      val newIndividual = strategy.mutateIndividual(copyOfIndividual)
 
-    println(individual.render)
-    println(newIndividual.render)
+      println(individual.render)
+      println(newIndividual.render)
 
-    individual should not equal newIndividual
-    individual shouldEqual individual
+      val areTheyEqual = individual == newIndividual
+      areTheyEqual should be(false)
+      individual shouldEqual individual
+    }
+
+  }
+
+  test("that copy of LeafTree copy internal field") {
+    val individual = LeafTemplate(DecisionTree())
+    val copy = individual.copy()
+//    individual == individual shouldBe true
+//    individual == copy shouldBe false
   }
 
   test("that we will receive new unique population by using mutate method ") {

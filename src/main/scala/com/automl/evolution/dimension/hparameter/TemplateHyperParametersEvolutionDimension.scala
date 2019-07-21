@@ -6,6 +6,7 @@ import com.automl.problemtype.ProblemType
 import org.apache.spark.sql.DataFrame
 import com.automl.evolution.dimension.{EvolutionDimension, TemplateEvolutionDimension}
 import com.automl.evolution.evaluation.{HyperParameterContemporaryPopulationEvaluator, HyperParameterMixedEvaluator}
+import com.automl.evolution.mutation.{DepthDependentTemplateMutationStrategy, HPMutationStrategy}
 import com.automl.helper.PopulationHelper
 import com.automl.population.{GenericPopulationBuilder, HPPopulation}
 
@@ -26,6 +27,8 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
   val hpdConfig = ConfigProvider.config.getConfig("evolution.hyperParameterDimension")
 
   lazy val evolutionDimensionLabel: String = hpdConfig.getString("name")
+
+  val hpMutationStrategy = new HPMutationStrategy()(logPaddingSize + 4)
 
   lazy val numberOfHPEvolutionsPerGeneration: Int = hpdConfig.getInt("numOfEvolutionsPerGen")
   lazy val populationSize: Int = hpdConfig.getInt("populationSize")
@@ -53,16 +56,7 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
 
   // Use implicits to mutate HyperParametersField
   override def mutateParentPopulation(population: HPPopulation, notToIntersectWith: HPPopulation): HPPopulation = {
-    //TODO notToIntersectWith is not used here
-    // Use lenses here :)
-    new HPPopulation(
-      population.individuals.map { hpField => {
-        val newField = HyperParametersField(modelsHParameterGroups = hpField.modelsHParameterGroups.map { hpGroup => hpGroup.mutate() })
-        require(hpField.hashCode() != newField.hashCode(), "Hash codes should be different")
-        debug(s"HyperParametersField mutated from $hpField to $newField")
-        newField
-      }
-    })
+    hpMutationStrategy.mutate(population)
   }
 
 

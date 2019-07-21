@@ -3,16 +3,19 @@ package com.automl.template
 import java.util.UUID
 
 import com.automl.PaddedLogging
-import com.automl.evolution.dimension.hparameter.HyperParametersField
+import com.automl.evolution.dimension.hparameter._
 import com.automl.template.ensemble.EnsemblingModelMember
-import com.automl.template.simple.SimpleModelMember
+import com.automl.template.simple.{DecisionTree, SimpleModelMember}
 import org.apache.spark.sql.DataFrame
 import com.automl.helper.{FitnessResult, TemplateTreeHelper}
+import com.automl.population.HPPopulation
 import com.automl.problemtype.ProblemType
 import com.typesafe.scalalogging.LazyLogging
 import kamon.Kamon
 import kamon.metric.MeasurementUnit
 import org.apache.commons.lang3.RandomStringUtils
+import scalaz.Lens
+import scalaz.std.set
 
 import scala.util.Random
 
@@ -30,24 +33,53 @@ sealed trait TemplateTree[+A <: TemplateMember]{
 
   def subMembers: Seq[TemplateTree[A]]
 
+  /**
+    * @param hyperParamsMap can come from coevolution outside of the TemplateTree or could be present in TemplateTree itself.
+    */
   def evaluateFitness(trainingDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParamsMap: Option[HyperParametersField], seed: Long = new Random().nextLong())(implicit tc: TreeContext = TreeContext()): FitnessResult
+
+  var internalHyperParamsMap: Option[HyperParametersField] = Some(HPPopulation.randomHPField)
 
   def height: Int = 1 + subMembers.foldLeft(1){ case (h, subMember) => Math.max(h, subMember.height)}
 
   override def equals(obj: Any): Boolean = {
-    try {
-      require(obj.isInstanceOf[TemplateTree[A]])
-    } catch {
-      case ex: Throwable => {
-        throw ex
-      }
-    }
+    require(obj.isInstanceOf[TemplateTree[A]])
     val another = obj.asInstanceOf[TemplateTree[A]]
     TemplateTreeComparator.compare(this, another)
   }
+
+  def copy(): TemplateTree[A] = {
+//    import scalaz.Scalaz._
+//    val streetNumberLens = Lens.lensu[LeafTemplate[TemplateMember], TemplateMember] (
+//      (p, memberT) => p.copy(member = memberT),
+//      _.member
+//    )
+    this match {
+      case lt: LeafTemplate[A] => {
+        LeafTemplate(member = lt.member match {
+          case o: DecisionTree => o.copy()(o.logPaddingSize).asInstanceOf[A]
+        })
+      }
+      case lt: NodeTemplate[A] => {
+        val nt = NodeTemplate(member = lt.member, subMembers = lt.subMembers)
+//        nt.id = lt.id
+        val copyOfHPGroups = lt.internalHyperParamsMap.get.modelsHParameterGroups.map{
+          case bhpg: BayesianHPGroup  =>
+            val smoothing = Smoothing()
+            BayesianHPGroup(Seq( smoothing ))//bhpg.copy()
+          case bhpg: DecisionTreeHPGroup  => DecisionTreeHPGroup()//bhpg.copy()
+          case bhpg: LogisticRegressionHPGroup  => LogisticRegressionHPGroup()//bhpg.copy()
+          case unknown  => throw new IllegalStateException(s"Method copy failed due to unsupported copy for $unknown")
+        }
+        nt.internalHyperParamsMap = Some(lt.internalHyperParamsMap.get.copy(modelsHParameterGroups = copyOfHPGroups))
+        nt
+      }
+      case _ => throw new IllegalStateException()
+    }
+  }
 }
 
-case class LeafTemplate[+A <: SimpleModelMember](member: A) extends TemplateTree[A] {
+case class LeafTemplate[+A <: TemplateMember](member: A) extends TemplateTree[A] {
   override def subMembers: Seq[TemplateTree[A]] = throw new UnsupportedOperationException("Leaf template isn't supposed to have subMembers")
 
 

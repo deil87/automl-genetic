@@ -17,6 +17,15 @@ case class HyperParametersField(modelsHParameterGroups: Seq[HyperParametersGroup
     }.get
   }
 
+
+  override def equals(obj: Any): Boolean = {
+    require(obj.isInstanceOf[HyperParametersField])
+    val that = obj.asInstanceOf[HyperParametersField]
+//    modelsHParameterGroups.map(_.hpParameters).forall() //TODO make comparison as in TemplateTree equals method
+    val thatAsString = that.toString
+    this.toString equals thatAsString
+  }
+
   override def toString: String = modelsHParameterGroups.map(group => group.hpParameters.map(parameter => s"$parameter").mkString(" , ")).mkString(" | ")
 }
 

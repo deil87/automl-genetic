@@ -1,9 +1,10 @@
 package com.automl.evolution.mutation
 
+import com.automl.evolution.dimension.hparameter.TemplateHyperParametersEvolutionDimension
 import com.automl.{ConfigProvider, PaddedLogging}
 import com.automl.evolution.diversity.DiversityStrategy
 import com.automl.evolution.selection.{RankBasedSelectionProbabilityAssigner, RouletteWheel}
-import com.automl.population.TPopulation
+import com.automl.population.{HPPopulation, TPopulation}
 import com.automl.problemtype.ProblemType
 import com.automl.template.ensemble.EnsemblingModelMember
 import com.automl.template.simple.SimpleModelMember
@@ -11,6 +12,7 @@ import com.automl.template.simple.SimpleModelMember.poolOfSimpleModels
 import com.automl.template.{LeafTemplate, NodeTemplate, TemplateMember, TemplateTree}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
+import scalaz.Lens
 
 import scala.collection.immutable
 import scala.util.Random
@@ -87,7 +89,7 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
       levelOfMutation
     }
 
-    def mutateLeafToNode(lt: LeafTemplate[SimpleModelMember]) = {
+    def mutateLeafToNode(lt: LeafTemplate[TemplateMember]) = {
       val numberOfNewChildren = new Random().nextInt(2) + 1
       val randomEnsemblingMember = getRandomEnsemblingMember
       val oneForOriginalTemplate = 1
@@ -99,25 +101,16 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
     def traverseAndMutate(individual: TemplateTree[TemplateMember], currentLevel: Int,
                           targetLevelOfMutation: Int): TemplateTree[TemplateMember] = individual match {
       case lt@LeafTemplate(member) =>
-        if(targetLevelOfMutation == currentLevel) {
-          val pivot = new Random().nextDouble()
-          // Note currentLevel is zero-based
-          if(pivot > 0.8 && currentLevel < maxEnsembleDepth - 1) {
-            mutateLeafToNode(lt.asInstanceOf[LeafTemplate[SimpleModelMember]])
+        if (targetLevelOfMutation == currentLevel) {
+          val rg = new Random()
+          val pivotStructureVsHPs = rg.nextDouble()
+          if (pivotStructureVsHPs > 0.5) {
+            mutateHPMap(lt)
           } else {
-            val randomBaseMemberBasedOnProblemType = getRandomBaseMemberWithExclusion(Seq(member.asInstanceOf[SimpleModelMember])).asInstanceOf[Option[SimpleModelMember]]
-            // TODO rewrite so that we don't need to cast member to SimpleModelMember
-            randomBaseMemberBasedOnProblemType match {
-              case Some(randomBaseMember) =>
-                info(s"\t\t Mutation happened from leaf node $lt to another leaf node ${randomBaseMemberBasedOnProblemType}")
-                LeafTemplate(randomBaseMember)
-              case None =>
-                mutateLeafToNode(lt.asInstanceOf[LeafTemplate[SimpleModelMember]])
-            }
+            mutateStructureInCaseOfLeafNode(getRandomBaseMemberWithExclusion _, mutateLeafToNode _, currentLevel, lt, member, rg)
           }
-        } else
-        {
-          info("Dead end. Lost an opportunity to mutate.")
+        } else { // TODO how we end up here? Should not get here.
+          info("Dead end. Lost an opportunity to mutate. Should not happen.")
           lt
         }
 
@@ -146,6 +139,34 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
     val targetLevelOfMutation = chooseLevelOfMutationBasedOnDepth(individual.height)
 
     traverseAndMutate(individual, 0, targetLevelOfMutation)
+  }
+
+  private def mutateStructureInCaseOfLeafNode(getRandomBaseMemberWithExclusion: Seq[SimpleModelMember] => Option[TemplateMember], mutateLeafToNode: LeafTemplate[TemplateMember] => NodeTemplate[TemplateMember], currentLevel: Int, lt: LeafTemplate[TemplateMember], member: TemplateMember, rg: Random) = {
+    if (rg.nextDouble() > 0.8 && currentLevel < maxEnsembleDepth - 1) { // Note currentLevel is zero-based
+      mutateLeafToNode(lt.asInstanceOf[LeafTemplate[SimpleModelMember]])
+    } else {
+      val randomBaseMemberBasedOnProblemType = getRandomBaseMemberWithExclusion(Seq(member.asInstanceOf[SimpleModelMember])).asInstanceOf[Option[SimpleModelMember]]
+      // TODO rewrite so that we don't need to cast member to SimpleModelMember
+      randomBaseMemberBasedOnProblemType match {
+        case Some(randomBaseMember) =>
+          info(s"\t\t Mutation happened from leaf node $lt to another leaf node $randomBaseMemberBasedOnProblemType")
+          LeafTemplate(randomBaseMember)
+        case None =>
+          if (currentLevel < maxEnsembleDepth - 1) {
+            mutateLeafToNode(lt.asInstanceOf[LeafTemplate[SimpleModelMember]])
+          } else {
+            info("Dead end. Lost an opportunity to mutate. Just mutate HyperParameters field")
+            lt
+          }
+      }
+    }
+  }
+
+  private def mutateHPMap(lt: TemplateTree[TemplateMember]): TemplateTree[TemplateMember] = {
+    val hPMutationStrategy = new HPMutationStrategy()(4)
+    val hpPopulationToMutate = new HPPopulation(lt.internalHyperParamsMap.toSeq)
+    lt.internalHyperParamsMap = hPMutationStrategy.mutate(hpPopulationToMutate).individuals.headOption
+    lt
   }
 
   def mutateNTimes(population: TPopulation, times: Int): TPopulation = {

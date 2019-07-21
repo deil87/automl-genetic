@@ -1,6 +1,9 @@
 package com.automl.template
 
 import com.automl.classifier.ensemble.bagging.SparkGenericBagging
+import com.automl.dataset.Datasets
+import com.automl.evolution.dimension.hparameter.HyperParametersField
+import com.automl.problemtype.ProblemType
 import com.automl.template.simple.{Bayesian, DecisionTree, RandomForest}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -172,4 +175,47 @@ class TemplateTreeTest extends FunSuite with Matchers {
     individual == individual2 shouldBe true
   }
 
+  test("evaluation does not cause error") {
+
+    val individual: TemplateTree[TemplateMember] =
+      NodeTemplate(SparkGenericBagging(),
+        Seq(
+          LeafTemplate(DecisionTree()),
+          NodeTemplate(SparkGenericBagging(),
+            Seq(
+              LeafTemplate(DecisionTree()),
+              LeafTemplate(Bayesian())
+            )
+          )
+        )
+      )
+
+    val preparedGlassDF = Datasets.getGlassDataFrame(1234)
+    val Array(trainingSplit, testSplit) = preparedGlassDF.randomSplit(Array(0.8, 0.2))
+
+    val fitnessValue = individual.evaluateFitness(trainingSplit, testSplit, ProblemType.MultiClassClassificationProblem, hyperParamsMap = None)
+  }
+
+  //TODO we probably need to store only HPGroup that is suitable for a particular Member in the node
+  test("every node of template tree gets its own HyperParameterField") {
+
+    val individual: TemplateTree[TemplateMember] =
+      NodeTemplate(SparkGenericBagging(),
+        Seq(
+          LeafTemplate(DecisionTree()),
+          NodeTemplate(SparkGenericBagging(),
+            Seq(
+              LeafTemplate(DecisionTree()),
+              LeafTemplate(Bayesian())
+            )
+          )
+        )
+      )
+
+    val L0Bag: HyperParametersField = individual.internalHyperParamsMap.get
+    L0Bag == L0Bag shouldBe true
+
+    val L1DT: HyperParametersField = individual.subMembers(0).internalHyperParamsMap.get
+    L0Bag shouldNot equal(L1DT)
+  }
 }
