@@ -16,9 +16,9 @@ class RankSelectionStrategy()(implicit val logPaddingSize: Int = 0) extends Padd
     parentSelectionBySize(numberOfParents, individuals)
   }
 
-  def parentSelectionBySizeWithLocalCompetitions(numberOfParentsToSelect: Int, individuals: Seq[EvaluatedTemplateData]): Seq[EvaluatedTemplateData] = {
+  def selectionBySizeWithLocalCompetitions(numberOfParentsToSelect: Int, individuals: Seq[EvaluatedTemplateData]): Seq[EvaluatedTemplateData] = {
 
-    debug(s"Parent selection ( task is to select $numberOfParentsToSelect out of ${individuals.length}):")
+    debug(s"Selection ( task is to select $numberOfParentsToSelect out of ${individuals.length}):")
     val localScores = individuals.map{ individual =>
 //      import collection.breakOut
 //      val value = individual.neighbours.groupBy(_.fitness).map(_._2.head)//(breakOut)
@@ -33,18 +33,23 @@ class RankSelectionStrategy()(implicit val logPaddingSize: Int = 0) extends Padd
 
     val orderedBasedOnFitnessAgainstNeighbours: Seq[EvaluatedTemplateData] = sortedBasedOnLocalScores.map(_._1)
 
-    val withAssignedProbs = new RankBasedSelectionProbabilityAssigner[EvaluatedTemplateData].assign(orderedBasedOnFitnessAgainstNeighbours.toList)
-    debug(s"Selecting by rank based probabilities from [ ${withAssignedProbs.map{case (individual, assignedProb) => s"${individual.idShort} with assigned probability to be drawn = $assignedProb"}.mkString("  ,  ")} ]")
+    val (selectedBySize, _) = (0 until numberOfParentsToSelect).foldLeft((Seq[EvaluatedTemplateData](), orderedBasedOnFitnessAgainstNeighbours)){ case ((selectedAcc, rest), next) => {
+      val evaluatedTemplateDataWithAssignedProbs = new RankBasedSelectionProbabilityAssigner[EvaluatedTemplateData].assign(rest.toList)
+      debug(s"Selecting by rank based probabilities from [ ${evaluatedTemplateDataWithAssignedProbs.map{case (individual, assignedProb) => s"${individual.idShort} with assigned probability to be drawn = $assignedProb"}.mkString("  ,  ")} ]")
 
-    val selector = new RouletteWheel[EvaluatedTemplateData](withAssignedProbs)
-    selector.sample(numberOfParentsToSelect).map(_._1)
+      val selector = new RouletteWheel[EvaluatedTemplateData](evaluatedTemplateDataWithAssignedProbs)
+      val selected = selector.sample(1).map(_._1)
+
+      (selectedAcc ++ selected, rest.diff(selected))
+    }}
+    selectedBySize
   }
 
   def parentSelectionByShareWithLocalCompetitions(selectionShare: Double, individuals: Seq[EvaluatedTemplateData]): Seq[EvaluatedTemplateData] = {
     require(individuals.forall(_.neighbours.nonEmpty) , "We should not call local competition version without having neighbours")
     val numberOfParents = ratioToSIze(selectionShare, individuals)
 
-    parentSelectionBySizeWithLocalCompetitions(numberOfParents, individuals)
+    selectionBySizeWithLocalCompetitions(numberOfParents, individuals)
   }
 
   def parentSelectionBySize(numberOfParentsToSelect: Int, individuals: Seq[EvaluatedTemplateData]): Seq[EvaluatedTemplateData] = {

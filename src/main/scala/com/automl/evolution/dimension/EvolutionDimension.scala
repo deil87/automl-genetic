@@ -1,6 +1,7 @@
 package com.automl.evolution.dimension
 
-import com.automl.population.Population
+import com.automl.helper.PopulationHelper
+import com.automl.population.{Population, TPopulation}
 import com.automl.{Evaluated, EvaluatedTemplateData, PaddedLogging}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.DataFrame
@@ -57,7 +58,7 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
     val selectedParentsPopulation = extractIndividualsFromEvaluatedIndividuals(selectedParents)
 
     debug("Mutating parents:")
-    val offspring = mutateParentPopulation(selectedParentsPopulation)
+    val offspring = mutateParentPopulation(selectedParentsPopulation, getPopulation)
 
     debug("Evaluating offspring:")
     val evaluatedOffspring = evaluatePopulation(offspring, workingDF)
@@ -70,8 +71,9 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
 
     _evaluatedPopulation = survivedForNextGenerationEvaluatedTemplates
 
-    val evolvedNewGeneration = extractIndividualsFromEvaluatedIndividuals(survivedForNextGenerationEvaluatedTemplates)
-    debug("Evolution is finished.")
+    val evolvedNewGeneration: PopulationType = extractIndividualsFromEvaluatedIndividuals(survivedForNextGenerationEvaluatedTemplates)
+    evolvedNewGeneration.render
+    debug("Evolution is finished.") // TODO we should not stop evolution after one run of generation.
 
     _population = evolvedNewGeneration
     _population
@@ -97,7 +99,7 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
   def extractIndividualsFromEvaluatedIndividuals(evaluatedIndividuals: Seq[EvaluatedResult]): PopulationType
 
   //Consider renaming mutateParents
-  def mutateParentPopulation(population: PopulationType): PopulationType
+  def mutateParentPopulation(population: PopulationType, notToIntersectWith: PopulationType): PopulationType
 
   //meaning each individual separately and not as a whole
   def evaluatePopulation(population: PopulationType, workingDF: DataFrame): Seq[EvaluatedResult]

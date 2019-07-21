@@ -35,7 +35,13 @@ sealed trait TemplateTree[+A <: TemplateMember]{
   def height: Int = 1 + subMembers.foldLeft(1){ case (h, subMember) => Math.max(h, subMember.height)}
 
   override def equals(obj: Any): Boolean = {
-    require(obj.isInstanceOf[TemplateTree[A]])
+    try {
+      require(obj.isInstanceOf[TemplateTree[A]])
+    } catch {
+      case ex: Throwable => {
+        throw ex
+      }
+    }
     val another = obj.asInstanceOf[TemplateTree[A]]
     TemplateTreeComparator.compare(this, another)
   }

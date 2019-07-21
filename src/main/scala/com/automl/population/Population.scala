@@ -6,4 +6,6 @@ trait Population[+T] {
   def size: Int = individuals.length
 
   def nonEmpty: Boolean = size != 0
+
+  def render: Unit
 }

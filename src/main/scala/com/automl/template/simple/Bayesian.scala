@@ -113,7 +113,7 @@ case class Bayesian(hpGroup: BayesianHPGroup = BayesianHPGroup.default)(implicit
 
 //        MulticlassMetricsHelper.showStatistics(predictions)
 
-        if(metrics.weightedFMeasure <= 0.1 )
+        if(metrics.weightedFMeasure <= 0.01 )
           throw SuspiciousPerformanceException("Bayesian predictions are too low")
 
         info(s"Finished. $name : F1 metric = " + metrics.weightedFMeasure + s". Number of rows = ${trainDF.count()} / ${testDF.count()}")

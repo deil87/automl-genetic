@@ -74,7 +74,7 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
 
   override def showCurrentPopulation(): Unit = {
     if(getEvaluatedPopulation.nonEmpty)
-      debug(PopulationHelper.renderEvaluatedIndividuals(getEvaluatedPopulation))
+      debug(PopulationHelper.renderEvaluatedIndividuals(getEvaluatedPopulation, "Last evaluated population from previous generation"))
     else PopulationHelper.print(getPopulation, "Current population without evaluations")
   }
 
@@ -106,7 +106,7 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
     val populationForUpcomingMutation = extractIndividualsFromEvaluatedIndividuals(selectedParents)
 
     debug("Mutating parents:")
-    val offspring = mutateParentPopulation(populationForUpcomingMutation)
+    val offspring = mutateParentPopulation(populationForUpcomingMutation, new TPopulation(getPopulation.individuals  ++ hallOfFame.map(_.template)))
 
     debug("Evaluating offspring:")
     val evaluatedOffspring = evaluatePopulation(offspring, workingDF)
@@ -133,7 +133,7 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
   }
 
   override def selectSurvived(populationSize: Int, evaluationResultsForNewExpandedGeneration: Seq[EvaluatedTemplateData]) = {
-    rankSelectionStrategy.parentSelectionBySizeWithLocalCompetitions(populationSize, evaluationResultsForNewExpandedGeneration)
+    rankSelectionStrategy.selectionBySizeWithLocalCompetitions(populationSize, evaluationResultsForNewExpandedGeneration)
   }
 
 
@@ -147,9 +147,9 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
     selectedParents
   }
 
-  override def mutateParentPopulation(population: TPopulation): TPopulation = {
+  override def mutateParentPopulation(population: TPopulation, notToIntersectWith: TPopulation): TPopulation = {
     // If we made sure that mutation Strategy ensures diversity than we need to perform extra mutations for duplications only in the case of cold start in the first iteration.
-    val offspring = mutationStrategy.mutate(population) // duplicates are kind of a winners as well and that is unfair but we will eliminate it int the first iteration
+    val offspring = mutationStrategy.mutate(population, notToIntersectWith) // duplicates are kind of a winners as well and that is unfair but we will eliminate it int the first iteration
     //TODO we can keep track on those who have already passed mutate function and see whether a new one is a duplicate or not.
     PopulationHelper.print(offspring, "Offspring population:")
     offspring

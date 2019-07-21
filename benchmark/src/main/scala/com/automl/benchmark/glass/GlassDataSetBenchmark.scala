@@ -7,9 +7,10 @@ import com.automl.spark.SparkSessionProvider
 import com.automl.template.ensemble.stacking.GenericStacking
 import com.automl.template.{LeafTemplate, NodeTemplate}
 import com.automl.template.simple._
-import com.automl.AutoML
+import com.automl.{AutoML, ConfigProvider}
 import com.automl.population.{GenericPopulationBuilder, TPopulation}
 import com.automl.template.simple.SVMModel
+import com.typesafe.config.{Config, ConfigFactory, ConfigRenderOptions}
 
 class GlassDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvider{
 
@@ -17,22 +18,39 @@ class GlassDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvid
 
   def run() = {
 
+    val testOverride: Config = ConfigFactory.parseString(
+      """
+        |evolution {
+        |  templateDimension {
+        |    populationSize = 3
+        |    poolOfSimpleModels = ["logistic_regression", "decision_tree", "bayesian"]
+        |    poolOfEnsemblingModels = ["bagging", "stacking"]
+        |    maxEnsembleDepth = 5
+        |  }
+        |  hyperParameterDimension {
+        |    enabled = false
+        |  }
+        |}
+      """.stripMargin)
+    ConfigProvider.addOverride(testOverride)
+    println(ConfigProvider.config.root().render(ConfigRenderOptions.concise()))
+
     val individuals = Seq(
 //      LeafTemplate(SVMModel()),
       LeafTemplate(LogisticRegressionModel()),
       LeafTemplate(Bayesian()),
-      NodeTemplate(SparkGenericBagging(),
-        Seq(
-          LeafTemplate(Bayesian()),
-          LeafTemplate(DecisionTree())
-        )
-      ),
-      NodeTemplate(GenericStacking(),
-        Seq(
-          LeafTemplate(Bayesian()),
-          LeafTemplate(DecisionTree())
-        )
-      ),
+//      NodeTemplate(SparkGenericBagging(),
+//        Seq(
+//          LeafTemplate(Bayesian()),
+//          LeafTemplate(DecisionTree())
+//        )
+//      ),
+//      NodeTemplate(GenericStacking(),
+//        Seq(
+//          LeafTemplate(Bayesian()),
+//          LeafTemplate(DecisionTree())
+//        )
+//      ),
       //      LeafTemplate(GradientBoosting()), //TODO multiclass classification case is not supported
       //        LeafTemplate(NeuralNetwork(Array(5,10,5))), // TODO need to implement detection of features number and number of classes
       LeafTemplate(DecisionTree())
@@ -40,7 +58,6 @@ class GlassDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvid
 
     val seedPopulation = new TPopulation(individuals)
 
-    val population = GenericPopulationBuilder.fromSeedPopulation(seedPopulation).withSize(7).build
     val seed = 1234
     val preparedGlassDF = Datasets.getGlassDataFrame(seed)
 
@@ -48,10 +65,10 @@ class GlassDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvid
     val autoMl = new AutoML(
       data = preparedGlassDF,
       responseColumn = "indexedLabel",
-      maxTime = 10 * 60000,
+      maxTime = 120 * 60000,
       useMetaDB = false,
-      initialPopulationSize = Some(7),
-      seedPopulation = Some(population),
+      initialPopulationSize = Some(3),
+      seedPopulation = Some(seedPopulation),
       maxGenerations = 5)
 
     autoMl.runEvolution(as)

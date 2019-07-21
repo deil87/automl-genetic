@@ -3,9 +3,11 @@ package com.automl.evolution.mutation
 import com.automl.ConfigProvider
 import com.automl.classifier.ensemble.bagging.SparkGenericBagging
 import com.automl.evolution.diversity.DistinctDiversityStrategy
+import com.automl.helper.PopulationHelper
 import com.automl.population.TPopulation
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.MultiClassClassificationProblem
+import com.automl.template.ensemble.stacking.GenericStacking
 import com.automl.template.simple.{Bayesian, DecisionTree, RandomForest}
 import com.automl.template.{LeafTemplate, NodeTemplate, TemplateMember, TemplateTree}
 import com.typesafe.config.{Config, ConfigFactory}
@@ -129,7 +131,7 @@ class DepthDependentTemplateMutationStrategyTest extends FunSuite with Matchers{
     //TODO
   }
 
-  test("that we will receive new individual") {
+  test("that we will receive new individual by applying mutateIndividual method ") {
 
     implicit val padding: Int = 0
     val strategy = new DepthDependentTemplateMutationStrategy(null, ProblemType.MultiClassClassificationProblem)
@@ -150,6 +152,77 @@ class DepthDependentTemplateMutationStrategyTest extends FunSuite with Matchers{
 
     individual should not equal newIndividual
     individual shouldEqual individual
+  }
+
+  test("that we will receive new unique population by using mutate method ") {
+
+    implicit val padding: Int = 0
+    val strategy = new DepthDependentTemplateMutationStrategy(null, ProblemType.MultiClassClassificationProblem)
+
+    val individual1: TemplateTree[TemplateMember] =
+      NodeTemplate(SparkGenericBagging(),
+        Seq(
+          LeafTemplate(DecisionTree()),
+          LeafTemplate(RandomForest()),
+          LeafTemplate(Bayesian())
+        )
+      )
+    val individual2: TemplateTree[TemplateMember] =
+      NodeTemplate(GenericStacking(),
+        Seq(
+          LeafTemplate(DecisionTree())
+        )
+      )
+    val individual3: TemplateTree[TemplateMember] =
+      LeafTemplate(DecisionTree())
+
+    val originalPopulation = new TPopulation(Seq(individual1, individual2, individual3))
+
+    originalPopulation.individuals diff Seq(individual3, individual1, individual2) shouldBe Seq()
+
+    val newPopulation = strategy.mutate(originalPopulation)
+
+    PopulationHelper.print(originalPopulation, "Original population:")
+    PopulationHelper.print(newPopulation, "New population:")
+
+    //Following way to test could not be used because of the scalatest's way of comparison and overriden equal method on TemplateTree
+    //originalPopulation.individuals shouldNot contain theSameElementsAs(newPopulation.individuals)
+    originalPopulation.individuals diff newPopulation.individuals shouldNot be( Seq())
+  }
+
+  test("that we will increase complexity") {
+    implicit val padding: Int = 0
+
+    val numberOfMutationPhases = 1000
+
+    val strategy = new DepthDependentTemplateMutationStrategy(null, ProblemType.MultiClassClassificationProblem)
+    val individual1: TemplateTree[TemplateMember] =
+      NodeTemplate(SparkGenericBagging(),
+        Seq(
+          LeafTemplate(DecisionTree()),
+          LeafTemplate(RandomForest()),
+          LeafTemplate(Bayesian())
+        )
+      )
+    val individual2: TemplateTree[TemplateMember] =
+      NodeTemplate(GenericStacking(),
+        Seq(
+          LeafTemplate(DecisionTree())
+        )
+      )
+
+    val individual3: TemplateTree[TemplateMember] =
+      LeafTemplate(DecisionTree())
+
+    val originalPopulation = new TPopulation(Seq(individual1, individual2, individual3))
+    originalPopulation.individuals diff Seq(individual3, individual1, individual2) shouldBe Seq()
+
+    val newPopulation = (1 to numberOfMutationPhases).foldLeft(originalPopulation) ((currentPopulation, index) => strategy.mutate(currentPopulation))
+
+    PopulationHelper.print(originalPopulation, "Original population:")
+    PopulationHelper.print(newPopulation, "New population:")
+
+    newPopulation.depthComplexity shouldBe >= (originalPopulation.depthComplexity)
   }
 
 }

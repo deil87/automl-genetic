@@ -31,12 +31,13 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
   val tdConfig = ConfigProvider.config.getConfig("evolution.templateDimension")
 
   lazy val maxEnsembleDepth: Int = tdConfig.getInt("maxEnsembleDepth")
+  lazy val maxNumberOfMutationAttempts: Int = 15 //tdConfig.getInt("maxEnsembleDepth")
   /**
     *
     * @param population Among other things it contains population-wide mutation probabilities
     * @return
     */
-  def mutate(population: TPopulation): TPopulation = {
+  def mutate(population: TPopulation, populationNotToIntersectWith: TPopulation = null): TPopulation = {
 
     info(s"Starting new mutation phase for the population...")
 
@@ -45,8 +46,18 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
     // If we restrinct duplicates or similar indeviduals than we are risking to not searching around the optimal ensemble.
     // We would have to compensate this restriction with more search-time for best individuals
     ////val res = diversityStrategy.apply(population, mutateIndividual)
-    new TPopulation(population.individuals.map(mutateIndividual))
-
+    val mutatedIndividuals = population.individuals.foldLeft(List.empty[TemplateTree[TemplateMember]])((res, next) => {
+      var attempts = 0
+      var newMutant: TemplateTree[TemplateMember] = null
+      do {
+        newMutant = mutateIndividual(next)
+        attempts += 1
+      } while ( (population.individuals ++ res ++ populationNotToIntersectWith.individuals).contains(newMutant) && attempts < maxNumberOfMutationAttempts) // Not to overlap with itself, with recently mutated new individuals and custom individuals from `notToIntersectWith`
+      require(attempts != maxNumberOfMutationAttempts, "Too many attempts to mutate with DepthDependentTemplateMutationStrategy.")
+      val list = newMutant +: res
+      list
+    })
+    new TPopulation(mutatedIndividuals)
   }
 
   // We should check after mutation whether we have already encountered individuals like this before. Compare with the cache and current population.

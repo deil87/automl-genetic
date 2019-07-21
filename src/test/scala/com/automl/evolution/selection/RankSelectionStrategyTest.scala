@@ -98,7 +98,7 @@ class RankSelectionStrategyTest extends WordSpec with Matchers{
       val evaluatedTemplateDataWithNeighbours = evaluatedTemplateData.map(etd => etd.copy(neighbours = evaluatedTemplateData.diff(Seq(etd))))
 
       val sizeOfSample = 1500
-      val selectedParents = selectionStrategy.parentSelectionBySizeWithLocalCompetitions(sizeOfSample, evaluatedTemplateDataWithNeighbours)
+      val selectedParents = selectionStrategy.selectionBySizeWithLocalCompetitions(sizeOfSample, evaluatedTemplateDataWithNeighbours)
 
       PopulationHelper.print(new TPopulation(selectedParents.map(_.template)))
 
@@ -137,7 +137,7 @@ class RankSelectionStrategyTest extends WordSpec with Matchers{
       val evaluatedTemplateDataWithNeighbours = evaluatedTemplateData.map(etd => etd.copy(neighbours = evaluatedTemplateData.diff(Seq(etd))))
 
       val sizeOfSample = 10
-      val selectedParents = selectionStrategy.parentSelectionBySizeWithLocalCompetitions(sizeOfSample, evaluatedTemplateDataWithNeighbours)
+      val selectedParents = selectionStrategy.selectionBySizeWithLocalCompetitions(sizeOfSample, evaluatedTemplateDataWithNeighbours)
 
       PopulationHelper.print(new TPopulation(selectedParents.map(_.template)))
 

@@ -21,8 +21,9 @@ object PopulationHelper extends PaddedLogging{
   }
 
   //TODO move to EvolutionDimension or a trait that will be mixed to EvolutionDimension
-  def renderEvaluatedIndividuals[T <: Evaluated[T]](individuals: Seq[T]): String = {
-    individuals
+  def renderEvaluatedIndividuals[T <: Evaluated[T]](individuals: Seq[T], prefix: String = ""): String = {
+    val prefixToPrepend = if (prefix.nonEmpty) prefix + " : \n" else prefix
+    prefixToPrepend  + individuals
       .sortWith((a,b) => a.compare(b))
       .map(evd => (evd.result, evd.item, evd.params))
       .map {

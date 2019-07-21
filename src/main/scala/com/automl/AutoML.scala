@@ -59,7 +59,10 @@ class AutoML(data: DataFrame,
   lazy val evolutionDataSizeFactor: Long = Math.max(totalDataSize / maxEvolutions, 500)
 
   def calculateTimeBoxes(isDataBig: Boolean): EvolutionTimeBoxes = {
-    val allowanceOfEvolutions = if(isDataBig) maxEvolutions else 1
+    val allowanceOfEvolutions = if(isDataBig) maxEvolutions else {
+      logger.info("Data was considered to be big therefore we will override `maxEvolutions` with 1")
+      1
+    }
     val strategy: EqualEvolutionsStrategy = EqualEvolutionsStrategy(maxTime, allowanceOfEvolutions)
     val builder = EvolutionTimeBoxesBuilder(maxTime, allowanceOfEvolutions).withSplittingStrategy(strategy)
     builder.build
@@ -74,7 +77,7 @@ class AutoML(data: DataFrame,
 
   def isDataBig(df: DataFrame): Boolean = {
     def numberOfDimensions: Int = df.columns.length
-    numberOfDimensions >= 200 || totalDataSize >= isBigSizeThreshold
+    totalDataSize >= isBigSizeThreshold || numberOfDimensions >= 200
   }
 
   def getDataSize(df: DataFrame): Long = df.count()
@@ -117,7 +120,7 @@ class AutoML(data: DataFrame,
     val startTime = System.currentTimeMillis()
 
     val timeBoxes = calculateTimeBoxes(isDataBig)
-    logger.info("TimeBoxes schedule " + timeBoxes.timeBoxes.map(_.upperBoundary).mkString(","))
+    logger.info("TimeBoxes schedule: " + timeBoxes.timeBoxes.map(_.upperBoundary).mkString(","))
 
     //TODO Consider not creating timeboxes when dataset is not big. We can use generations only as we will not be increasing dataset size over evolutions.
     timeBoxes.timeBoxes foreach { timeBox =>
@@ -140,7 +143,7 @@ class AutoML(data: DataFrame,
         while (condition) {
 
           logger.info(s"Time left: ${(maxTime - System.currentTimeMillis() + startTime) / 1000}")
-          logger.info(s"Generation number $generationNumber is launched ( evolution number $evolutionNumber)")
+          logger.info(s"Evolution number still $evolutionNumber - next generation number $generationNumber is launched.")
 
           templateEvDim.evolveFromLastPopulation(workingDataSet)
 

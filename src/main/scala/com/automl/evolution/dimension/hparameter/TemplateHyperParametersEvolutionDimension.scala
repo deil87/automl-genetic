@@ -51,8 +51,9 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
     evaluatedIndividuals.sortWith(_.score > _.score).take(populationSize)
   }
 
-// Use implicits to mutate HyperParametersField
-  override def mutateParentPopulation(population: HPPopulation): HPPopulation = {
+  // Use implicits to mutate HyperParametersField
+  override def mutateParentPopulation(population: HPPopulation, notToIntersectWith: HPPopulation): HPPopulation = {
+    //TODO notToIntersectWith is not used here
     // Use lenses here :)
     new HPPopulation(
       population.individuals.map { hpField => {
