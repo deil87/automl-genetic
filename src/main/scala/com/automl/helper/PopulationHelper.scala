@@ -29,7 +29,7 @@ object PopulationHelper extends PaddedLogging{
       .map {
         case ( correspondingMetric, item:HyperParametersField, _) => f" - $item $correspondingMetric"
         case ( correspondingMetric, template:TemplateTree[TemplateMember], params: Option[HyperParametersField]) =>
-          f" - ${TemplateTreeHelper.renderAsString_v2(template)} \n Evaluation: $correspondingMetric hp: ${params.orElse(template.internalHyperParamsMap)}"
+          f" - ${TemplateTreeHelper.renderAsString_v2(template)} \n Evaluation: $correspondingMetric; hps from co-evolution: $params"
         case _ => throw new IllegalStateException("Unmanaged cases")
       }
       .mkString("\n\t\t\t\t\t", "\n\t\t\t\t\t", "")

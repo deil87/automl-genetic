@@ -26,11 +26,11 @@ object TemplateTreeHelper {
 
   def traverse2(template: TemplateTree[TemplateMember]): Queue[String] = {
     def recursive(prefix: String = "", childrenPrefix: String = "", template: TemplateTree[TemplateMember], acc: Queue[String]): Queue[String] = template match {
-      case LeafTemplate(x) =>
-        acc.enqueue(/*"L" + */prefix + x.name)
+      case lt@LeafTemplate(x) =>
+        acc.enqueue(/*"L" + */prefix + x.name + " hps: " + lt.internalHyperParamsMap)
         acc
-      case NodeTemplate(x, subMembers) =>
-        acc.enqueue(/*"N" + */prefix + x.name)
+      case nt@NodeTemplate(x, subMembers) =>
+        acc.enqueue(/*"N" + */prefix + x.name + " hps: " + nt.internalHyperParamsMap)
 
         subMembers.zipWithIndex.foldLeft(acc){case (ac, (subMember, i)) =>
           if (subMembers.size - 1 != i) {
