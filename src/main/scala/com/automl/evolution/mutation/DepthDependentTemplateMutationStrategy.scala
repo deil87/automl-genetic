@@ -33,7 +33,7 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
   val tdConfig = ConfigProvider.config.getConfig("evolution.templateDimension")
 
   lazy val maxEnsembleDepth: Int = tdConfig.getInt("maxEnsembleDepth")
-  lazy val maxNumberOfMutationAttempts: Int = 15 //tdConfig.getInt("maxEnsembleDepth")
+  lazy val maxNumberOfMutationAttempts: Int = tdConfig.getInt("maxNumberOfMutationAttempts")
 
   val hPMutationStrategy = new HPMutationStrategy()(4)
 
