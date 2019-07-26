@@ -43,7 +43,7 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
     * @param population Among other things it contains population-wide mutation probabilities
     * @return
     */
-  def mutate(population: TPopulation, populationNotToIntersectWith: TPopulation = null): TPopulation = {
+  def mutate(population: TPopulation, populationNotToIntersectWith: TPopulation = new TPopulation(Nil)): TPopulation = {
 
     info(s"Starting new mutation phase for the population...")
 
@@ -61,7 +61,7 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
         attempts += 1
       } while ( (population.individuals ++ res ++ populationNotToIntersectWith.individuals).contains(newMutant) && attempts < maxNumberOfMutationAttempts) // Not to overlap with itself, with recently mutated new individuals and custom individuals from `notToIntersectWith`
       info(s"Mutation of the ${next.id}:${next.member.name.take(5)} individual took ${attempts-1} attempts.")
-      require(attempts != maxNumberOfMutationAttempts, s"Too many attempts to mutate ${next.id} with DepthDependentTemplateMutationStrategy.")
+      require(attempts != maxNumberOfMutationAttempts, s"Too many attempts to mutate ${next.id} with DepthDependentTemplateMutationStrategy.") // Just to inform that probably we have some issue
       val list = newMutant +: res
       list
     })
@@ -170,8 +170,9 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
 
   private def mutateHPMap(lt: TemplateTree[TemplateMember]): TemplateTree[TemplateMember] = {
     val hpPopulationToMutate = new HPPopulation(lt.internalHyperParamsMap.toSeq)
-    lt.internalHyperParamsMap = hPMutationStrategy.mutate(hpPopulationToMutate).individuals.headOption
-    lt
+    val ltWithMutatedHPs = LeafTemplate(lt.member)
+    ltWithMutatedHPs.internalHyperParamsMap = hPMutationStrategy.mutate(hpPopulationToMutate).individuals.headOption
+    ltWithMutatedHPs
   }
 
   def mutateNTimes(population: TPopulation, times: Int): TPopulation = {

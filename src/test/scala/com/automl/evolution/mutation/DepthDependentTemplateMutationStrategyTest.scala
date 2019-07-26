@@ -238,4 +238,34 @@ class DepthDependentTemplateMutationStrategyTest extends FunSuite with Matchers{
     newPopulation.depthComplexity shouldBe >= (originalPopulation.depthComplexity)
   }
 
+
+  test("that mutation of HyperParameters results in a creation of a new individual (#146, #143)") {
+    val testOverride: Config = ConfigFactory.parseString(
+      """
+        |evolution {
+        |  hpGridSearch = false
+        |  hyperParameterDimension {
+        |     enabled = false
+        |  }
+        |  templateDimension {
+        |     pivotBetweenStructureAndHPMutations = -1.0
+        |     maxNumberOfMutationAttempts = 1
+        |  }
+        |}
+      """.stripMargin)
+    ConfigProvider.clearOverride.addOverride(testOverride)
+
+    implicit val padding: Int = 0
+    val strategy = new DepthDependentTemplateMutationStrategy(null, ProblemType.MultiClassClassificationProblem)
+
+    val originalPopulation = new TPopulation(Seq(LeafTemplate(Bayesian())))
+
+    val newPopulation = strategy.mutate(originalPopulation)
+
+    PopulationHelper.print(originalPopulation, "Original population:")
+    PopulationHelper.print(newPopulation, "New population:")
+
+    originalPopulation.individuals diff newPopulation.individuals shouldNot be( Seq())
+  }
+
 }
