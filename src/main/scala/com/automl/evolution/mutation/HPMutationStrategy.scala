@@ -15,7 +15,7 @@ class HPMutationStrategy()(implicit val logPaddingSize: Int) extends PaddedLoggi
           hpGroup.mutate()
         })
         require(hpField.hashCode() != newField.hashCode(), "Hash codes should be different")
-        debug(s"HyperParametersField mutated from $hpField to $newField")
+        debug(s"\t\t HyperParametersField mutated from $hpField to $newField")
         newField
       }
       })

@@ -52,13 +52,15 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
     // We would have to compensate this restriction with more search-time for best individuals
     ////val res = diversityStrategy.apply(population, mutateIndividual)
     val mutatedIndividuals = population.individuals.foldLeft(List.empty[TemplateTree[TemplateMember]])((res, next) => {
-      var attempts = 0
+      var attempts = 1
       var newMutant: TemplateTree[TemplateMember] = null
       do {
+        if(attempts > 1) info(s"\t\t Attempt number ${attempts - 1} was unsuccessful. Max. number of attemts from config = $maxNumberOfMutationAttempts")
         newMutant = mutateIndividual(next)
         attempts += 1
       } while ( (population.individuals ++ res ++ populationNotToIntersectWith.individuals).contains(newMutant) && attempts < maxNumberOfMutationAttempts) // Not to overlap with itself, with recently mutated new individuals and custom individuals from `notToIntersectWith`
-      require(attempts != maxNumberOfMutationAttempts, "Too many attempts to mutate with DepthDependentTemplateMutationStrategy.")
+      info(s"Mutation of the ${next.id}:${next.member.name.take(5)} individual took ${attempts-1} attempts.")
+      require(attempts != maxNumberOfMutationAttempts, s"Too many attempts to mutate ${next.id} with DepthDependentTemplateMutationStrategy.")
       val list = newMutant +: res
       list
     })
