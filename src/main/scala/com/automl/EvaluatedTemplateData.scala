@@ -43,6 +43,13 @@ case class EvaluatedTemplateData(id: String,
     val newValue = (fitness.getCorrespondingMetric * 1000000).toLong
     kamonMetric.set(newValue)
   }
+
+  //Should be faster as we compare only certain fiels of the case class
+  override def equals(obj: Any): Boolean = {
+    require(obj.isInstanceOf[EvaluatedTemplateData])
+    val another = obj.asInstanceOf[EvaluatedTemplateData]
+    this.template == another.template && this.fitness.getCorrespondingMetric == another.fitness.getCorrespondingMetric
+  }
 }
 
 object EvaluatedTemplateData extends LazyLogging {

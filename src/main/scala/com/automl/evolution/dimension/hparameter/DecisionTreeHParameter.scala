@@ -1,11 +1,13 @@
 package com.automl.evolution.dimension.hparameter
 
-import scala.math.BigDecimal.RoundingMode
-import scala.util.Random
+import com.automl.template.TemplateMember
+import com.automl.template.simple.DecisionTree
 
 
 case class DecisionTreeHPGroup(hpParameters:Seq[DecisionTreeHParameter[Double]] = Seq(MaxDepth()))
   extends HyperParametersGroup[DecisionTreeHParameter[Double]] {
+
+  override def isRelevantTo(templateTree: TemplateMember): Boolean = templateTree.isInstanceOf[DecisionTree]
 
   override def mutate(): HyperParametersGroup[DecisionTreeHParameter[Double]] = {
     DecisionTreeHPGroup(hpParameters = hpParameters.map(hpModelTpe => hpModelTpe.mutate()))

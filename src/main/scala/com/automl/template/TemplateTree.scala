@@ -38,7 +38,7 @@ sealed trait TemplateTree[+A <: TemplateMember]{
     */
   def evaluateFitness(trainingDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParamsMap: Option[HyperParametersField], seed: Long = new Random().nextLong())(implicit tc: TreeContext = TreeContext()): FitnessResult
 
-  var internalHyperParamsMap: Option[HyperParametersField] = Some(HPPopulation.randomHPField)
+  var internalHyperParamsMap: Option[HyperParametersField] = Some(HPPopulation.randomRelevantHPFieldFor(member))
 
   def height: Int = 1 + subMembers.foldLeft(1){ case (h, subMember) => Math.max(h, subMember.height)}
 

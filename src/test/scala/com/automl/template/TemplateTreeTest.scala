@@ -2,7 +2,8 @@ package com.automl.template
 
 import com.automl.classifier.ensemble.bagging.SparkGenericBagging
 import com.automl.dataset.Datasets
-import com.automl.evolution.dimension.hparameter.HyperParametersField
+import com.automl.evolution.dimension.hparameter._
+import com.automl.evolution.mutation.HPMutationStrategy
 import com.automl.problemtype.ProblemType
 import com.automl.template.simple.{Bayesian, DecisionTree, RandomForest}
 import org.scalatest.{FunSuite, Matchers}
@@ -217,5 +218,20 @@ class TemplateTreeTest extends FunSuite with Matchers {
 
     val L1DT: HyperParametersField = individual.subMembers(0).internalHyperParamsMap.get
     L0Bag shouldNot equal(L1DT)
+  }
+
+  test("hyperparameters are being taken into account when we compare templates") {
+
+    val individual: TemplateTree[TemplateMember] = LeafTemplate(DecisionTree())
+
+    val individual2: TemplateTree[TemplateMember] = LeafTemplate(DecisionTree())
+    individual2.internalHyperParamsMap = Some(HyperParametersField(
+      Seq(
+        DecisionTreeHPGroup(Seq(MaxDepth(Some(2.0))))
+      )
+    ))
+
+    individual should equal(individual)
+    individual shouldNot equal(individual2)
   }
 }

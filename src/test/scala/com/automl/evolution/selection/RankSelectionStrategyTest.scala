@@ -1,9 +1,10 @@
 package com.automl.evolution.selection
 
+import com.automl.evolution.dimension.hparameter.{DecisionTreeHPGroup, HyperParametersField, MaxDepth}
 import com.automl.helper.{FitnessResult, PopulationHelper}
 import com.automl.population.{GenericPopulationBuilder, TPopulation}
 import com.automl.problemtype.ProblemType.{MultiClassClassificationProblem, RegressionProblem}
-import com.automl.template.LeafTemplate
+import com.automl.template.{LeafTemplate, TemplateMember, TemplateTree}
 import com.automl.{AutoML, EvaluatedTemplateData}
 import com.automl.template.simple.{DecisionTree, LinearRegressionModel, SimpleModelMember}
 import org.scalatest.{Matchers, WordSpec}
@@ -130,7 +131,7 @@ class RankSelectionStrategyTest extends WordSpec with Matchers{
         // For population size = 10 we expect 4 members to have same `42` score.
 
         EvaluatedTemplateData(idx.toString, individual, null,
-          FitnessResult(Map("f1" -> sameScoreEveryThirdIndex ), MultiClassClassificationProblem, null)
+          FitnessResult(Map("f1" -> sameScoreEveryThirdIndex), MultiClassClassificationProblem, null)
         )
       }
 
@@ -145,5 +146,54 @@ class RankSelectionStrategyTest extends WordSpec with Matchers{
 
     }
 
+    "evaluatedTemplates are being selected properly" in {
+      val template1 = LeafTemplate(DecisionTree())
+      template1.internalHyperParamsMap = Some(HyperParametersField(
+        Seq(
+          DecisionTreeHPGroup(Seq(MaxDepth(Some(2.0))))
+        )
+      ))
+      val template2 = LeafTemplate(DecisionTree())
+      template2.internalHyperParamsMap = Some(HyperParametersField(
+        Seq(
+          DecisionTreeHPGroup(Seq(MaxDepth(Some(9.0))))
+        )
+      ))
+      val template3 = LeafTemplate(DecisionTree())
+      template3.internalHyperParamsMap = Some(HyperParametersField(
+        Seq(
+          DecisionTreeHPGroup(Seq(MaxDepth(Some(7.0))))
+        )
+      ))
+
+      val individuals: Seq[LeafTemplate[SimpleModelMember]] = Seq(
+        template1,
+        template2,
+        template3
+      )
+
+      val sameRMSE = Random.nextDouble()
+
+      val selectionStrategy = new RankSelectionStrategy
+      val evaluatedTemplateDatas: Seq[EvaluatedTemplateData] = individuals.zipWithIndex.map { case (inds, idx) =>
+        EvaluatedTemplateData(idx.toString, inds, null, FitnessResult(Map("rmse" -> sameRMSE), RegressionProblem, null), hyperParamsField = null)
+      }
+
+      1 to 10 foreach { index =>
+        val (res, _) = selectionStrategy.selectNIndividualsFromSortedByRankCollectionWithoutReplacement(2, evaluatedTemplateDatas)
+
+        def getMaxDepth(template: TemplateTree[TemplateMember]) = {
+          template.internalHyperParamsMap.get.modelsHParameterGroups.head.asInstanceOf[DecisionTreeHPGroup].hpParameters.head.asInstanceOf[MaxDepth].currentValue
+        }
+
+        val maxDepth1: Double = getMaxDepth(res(0).item)
+        val maxDepth2: Double = getMaxDepth(res(1).item)
+
+        getMaxDepth(template1) shouldBe getMaxDepth(template1)
+        maxDepth1 == maxDepth2 should not be true
+        maxDepth1 should not be equal(maxDepth2)
+
+      }
+    }
   }
 }

@@ -1,11 +1,15 @@
 package com.automl.evolution.dimension.hparameter
 
-import scala.math.BigDecimal.RoundingMode
+import com.automl.template.simple.LogisticRegressionModel
+import com.automl.template.{TemplateMember, TemplateTree}
+
 import scala.util.Random
 
 
 case class LogisticRegressionHPGroup(hpParameters:Seq[LogisticRegressionHParameter[Double]] = Seq(LRRegParam(), ElasticNet()))
   extends HyperParametersGroup[LogisticRegressionHParameter[Double]] {
+
+  override def isRelevantTo(templateTree: TemplateMember): Boolean = templateTree.isInstanceOf[LogisticRegressionModel]
 
   override def mutate(): HyperParametersGroup[LogisticRegressionHParameter[Double]] = {
     LogisticRegressionHPGroup(hpParameters = hpParameters.map(hpModelTpe => hpModelTpe.mutate()))
