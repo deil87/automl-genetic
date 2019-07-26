@@ -34,6 +34,7 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
 
   lazy val maxEnsembleDepth: Int = tdConfig.getInt("maxEnsembleDepth")
   lazy val maxNumberOfMutationAttempts: Int = tdConfig.getInt("maxNumberOfMutationAttempts")
+  lazy val pivotBetweenStructureAndHPMutations: Double = tdConfig.getDouble("pivotBetweenStructureAndHPMutations")
 
   val hPMutationStrategy = new HPMutationStrategy()(4)
 
@@ -109,7 +110,7 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
         if (targetLevelOfMutation == currentLevel) {
           val rg = new Random()
           val pivotStructureVsHPs = rg.nextDouble()
-          if (pivotStructureVsHPs > 0.5) {
+          if (pivotStructureVsHPs > pivotBetweenStructureAndHPMutations) {
             mutateHPMap(lt)
           } else {
             mutateStructureInCaseOfLeafNode(getRandomBaseMemberWithExclusion _, mutateLeafToNode _, currentLevel, lt, member, rg)
