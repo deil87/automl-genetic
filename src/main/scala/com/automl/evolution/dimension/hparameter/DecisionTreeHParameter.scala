@@ -30,9 +30,9 @@ case class MaxDepth(initialValue: Option[Double] = None) extends DecisionTreeHPa
   var currentValue: Double = initialValue.getOrElse(getDefault)
 
   override def mutate(): MaxDepth = {
-    var newValue = getNextWithinTheRange
+    var newValue = getNextClosestWithinTheRange(currentValue)
     while(newValue == currentValue) {
-      newValue = getNextWithinTheRange
+      newValue = getNextClosestWithinTheRange(currentValue)
     }
     val newVersion = MaxDepth()
     newVersion.currentValue = newValue

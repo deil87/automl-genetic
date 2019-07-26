@@ -25,15 +25,23 @@ case class Smoothing() extends BayesianHParameter[Double] with DoubleHPRange { /
 
   override def getDefault: Double = getNextWithinTheRange
 
-  var currentValue: Double = getDefault
+  var currentValue: Double = {
+    val defaultValue = getDefault
+//    explored(defaultValue) = true
+    defaultValue
+  }
 
-  override def mutate(): Smoothing = {
-    var newValue = getNextWithinTheRange
+  // Note: In DepthDependentTemplateMutationStrategy we use strategy to mutate.
+  // Here it is opposite... class has mutate method in its API and we can pass Strategy as parameter.
+  override def mutate(/*hpMutationStrategy: Strategy*/): Smoothing = {
+    var newValue = getNextClosestWithinTheRange(currentValue)
     while(newValue == currentValue) {
-      newValue = getNextWithinTheRange
+//    while(explored.contains(newValue)) {
+      newValue = getNextClosestWithinTheRange(currentValue)
     }
     val newVersion = Smoothing()
     newVersion.currentValue = newValue
+//    explored(newVersion.currentValue) = true
     newVersion
   }
 

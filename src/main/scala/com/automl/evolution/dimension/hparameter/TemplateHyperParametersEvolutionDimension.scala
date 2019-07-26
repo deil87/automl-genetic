@@ -118,8 +118,12 @@ trait HPRange[RangeType <: AnyVal] {
   def min: RangeType
   def max: RangeType
   def step: RangeType
+  def numberOfEntries: Int
 }
 trait DoubleHPRange extends HPRange[Double] {
+
+  val numberOfEntries: Int = (max - min + 1/ step).asInstanceOf[Int]
+//  val explored = mutable.Map.empty[Double, Boolean]
 
   def round(value: Double, places: Int): Double = {
     if (places < 0) throw new IllegalArgumentException
@@ -129,6 +133,15 @@ trait DoubleHPRange extends HPRange[Double] {
 
   def getNextWithinTheRange: Double = {
     new Random().nextInt(max.toInt) + min
+  }
+
+  def getNextClosestWithinTheRange(currentValue: Double): Double = {
+    val mutated = if(new Random().nextDouble() < 0.5) {
+      currentValue - 1
+    } else {
+      currentValue + 1
+    }
+    if(mutated <= max && mutated >= min) mutated else getNextClosestWithinTheRange(currentValue)
   }
 }
 

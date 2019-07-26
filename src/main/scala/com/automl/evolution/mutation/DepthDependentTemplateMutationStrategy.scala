@@ -34,6 +34,9 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
 
   lazy val maxEnsembleDepth: Int = tdConfig.getInt("maxEnsembleDepth")
   lazy val maxNumberOfMutationAttempts: Int = 15 //tdConfig.getInt("maxEnsembleDepth")
+
+  val hPMutationStrategy = new HPMutationStrategy()(4)
+
   /**
     *
     * @param population Among other things it contains population-wide mutation probabilities
@@ -163,7 +166,6 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
   }
 
   private def mutateHPMap(lt: TemplateTree[TemplateMember]): TemplateTree[TemplateMember] = {
-    val hPMutationStrategy = new HPMutationStrategy()(4)
     val hpPopulationToMutate = new HPPopulation(lt.internalHyperParamsMap.toSeq)
     lt.internalHyperParamsMap = hPMutationStrategy.mutate(hpPopulationToMutate).individuals.headOption
     lt
