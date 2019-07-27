@@ -28,7 +28,7 @@ object PopulationHelper extends PaddedLogging{
       .map(evd => (evd.idShort, evd.result, evd.item, evd.params))
       .map {
         case (idShort, correspondingMetric, item:HyperParametersField, _) => f" - $item $correspondingMetric"
-        case (idShort, correspondingMetric, template:TemplateTree[TemplateMember], params: Option[HyperParametersField]) =>
+        case (idShort, correspondingMetric, template:TemplateTree[TemplateMember], _) =>
           f" - ${TemplateTreeHelper.renderAsString_v2(template)} $idShort \t\t\t Evaluation: $correspondingMetric"
         case _ => throw new IllegalStateException("Unmanaged cases")
       }

@@ -92,6 +92,7 @@ case class SVMModel()(implicit val logPaddingSize: Int = 0) extends LinearModelM
         logger.info(s"Finished. $name : F1 = " + f1)
 
         FitnessResult(Map("f1" -> f1), problemType, predictions)
+      case RegressionProblem => throw new UnsupportedOperationException("Regression is not supported by SVMModel")
     }
   }
 }

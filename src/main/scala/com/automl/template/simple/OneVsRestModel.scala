@@ -49,6 +49,7 @@ case class OneVsRestModel()(implicit val logPaddingSize: Int = 0) extends Simple
         // compute the classification error on test data.
         val accuracy = evaluator.evaluate(predictions)
         FitnessResult(???, ???, ???)
+      case RegressionProblem => throw new UnsupportedOperationException("Regression is not supported by OneVsRestModel")
     }
   }
 

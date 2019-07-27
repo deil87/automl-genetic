@@ -87,6 +87,7 @@ case class LogisticRegressionModel(hpGroup: LogisticRegressionHPGroup = Logistic
         info(s"Finished. $name : F1 = " + f1)
 
         FitnessResult(Map("f1" -> f1), problemType, prediction)
+      case RegressionProblem => throw new UnsupportedOperationException("Regression is not supported by LogisticRegressionModel")
     }
 
   }
