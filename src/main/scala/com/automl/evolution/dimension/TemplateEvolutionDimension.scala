@@ -121,7 +121,7 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
     debug("Selecting survivals:")
     val survivedForNextGenerationEvaluatedTemplates = selectSurvived(population.size, evaluationResultsForNewExpandedGeneration)
 
-    _evaluatedPopulation = survivedForNextGenerationEvaluatedTemplates
+    _evaluatedEvolvedPopulation = survivedForNextGenerationEvaluatedTemplates
 
     val evolvedPopulation = new TPopulation(survivedForNextGenerationEvaluatedTemplates.map(_.template))
 

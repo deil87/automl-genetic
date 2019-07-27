@@ -1,13 +1,14 @@
 package com.automl.template.simple
 
 import com.automl.{ConfigProvider, PaddedLogging}
-import com.automl.evolution.dimension.hparameter.{DecisionTreeHPGroup, MaxDepth}
+import com.automl.evolution.dimension.hparameter._
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
 import com.automl.spark.SparkSessionProvider
 import com.automl.template.EvaluationMagnet
 import com.automl.teststrategy.{TestStrategy, TrainingTestSplitStrategy}
+import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.ml.{Pipeline, PipelineModel}
 import org.apache.spark.ml.classification.{DecisionTreeClassificationModel, DecisionTreeClassifier, NaiveBayes}
@@ -36,7 +37,7 @@ case class DecisionTree(hpGroup: DecisionTreeHPGroup = DecisionTreeHPGroup.defau
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = null
 
 
-  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType): FitnessResult = {
+  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParametersField: Option[HyperParametersField]): FitnessResult = {
 
     trainDF.cache()
     testDF.cache()
@@ -72,9 +73,8 @@ case class DecisionTree(hpGroup: DecisionTreeHPGroup = DecisionTreeHPGroup.defau
            .setPredictionCol("prediction")
            .setMetricName("f1")
 
-
-
          val model = if(performGridSearch) {
+           debug(s"DecisionTree performs GridSearch over hps.")
            val paramGrid = new ParamGridBuilder()
              .addGrid(dtr.maxDepth, Array(3, 5, 7, 10))
 //             .addGrid(dtr.maxBins, Array(32, 48, 64))
@@ -89,13 +89,13 @@ case class DecisionTree(hpGroup: DecisionTreeHPGroup = DecisionTreeHPGroup.defau
            cv.fit(trainDF)
 
          } else {
-           val classifier = if (hpCoevolutionIsEnabled) {
-             hpGroup.hpParameters.foldLeft(dtr)((res, next) => next match {
+
+           val activeHPGroup = getActiveHPGroup(config, hpGroup, hyperParametersField)
+           val classifier = activeHPGroup.hpParameters.foldLeft(dtr)((res, next) => next match {
                case p@MaxDepth(_) =>
                  debug(s"DecisionTree max_depth hyper-parameter was set to ${p.currentValue}")
                  res.setMaxDepth(p.currentValue.toInt)
              })
-           } else dtr
 
            val pipeline = new Pipeline()
              .setStages(Array(classifier))

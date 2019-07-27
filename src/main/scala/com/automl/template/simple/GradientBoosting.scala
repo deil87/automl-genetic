@@ -1,6 +1,7 @@
 package com.automl.template.simple
 
 import com.automl.PaddedLogging
+import com.automl.evolution.dimension.hparameter.HyperParametersField
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
@@ -24,7 +25,7 @@ case class GradientBoosting()(implicit val logPaddingSize: Int = 0) extends Simp
 
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = null
 
-  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType): FitnessResult = {
+  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParametersField: Option[HyperParametersField]): FitnessResult = {
 
     problemType match {
       case RegressionProblem =>

@@ -44,5 +44,14 @@ class RankBasedSelectionProbabilityAssignerTest extends WordSpec with Matchers{
       assigned(4)._2 shouldBe 0.4 +- 0.01
     }
 
+    "get assigned probabilities for list of one element" in {
+
+      val items = List(0.2)
+
+      val assigned =  new RankBasedSelectionProbabilityAssigner[Double].assign(items)
+
+      assigned(0)._2 shouldBe 1.0 +- 0.01
+    }
+
   }
 }

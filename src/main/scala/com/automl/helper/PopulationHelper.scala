@@ -17,7 +17,7 @@ object PopulationHelper extends PaddedLogging{
   }
 
   def renderIndividuals(individuals: Seq[TemplateTree[TemplateMember]]): String = {
-    individuals.zipWithIndex.map { case (individual, idx) => f"$idx ) ${TemplateTreeHelper.renderAsString_v2(individual)} hp: ${individual.internalHyperParamsMap.get}" }.mkString("\n\t\t\t\t\t", "\n\t\t\t\t\t", "")
+    individuals.zipWithIndex.map { case (individual, idx) => f"$idx ) ${TemplateTreeHelper.renderAsString_v2(individual)}" }.mkString("\n\t\t\t\t\t", "\n\t\t\t\t\t", "")
   }
 
   //TODO move to EvolutionDimension or a trait that will be mixed to EvolutionDimension
@@ -25,11 +25,11 @@ object PopulationHelper extends PaddedLogging{
     val prefixToPrepend = if (prefix.nonEmpty) prefix + " : \n" else prefix
     prefixToPrepend  + individuals
       .sortWith((a,b) => a.compare(b))
-      .map(evd => (evd.result, evd.item, evd.params))
+      .map(evd => (evd.idShort, evd.result, evd.item, evd.params))
       .map {
-        case ( correspondingMetric, item:HyperParametersField, _) => f" - $item $correspondingMetric"
-        case ( correspondingMetric, template:TemplateTree[TemplateMember], params: Option[HyperParametersField]) =>
-          f" - ${TemplateTreeHelper.renderAsString_v2(template)} \n Evaluation: $correspondingMetric; hps from co-evolution: $params"
+        case (idShort, correspondingMetric, item:HyperParametersField, _) => f" - $item $correspondingMetric"
+        case (idShort, correspondingMetric, template:TemplateTree[TemplateMember], params: Option[HyperParametersField]) =>
+          f" - ${TemplateTreeHelper.renderAsString_v2(template)} $idShort \t\t\t Evaluation: $correspondingMetric"
         case _ => throw new IllegalStateException("Unmanaged cases")
       }
       .mkString("\n\t\t\t\t\t", "\n\t\t\t\t\t", "")

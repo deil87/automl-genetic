@@ -1,5 +1,6 @@
 package com.automl
 
+import com.automl.evolution.dimension.hparameter.HyperParametersField
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.template.{EvaluationMagnet, TemplateMember}
@@ -18,7 +19,7 @@ case class Wildcard(members: Seq[TemplateMember] = SimpleModelMember.poolOfSimpl
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
 
-  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType): FitnessResult = {
+  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParametersField: Option[HyperParametersField]): FitnessResult = {
     throw new IllegalStateException("We can't estimate fitnessError on wildcard for now")
   }
 

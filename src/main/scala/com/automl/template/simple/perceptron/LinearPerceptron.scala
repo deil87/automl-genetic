@@ -1,6 +1,7 @@
 package com.automl.template.simple.perceptron
 
 import com.automl.PaddedLogging
+import com.automl.evolution.dimension.hparameter.HyperParametersField
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
@@ -23,6 +24,6 @@ case class LinearPerceptron()(implicit val logPaddingSize: Int = 0) extends Line
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
 
-  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType): FitnessResult = ???
+  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParametersField: Option[HyperParametersField]): FitnessResult = ???
 
 }

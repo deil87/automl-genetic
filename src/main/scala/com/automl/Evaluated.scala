@@ -9,6 +9,8 @@ trait Evaluated[T <: Evaluated[T]] {
   def result: FitnessType
   def params: Option[ParamsType]
 
+  def idShort: String
+
   def compare(other: T): Boolean
 
 }

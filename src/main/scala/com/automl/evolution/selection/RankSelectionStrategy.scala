@@ -1,7 +1,7 @@
 package com.automl.evolution.selection
 
 import com.automl.{EvaluatedTemplateData, PaddedLogging}
-import com.automl.helper.LinearRankingProbabilityStrategy
+import com.automl.helper.{LinearRankingProbabilityStrategy, TemplateTreeHelper}
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.collection.immutable
@@ -33,16 +33,23 @@ class RankSelectionStrategy()(implicit val logPaddingSize: Int = 0) extends Padd
 
     val orderedBasedOnFitnessAgainstNeighbours: Seq[EvaluatedTemplateData] = sortedBasedOnLocalScores.map(_._1)
 
-    val (selectedBySize, _) = (0 until numberOfParentsToSelect).foldLeft((Seq[EvaluatedTemplateData](), orderedBasedOnFitnessAgainstNeighbours)){ case ((selectedAcc, rest), next) => {
+    val (selectedBySize, _) = selectNIndividualsFromSortedByRankCollectionWithoutReplacement(numberOfParentsToSelect, orderedBasedOnFitnessAgainstNeighbours)
+    selectedBySize
+  }
+
+  def selectNIndividualsFromSortedByRankCollectionWithoutReplacement(numberOfParentsToSelect: Int, orderedBasedOnFitnessAgainstNeighbours: Seq[EvaluatedTemplateData]) = {
+    (0 until numberOfParentsToSelect).foldLeft((Seq[EvaluatedTemplateData](), orderedBasedOnFitnessAgainstNeighbours)) { case ((selectedAcc, rest), next) => {
       val evaluatedTemplateDataWithAssignedProbs = new RankBasedSelectionProbabilityAssigner[EvaluatedTemplateData].assign(rest.toList)
-      debug(s"Selecting by rank based probabilities from [ ${evaluatedTemplateDataWithAssignedProbs.map{case (individual, assignedProb) => s"${individual.idShort} with assigned probability to be drawn = $assignedProb"}.mkString("  ,  ")} ]")
+      debug(s"Selecting by rank based probabilities from [ ${evaluatedTemplateDataWithAssignedProbs.map { case (individual, assignedProb) => s"${individual.idShort} ${TemplateTreeHelper.renderAsString_v2(individual.item)} with assigned probability to be drawn = $assignedProb" }.mkString("  ,  ")} ]")
 
       val selector = new RouletteWheel[EvaluatedTemplateData](evaluatedTemplateDataWithAssignedProbs)
       val selected = selector.sample(1).map(_._1)
 
+      debug(s"Selected: ${selected.head.idShort}")
+
       (selectedAcc ++ selected, rest.diff(selected))
-    }}
-    selectedBySize
+    }
+    }
   }
 
   def parentSelectionByShareWithLocalCompetitions(selectionShare: Double, individuals: Seq[EvaluatedTemplateData]): Seq[EvaluatedTemplateData] = {

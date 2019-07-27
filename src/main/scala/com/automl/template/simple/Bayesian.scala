@@ -1,7 +1,7 @@
 package com.automl.template.simple
 
-import com.automl.{ConsistencyChecker, PaddedLogging}
-import com.automl.evolution.dimension.hparameter.{BayesianHPGroup, Smoothing}
+import com.automl.{ConfigProvider, ConsistencyChecker, PaddedLogging}
+import com.automl.evolution.dimension.hparameter.{BayesianHPGroup, HyperParametersField, Smoothing}
 import com.automl.exception.SuspiciousPerformanceException
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
@@ -39,7 +39,7 @@ case class Bayesian(hpGroup: BayesianHPGroup = BayesianHPGroup.default)(implicit
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
 
-  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType): FitnessResult = {
+  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParametersField: Option[HyperParametersField]): FitnessResult = {
 
     debug(s"Evaluating $name ...")
 
@@ -67,6 +67,8 @@ case class Bayesian(hpGroup: BayesianHPGroup = BayesianHPGroup.default)(implicit
 
       case MultiClassClassificationProblem | BinaryClassificationProblem => //TODO generalize to a common method of evaluation for this type of problem.
 
+        val config = ConfigProvider.config.getConfig("evolution")
+
         val classes = trainDF.select("indexedLabel").distinct().collect().map(_.getDouble(0))
 
         consistencyCheck {
@@ -78,7 +80,9 @@ case class Bayesian(hpGroup: BayesianHPGroup = BayesianHPGroup.default)(implicit
           .setModelType("multinomial")
           .setLabelCol("indexedLabel")
 
-        val naiveBayesWithHP = hpGroup.hpParameters.foldLeft(nb)((res, next) => next match {
+        val activeHPGroup = getActiveHPGroup(config, hpGroup, hyperParametersField)
+
+        val naiveBayesWithHP = activeHPGroup.hpParameters.foldLeft(nb)((res, next) => next match {
           case p@Smoothing() =>
             debug(s"Bayesian smoothing hyper-parameter was set to ${p.currentValue}")
             res.setSmoothing(p.currentValue)

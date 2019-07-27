@@ -72,13 +72,15 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
         //TODO FIX We are storing this result in cache but not into the queue
         val fitness: FitnessResult = cache.getOrElseUpdate(cacheKey, {
 
+          individualTemplate.setLogPadding(logPaddingSize)
           materializedTemplate.setLogPadding(logPaddingSize)
-          val fitnessResult = materializedTemplate.evaluateFitness(trainingSplit, testSplit, problemType, bestHPField)
+
+          val fitnessResult = individualTemplate.evaluateFitness(trainingSplit, testSplit, problemType, bestHPField)
           debug(s"Entry $cacheKey with hashCode = ${cacheKey.hashCode()} was added to the cache with score = $fitnessResult")
           fitnessResult
         })
         val usedHPField = bestHPField.orElse(materializedTemplate.internalHyperParamsMap)
-        val result = EvaluatedTemplateData(idx.toString + ":" + materializedTemplate.id, materializedTemplate,
+        val result = EvaluatedTemplateData(idx.toString + ":" + materializedTemplate.id, individualTemplate,
           materializedTemplate, fitness, hyperParamsField = usedHPField)
         templateEvDimension.hallOfFame += result
         result

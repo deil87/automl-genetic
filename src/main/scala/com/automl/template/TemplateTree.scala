@@ -38,7 +38,7 @@ sealed trait TemplateTree[+A <: TemplateMember]{
     */
   def evaluateFitness(trainingDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParamsMap: Option[HyperParametersField], seed: Long = new Random().nextLong())(implicit tc: TreeContext = TreeContext()): FitnessResult
 
-  var internalHyperParamsMap: Option[HyperParametersField] = Some(HPPopulation.randomHPField)
+  var internalHyperParamsMap: Option[HyperParametersField] = Some(HPPopulation.randomRelevantHPFieldFor(member))
 
   def height: Int = 1 + subMembers.foldLeft(1){ case (h, subMember) => Math.max(h, subMember.height)}
 
@@ -91,7 +91,8 @@ case class LeafTemplate[+A <: TemplateMember](member: A) extends TemplateTree[A]
 
     trainDF.cache()
     testDF.cache()
-    member.fitnessError(trainDF, testDF, problemType)
+
+    member.fitnessError(trainDF, testDF, problemType, this.internalHyperParamsMap)
   }
 
   override def height: Int = 1
@@ -162,7 +163,14 @@ trait TemplateMember { self: PaddedLogging =>
 
   //TODO could add TreeContext parameter as well
   //TODO rename to  just fitness
-  def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType): FitnessResult
+  def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType): FitnessResult = {
+    val msg = "Consider to use fitnessError() method with `hyperParametersField` parameter"
+    info(s"!!!!!!!!!!!! $msg")
+    throw new IllegalStateException(msg)
+    fitnessError(trainDF, testDF, problemType, None)
+  }
+
+  def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParametersField: Option[HyperParametersField] = None): FitnessResult
 
   override def toString: String = name
 

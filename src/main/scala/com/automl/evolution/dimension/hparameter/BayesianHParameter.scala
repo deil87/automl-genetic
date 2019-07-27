@@ -1,9 +1,13 @@
 package com.automl.evolution.dimension.hparameter
 
-import scala.util.Random
+import com.automl.template.TemplateMember
+import com.automl.template.simple.Bayesian
+
 
 case class BayesianHPGroup(hpParameters:Seq[BayesianHParameter[Double]] = Seq(Smoothing()))
   extends HyperParametersGroup[BayesianHParameter[Double]] {
+
+  override def isRelevantTo(templateTree: TemplateMember): Boolean = templateTree.isInstanceOf[Bayesian]
 
   // TODO consider using HList
   override def mutate(): HyperParametersGroup[BayesianHParameter[Double]] = {

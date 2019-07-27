@@ -9,6 +9,7 @@ import com.automl.evolution.evaluation.{HyperParameterContemporaryPopulationEval
 import com.automl.evolution.mutation.{DepthDependentTemplateMutationStrategy, HPMutationStrategy}
 import com.automl.helper.PopulationHelper
 import com.automl.population.{GenericPopulationBuilder, HPPopulation}
+import com.automl.template.{TemplateMember, TemplateTree}
 
 import scala.collection.mutable
 import scala.math.BigDecimal.RoundingMode
@@ -111,6 +112,8 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
 trait HyperParametersGroup[HPModelBoundedType <: MutableHParameter[Double, HPModelBoundedType]]{
   def hpParameters : Seq[HPModelBoundedType]
   def mutate(): HyperParametersGroup[HPModelBoundedType]
+  //TODO maybe it is better to use Map as for now we have only one HPGroup per model
+  def isRelevantTo(template: TemplateMember): Boolean
 } //TODO instead of using Any we can create our own hierarhy of wrapper classes to make them have coomon ancestor like ParameterType
 
 
@@ -159,6 +162,8 @@ case class EvaluatedHyperParametersField(field: HyperParametersField, score:Doub
   override type FitnessType = Double
 
   override type ParamsType = AnyVal //Unused
+
+  override def idShort: String = s"idShort: ${field.hashCode}"
 
   override def params: Option[ParamsType] = None
 
