@@ -83,7 +83,7 @@ case class Bayesian(hpGroup: BayesianHPGroup = BayesianHPGroup.default)(implicit
         val activeHPGroup = getActiveHPGroup(config, hpGroup, hyperParametersField)
 
         val naiveBayesWithHP = activeHPGroup.hpParameters.foldLeft(nb)((res, next) => next match {
-          case p@Smoothing() =>
+          case p@Smoothing(_) =>
             debug(s"Bayesian smoothing hyper-parameter was set to ${p.currentValue}")
             res.setSmoothing(p.currentValue)
         })

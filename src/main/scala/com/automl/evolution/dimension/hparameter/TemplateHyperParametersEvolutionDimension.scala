@@ -123,10 +123,10 @@ trait HPRange[RangeType <: AnyVal] {
   def step: RangeType
   def numberOfEntries: Int
 }
-trait DoubleHPRange extends HPRange[Double] {
+
+trait DoubleHPRange[V <: MutableHParameter[Double, V]] extends HPRange[Double] { this: MutableHParameter[Double, V] =>
 
   val numberOfEntries: Int = (max - min + 1/ step).asInstanceOf[Int]
-//  val explored = mutable.Map.empty[Double, Boolean]
 
   def round(value: Double, places: Int): Double = {
     if (places < 0) throw new IllegalArgumentException
@@ -140,21 +140,53 @@ trait DoubleHPRange extends HPRange[Double] {
 
   def getNextClosestWithinTheRange(currentValue: Double): Double = {
     val mutated = if(new Random().nextDouble() < 0.5) {
-      currentValue - 1
+      currentValue - step
     } else {
-      currentValue + 1
+      currentValue + step
     }
-    if(mutated <= max && mutated >= min) mutated else getNextClosestWithinTheRange(currentValue)
+    val next = if (mutated > max) min
+    else if (mutated < min) max
+    else mutated
+
+    if(step < 1) round(next, 1) else next
+    // TODO Add random jump based on frequency defined in the config
+    //if(mutated <= max && mutated >= min) mutated else getNextClosestWithinTheRange(currentValue)
+  }
+
+  def newInstance: V
+
+  var currentValue: Double = {
+    val defaultValue = initialValue.getOrElse(getDefault)
+    explored(defaultValue) = true
+    defaultValue
+  }
+
+  // Note: In DepthDependentTemplateMutationStrategy we use strategy to mutate.
+  // Here it is opposite... class has mutate method in its API and we can pass Strategy as parameter.
+  override def mutate(): V = {
+    var newValue = getNextClosestWithinTheRange(currentValue)
+    while(explored.contains(newValue) && explored.size < numberOfEntries) {
+//      println(s"Cache hit: $newValue")
+      newValue = getNextClosestWithinTheRange(newValue)
+    }
+    val newVersion = newInstance
+    newVersion.currentValue = newValue
+    explored(newVersion.currentValue) = true
+//    println("Updated cache:" + explored.toList.mkString(","))
+    newVersion.explored = explored
+    newVersion
   }
 }
 
 sealed trait HParameter[+T] {
   def getDefault:T
+  def initialValue:Option[T]
 }
 
-trait MutableHParameter[+T, V <: MutableHParameter[T, V]] extends HParameter[T] {
-  def currentValue: T
+trait MutableHParameter[T, V <: MutableHParameter[T, V]] extends HParameter[T] {
+  var currentValue: T
   def mutate(): V
+  var explored = mutable.Map.empty[Double, Boolean]
 }
 
 case class EvaluatedHyperParametersField(field: HyperParametersField, score:Double) extends Evaluated[EvaluatedHyperParametersField] {

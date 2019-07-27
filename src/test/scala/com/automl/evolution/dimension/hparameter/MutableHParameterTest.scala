@@ -15,7 +15,7 @@ class MutableHParameterTest extends FunSuite with Matchers{
     smoothing.numberOfEntries shouldEqual 10
 
     1 to 50 foreach { _ =>
-      smoothing = smoothing.mutate()
+      smoothing = smoothing.mutate().asInstanceOf[Smoothing]
       println(smoothing.currentValue)
     }
   }
@@ -27,7 +27,7 @@ class MutableHParameterTest extends FunSuite with Matchers{
     elasticNet.numberOfEntries shouldEqual 11
 
     1 to 1000 foreach { _ =>
-      elasticNet = elasticNet.mutate()
+      elasticNet = elasticNet.mutate().asInstanceOf[ElasticNet]
       explored(elasticNet.currentValue) = true
       println(elasticNet.currentValue)
 
@@ -42,6 +42,23 @@ class MutableHParameterTest extends FunSuite with Matchers{
   }
 
 
+  // This type of tests are flaky as there is a chance for them not to explore all range due to randoness. We can just choose one direction for mutation.
+  test("Mutation of Smoothing should return only new values") {
+    var smoothing = Smoothing()
+    val firstValue = smoothing.currentValue
+    val newValue = smoothing.mutate()
+    firstValue == newValue.currentValue shouldBe false
+
+    smoothing.numberOfEntries shouldEqual 10
+
+    1 to 50 foreach { _ =>
+      smoothing = smoothing.mutate().asInstanceOf[Smoothing]
+      println(smoothing.currentValue)
+    }
+
+    smoothing.explored.size == smoothing.numberOfEntries shouldBe true
+  }
+
   test("Mutation of ElasticNet should return only new values") {
     var elasticNet = ElasticNet()
     val firstValue = elasticNet.currentValue
@@ -51,7 +68,7 @@ class MutableHParameterTest extends FunSuite with Matchers{
     elasticNet.numberOfEntries shouldEqual 11
 
     1 to 50 foreach { _ =>
-      elasticNet = elasticNet.mutate()
+      elasticNet = elasticNet.mutate().asInstanceOf[ElasticNet]
       println(elasticNet.currentValue)
     }
   }
@@ -66,7 +83,7 @@ class MutableHParameterTest extends FunSuite with Matchers{
     regParam.numberOfEntries shouldEqual 11
 
     1 to 50 foreach { _ =>
-      regParam = regParam.mutate()
+      regParam = regParam.mutate().asInstanceOf[LRRegParam]
       println(regParam.currentValue)
     }
   }
@@ -80,7 +97,7 @@ class MutableHParameterTest extends FunSuite with Matchers{
     maxDepth.numberOfEntries shouldEqual 10
 
     1 to 50 foreach { _ =>
-      maxDepth = maxDepth.mutate()
+      maxDepth = maxDepth.mutate().asInstanceOf[MaxDepth]
       println(maxDepth.currentValue)
     }
   }

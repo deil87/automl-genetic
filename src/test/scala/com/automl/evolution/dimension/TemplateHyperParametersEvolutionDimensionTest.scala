@@ -24,7 +24,7 @@ class TemplateHyperParametersEvolutionDimensionTest extends FunSuite with Matche
     val smoothing = hpGroupOfParameters.hpParameters
     val hpGroupOfParametersOrig = hpGroupOfParameters.mutate()
 
-    val isAllParametersChanged = hpGroupOfParametersOrig.hpParameters.forall{ case param@Smoothing() =>
+    val isAllParametersChanged = hpGroupOfParametersOrig.hpParameters.forall{ case param@Smoothing(_) =>
       param.currentValue != smoothing
     }
     isAllParametersChanged should be(true)
@@ -80,7 +80,7 @@ class TemplateHyperParametersEvolutionDimensionTest extends FunSuite with Matche
     val evolveFun: HPPopulation => HPPopulation = dimension.evolve(_, workingDF)
     repeatRecursively(initialPopulation, evolveFun, 15)
 
-    val bestSmoothingValue = dimension.getBestFromHallOfFame.modelsHParameterGroups.head.hpParameters.filter { case Smoothing() => true }.head.currentValue
+    val bestSmoothingValue = dimension.getBestFromHallOfFame.modelsHParameterGroups.head.hpParameters.filter { case Smoothing(_) => true }.head.currentValue
 
     bestSmoothingValue should be(1.0)
   }

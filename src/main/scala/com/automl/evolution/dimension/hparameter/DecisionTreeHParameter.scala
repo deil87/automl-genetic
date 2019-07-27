@@ -20,7 +20,7 @@ object DecisionTreeHPGroup {
 
 trait DecisionTreeHParameter[T <: AnyVal] extends MutableHParameter[T, DecisionTreeHParameter[T]]
 
-case class MaxDepth(initialValue: Option[Double] = None) extends DecisionTreeHParameter[Double] with DoubleHPRange { // we can specialize with Marker trait which parameter can be used with which Model
+case class MaxDepth(initialValue: Option[Double] = None) extends DecisionTreeHParameter[Double] with DoubleHPRange[DecisionTreeHParameter[Double]] { // we can specialize with Marker trait which parameter can be used with which Model
   override def min: Double = 1.0
 
   override def max: Double = 10.0
@@ -29,17 +29,7 @@ case class MaxDepth(initialValue: Option[Double] = None) extends DecisionTreeHPa
 
   override def getDefault: Double = getNextWithinTheRange
 
-  var currentValue: Double = initialValue.getOrElse(getDefault)
-
-  override def mutate(): MaxDepth = {
-    var newValue = getNextClosestWithinTheRange(currentValue)
-    while(newValue == currentValue) {
-      newValue = getNextClosestWithinTheRange(currentValue)
-    }
-    val newVersion = MaxDepth()
-    newVersion.currentValue = newValue
-    newVersion
-  }
+  override def newInstance: DecisionTreeHParameter[Double] = MaxDepth()
 
   override def toString: String = "max_depth:" + currentValue.toString
 }
