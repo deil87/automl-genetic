@@ -112,6 +112,7 @@ class TemplateHyperParametersEvolutionDimension(parentTemplateEvDimension: Templ
 trait HyperParametersGroup[HPModelBoundedType <: MutableHParameter[Double, HPModelBoundedType]]{
   def hpParameters : Seq[HPModelBoundedType]
   def mutate(): HyperParametersGroup[HPModelBoundedType]
+  //TODO maybe it is better to use Map as for now we have only one HPGroup per model
   def isRelevantTo(template: TemplateMember): Boolean
 } //TODO instead of using Any we can create our own hierarhy of wrapper classes to make them have coomon ancestor like ParameterType
 

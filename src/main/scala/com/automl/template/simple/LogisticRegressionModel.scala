@@ -1,7 +1,7 @@
 package com.automl.template.simple
 
-import com.automl.PaddedLogging
-import com.automl.evolution.dimension.hparameter.{ElasticNet, LRRegParam, LogisticRegressionHPGroup}
+import com.automl.{ConfigProvider, PaddedLogging}
+import com.automl.evolution.dimension.hparameter.{ElasticNet, HyperParametersField, LRRegParam, LogisticRegressionHPGroup}
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
@@ -31,7 +31,7 @@ case class LogisticRegressionModel(hpGroup: LogisticRegressionHPGroup = Logistic
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
   //We need here a task/problemType or something like ModelSearchContext()
-  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType): FitnessResult = {
+  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParametersField: Option[HyperParametersField] = None): FitnessResult = {
 
   debug(s"Evaluating $name ...")
     problemType match {
@@ -48,6 +48,8 @@ case class LogisticRegressionModel(hpGroup: LogisticRegressionHPGroup = Logistic
         //    val predictionsAsDF = scoreAndLabels.toDF("score", "prediction") //TODO maybe we need to join scores and labels with original data here
         FitnessResult(???, ???, ???)
       case MultiClassClassificationProblem =>
+        val config = ConfigProvider.config.getConfig("evolution")
+
         val scaler = new StandardScaler()
           .setInputCol("features")
           .setOutputCol("scaledFeatures")
@@ -58,7 +60,8 @@ case class LogisticRegressionModel(hpGroup: LogisticRegressionHPGroup = Logistic
           .setLabelCol("indexedLabel")
           .setMaxIter(20)
 
-        val lrWithHP = hpGroup.hpParameters.foldLeft(lrEstimator)((res, next) => next match {
+        val activeHPGroup = getActiveHPGroup(config, hpGroup, hyperParametersField)
+        val lrWithHP = activeHPGroup.hpParameters.foldLeft(lrEstimator)((res, next) => next match {
           case p@LRRegParam(_) =>
             debug(s"LogisticRegression lambda hyper-parameter was set to ${p.currentValue}")
             res.setRegParam(p.currentValue)

@@ -59,7 +59,7 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
         if(attempts > 1) info(s"\t\t Attempt number ${attempts - 1} was unsuccessful. Max. number of attemts from config = $maxNumberOfMutationAttempts")
         newMutant = mutateIndividual(next)
         attempts += 1
-      } while ( (population.individuals ++ res ++ populationNotToIntersectWith.individuals).contains(newMutant) && attempts < maxNumberOfMutationAttempts) // Not to overlap with itself, with recently mutated new individuals and custom individuals from `notToIntersectWith`
+      } while ( (population.individuals ++ res ++ populationNotToIntersectWith.individuals).contains(newMutant) && attempts <= maxNumberOfMutationAttempts) // Not to overlap with itself, with recently mutated new individuals and custom individuals from `notToIntersectWith`
       info(s"Mutation of the ${next.id}:${next.member.name.take(5)} individual took ${attempts-1} attempts.")
       require(attempts != maxNumberOfMutationAttempts, s"Too many attempts to mutate ${next.id} with DepthDependentTemplateMutationStrategy.") // Just to inform that probably we have some issue
       val list = newMutant +: res

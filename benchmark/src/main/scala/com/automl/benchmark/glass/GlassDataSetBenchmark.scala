@@ -30,6 +30,7 @@ class GlassDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvid
         |  hyperParameterDimension {
         |    enabled = false
         |  }
+        |  hpGridSearch = false
         |}
       """.stripMargin)
     ConfigProvider.addOverride(testOverride)

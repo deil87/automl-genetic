@@ -1,6 +1,7 @@
 package com.automl.template.simple
 
 import com.automl.PaddedLogging
+import com.automl.evolution.dimension.hparameter.HyperParametersField
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
@@ -27,7 +28,7 @@ case class LinearRegressionModel()(implicit val logPaddingSize: Int = 0) extends
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
 
-  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType): FitnessResult = {
+  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParametersField: Option[HyperParametersField]): FitnessResult = {
 
     logger.debug(s"Evaluating $name ...")
     val linearRegression = new LinearRegression() // It is a newer version of LinearRegressionWithSGD from mllib

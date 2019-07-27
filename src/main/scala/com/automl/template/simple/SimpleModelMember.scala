@@ -1,10 +1,12 @@
 package com.automl.template.simple
 
+import com.automl.evolution.dimension.hparameter.{HyperParametersField, HyperParametersGroup}
 import com.automl.{ConfigProvider, PaddedLogging}
 import com.automl.problemtype.ProblemType
 import com.automl.template._
 import com.automl.template.simple.perceptron.LinearPerceptron
 import com.automl.teststrategy.TestStrategy
+import com.typesafe.config.Config
 
 import scala.collection.JavaConverters._
 
@@ -16,6 +18,18 @@ trait SimpleModelMember extends TemplateMember { self: PaddedLogging =>
   def modelKey: ModelKey = ???
 
   def testStrategy: TestStrategy = ???
+
+  /**
+    * Selects hpGroup based on the way how we decided to derive it. Either from coevolution or through regular mutation from TemplateTree
+    */
+  def getActiveHPGroup(config: Config, hpGroup: HyperParametersGroup[_], hyperParametersField: Option[HyperParametersField]) = {
+    val hpCoevolutionIsEnabled = config.getBoolean("hyperParameterDimension.enabled")
+
+    // It is assumed that we have only one relevant HPGroup per model
+    def getRelevantHPGroup = hyperParametersField.get.modelsHParameterGroups.filter(_.isRelevantTo(this)).head
+
+    if (hpCoevolutionIsEnabled) hpGroup else getRelevantHPGroup
+  }
 }
 
 object SimpleModelMember {

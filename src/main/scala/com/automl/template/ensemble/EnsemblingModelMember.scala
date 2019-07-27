@@ -15,7 +15,7 @@ trait EnsemblingModelMember extends TemplateMember { self: PaddedLogging =>
   override def name: String = "ensembling member"
 
   //TODO maybe we can reuse the same name so that we can treat Simple and Ensempling nodes equally?
-  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType): FitnessResult = {
+  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParametersField: Option[HyperParametersField]): FitnessResult = {
     throw new IllegalStateException("We should call ensemblingFitnessError method for ensembling classifiers")
   }
 

@@ -21,7 +21,7 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
 
   var _population: PopulationType
 
-  var _evaluatedPopulation: Seq[EvaluatedResult] = Nil
+  var _evaluatedEvolvedPopulation: Seq[EvaluatedResult] = Nil
 
   var currentWorkingDFSize:Long = 0
 
@@ -69,7 +69,7 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
     debug("Selecting survivals:")
     val survivedForNextGenerationEvaluatedTemplates = selectSurvived(population.size, evaluatedOffspring)
 
-    _evaluatedPopulation = survivedForNextGenerationEvaluatedTemplates
+    _evaluatedEvolvedPopulation = survivedForNextGenerationEvaluatedTemplates
 
     val evolvedNewGeneration: PopulationType = extractIndividualsFromEvaluatedIndividuals(survivedForNextGenerationEvaluatedTemplates)
     evolvedNewGeneration.render
@@ -108,7 +108,7 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
 
   def getPopulation: PopulationType = if(_population.nonEmpty) _population else getInitialPopulation
 
-  def getEvaluatedPopulation: Seq[EvaluatedResult] = _evaluatedPopulation
+  def getEvaluatedPopulation: Seq[EvaluatedResult] = _evaluatedEvolvedPopulation
 
   def getLastEvaluatedPopulation(workingDF: DataFrame): Seq[EvaluatedResult] = {
     val newWorkingDFSize = workingDF.count()

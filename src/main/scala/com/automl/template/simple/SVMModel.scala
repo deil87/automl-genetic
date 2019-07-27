@@ -1,6 +1,7 @@
 package com.automl.template.simple
 
 import com.automl.PaddedLogging
+import com.automl.evolution.dimension.hparameter.HyperParametersField
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
@@ -30,7 +31,7 @@ case class SVMModel()(implicit val logPaddingSize: Int = 0) extends LinearModelM
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
 
-  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType): FitnessResult = {
+  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParametersField: Option[HyperParametersField]): FitnessResult = {
     logger.debug(s"Evaluating $name ...")
     import utils.SparkMLUtils._
     problemType match {
