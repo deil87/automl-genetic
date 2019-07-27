@@ -83,7 +83,10 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
     val hallOfFameUpdateSize = 5  // TODO Config
     hallOfFame.headOption.map{bestAtAllTimes =>
       //TODO >= should be <= when we have "the less the better" approach
-      hallOfFame ++= evaluatedIndividuals.filter(_.compare(bestAtAllTimes)).take(hallOfFameUpdateSize)
+      debug("WARNING!!! Check that updateHallOfFame supports regressiong problem")
+      val goingToTheHallOfFame = evaluatedIndividuals.toSet.filter(_.compare(bestAtAllTimes)).take(hallOfFameUpdateSize).diff(hallOfFame.toSet)
+      info(s"Following templates were added to the hall of fame: ${goingToTheHallOfFame.map(_.idShort).mkString(",")}")
+      hallOfFame ++= goingToTheHallOfFame
     }.getOrElse{
       hallOfFame ++= evaluatedIndividuals.take(hallOfFameUpdateSize)
     }

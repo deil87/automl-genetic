@@ -79,7 +79,7 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
           debug(s"Entry $cacheKey with hashCode = ${cacheKey.hashCode()} was added to the cache with score = $fitnessResult")
           fitnessResult
         })
-        val usedHPField = bestHPField.orElse(materializedTemplate.internalHyperParamsMap)
+        val usedHPField = bestHPField.orElse(individualTemplate.internalHyperParamsMap)
         val result = EvaluatedTemplateData(idx.toString + ":" + materializedTemplate.id, individualTemplate,
           materializedTemplate, fitness, hyperParamsField = usedHPField)
         templateEvDimension.hallOfFame += result

@@ -106,7 +106,7 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
     val populationForUpcomingMutation = extractIndividualsFromEvaluatedIndividuals(selectedParents)
 
     debug("Mutating parents:")
-    val offspring = mutateParentPopulation(populationForUpcomingMutation, new TPopulation(getPopulation.individuals  ++ hallOfFame.map(_.template)))
+    val offspring = mutateParentPopulation(populationForUpcomingMutation, new TPopulation(hallOfFame.map(_.template).toSeq))
 
     debug("Evaluating offspring:")
     val evaluatedOffspring = evaluatePopulation(offspring, workingDF)
