@@ -121,6 +121,7 @@ case class DecisionTree(hpGroup: Option[DecisionTreeHPGroup] = None)(implicit va
 
              //Unused
              val f1 = evaluator.setMetricName("f1").evaluate(predictions)
+             //        MulticlassMetricsHelper.showStatistics(predictions)
 
              FitnessResult(Map("f1" -> f1CV, "accuracy" -> -1), problemType, predictions)
            } else {

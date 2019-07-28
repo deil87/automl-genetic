@@ -1,7 +1,7 @@
 package com.automl.template.simple
 
 import com.automl.{ConfigProvider, PaddedLogging}
-import com.automl.evolution.dimension.hparameter.{ElasticNet, HyperParametersField, LRRegParam, LogisticRegressionHPGroup}
+import com.automl.evolution.dimension.hparameter._
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
@@ -10,6 +10,7 @@ import com.automl.teststrategy.{TestStrategy, TrainingTestSplitStrategy}
 import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 import org.apache.spark.ml.feature.StandardScaler
+import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
 import org.apache.spark.sql._
 
 case class LogisticRegressionModel(hpGroup: Option[LogisticRegressionHPGroup] = None)(implicit val logPaddingSize: Int = 0) extends LinearModelMember with PaddedLogging{
@@ -49,6 +50,8 @@ case class LogisticRegressionModel(hpGroup: Option[LogisticRegressionHPGroup] = 
       case MultiClassClassificationProblem =>
         val config = ConfigProvider.config.getConfig("evolution")
 
+        val validationStrategy = config.getString("templateDimension.validationStrategy")
+
         val scaler = new StandardScaler()
           .setInputCol("features")
           .setOutputCol("scaledFeatures")
@@ -60,14 +63,7 @@ case class LogisticRegressionModel(hpGroup: Option[LogisticRegressionHPGroup] = 
           .setMaxIter(20)
 
         val activeHPGroup = getActiveHPGroup(config, hpGroup, hyperParametersField)
-        val lrWithHP = activeHPGroup.hpParameters.foldLeft(lrEstimator)((res, next) => next match {
-          case p@LRRegParam(_) =>
-            debug(s"LogisticRegression lambda hyper-parameter was set to ${p.currentValue}")
-            res.setRegParam(p.currentValue)
-          case p@ElasticNet(_) =>
-            debug(s"LogisticRegression elastic_net hyper-parameter was set to ${p.currentValue}")
-            res.setElasticNetParam(p.currentValue)
-        })
+
 
         val preparedTrainingDF = trainDF
           .applyTransformation(scaler)
@@ -75,17 +71,54 @@ case class LogisticRegressionModel(hpGroup: Option[LogisticRegressionHPGroup] = 
           .withColumnRenamed("scaledFeatures", "features")
           .cache()
 
-        val lrModel = lrWithHP.fit(preparedTrainingDF)
-        val prediction = lrModel.transform(testDF).cache()
-
         val evaluator = new MulticlassClassificationEvaluator()
           .setLabelCol("indexedLabel")
           .setMetricName("f1")
 
-        val f1 = evaluator.evaluate(prediction)
-        info(s"Finished. $name : F1 = " + f1)
+        if(validationStrategy == "cv") {
+          val paramGrid = new ParamGridBuilder()
+          val configuredParamGrid = activeHPGroup.hpParameters.foldLeft(paramGrid)((res, next) => next match {
+            case p@LRRegParam(_) =>
+              debug(s"LogisticRegression's regParam hyper-parameter was set to ${p.currentValue}")
+              res.addGrid(lrEstimator.regParam, Array(p.currentValue))
+            case p@ElasticNet(_) =>
+              debug(s"LogisticRegression's elasticNetParam hyper-parameter was set to ${p.currentValue}")
+              res.addGrid(lrEstimator.elasticNetParam, Array(p.currentValue))
+          }).build()
+          val cv = new CrossValidator()
+            .setEstimator(lrEstimator)
+            .setEvaluator(evaluator)
+            .setEstimatorParamMaps(configuredParamGrid)
+            .setNumFolds(2)
+            .setParallelism(2) // TODO 2 or ??
 
-        FitnessResult(Map("f1" -> f1), problemType, prediction)
+          val modelCV = cv.fit(trainDF)
+          val f1CV = modelCV.avgMetrics(0) // <- this is averaged metric whereas `evaluator.setMetricName("f1").evaluate(predictions)` will return metric computed only on test data
+          val predictions = modelCV.transform(testDF)
+          //Unused
+          //          val metrics = new MulticlassMetrics(predictions.select("prediction", "indexedLabel").rdd.map(r => (r.getDouble(0), r.getDouble(1))))
+
+          FitnessResult(Map("f1" -> f1CV, "accuracy" -> -1), problemType, predictions)
+        } else {
+          val lrWithHP = activeHPGroup.hpParameters.foldLeft(lrEstimator)((res, next) => next match {
+            case p@LRRegParam(_) =>
+              debug(s"LogisticRegression lambda hyper-parameter was set to ${p.currentValue}")
+              res.setRegParam(p.currentValue)
+            case p@ElasticNet(_) =>
+              debug(s"LogisticRegression elastic_net hyper-parameter was set to ${p.currentValue}")
+              res.setElasticNetParam(p.currentValue)
+          })
+          val lrModel = lrWithHP.fit(preparedTrainingDF)
+          val prediction = lrModel.transform(testDF).cache()
+
+
+          val f1 = evaluator.evaluate(prediction)
+          info(s"Finished. $name : F1 = " + f1)
+
+          FitnessResult(Map("f1" -> f1), problemType, prediction)
+        }
+
+
       case RegressionProblem => throw new UnsupportedOperationException("Regression is not supported by LogisticRegressionModel")
     }
 

@@ -21,9 +21,9 @@ object DecisionTreeHPGroup {
 trait DecisionTreeHParameter[T <: AnyVal] extends MutableHParameter[T, DecisionTreeHParameter[T]]
 
 case class MaxDepth(initialValue: Option[Double] = None) extends DecisionTreeHParameter[Double] with DoubleHPRange[DecisionTreeHParameter[Double]] { // we can specialize with Marker trait which parameter can be used with which Model
-  override def min: Double = 1.0
+  override def min: Double = 2.0
 
-  override def max: Double = 10.0
+  override def max: Double = 7.0
 
   override def step: Double = 1.0 //TODO can we change step during evolution? we need to detect stagnations/convergence and them change step for fine tuning.
 
