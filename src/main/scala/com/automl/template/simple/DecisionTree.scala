@@ -64,6 +64,7 @@ case class DecisionTree(hpGroup: Option[DecisionTreeHPGroup] = None)(implicit va
          //Temporarily using RandomGridSearch for hyper parameters to prove our assumtion that ensembles of models are better than simple models.
          val config = ConfigProvider.config.getConfig("evolution")
          val performGridSearch = config.getBoolean("hpGridSearch")
+         val validationStrategy = config.getString("templateDimension.validationStrategy")
          val hpCoevolutionIsEnabled = config.getBoolean("hyperParameterDimension.enabled")
 
          val evaluator = new MulticlassClassificationEvaluator()
@@ -71,7 +72,7 @@ case class DecisionTree(hpGroup: Option[DecisionTreeHPGroup] = None)(implicit va
            .setPredictionCol("prediction")
            .setMetricName("f1")
 
-         val model = if(performGridSearch) {
+         if(performGridSearch) {
            debug(s"DecisionTree performs GridSearch over hps.")
            val paramGrid = new ParamGridBuilder()
              .addGrid(dtr.maxDepth, Array(3, 5, 7, 10))
@@ -84,39 +85,73 @@ case class DecisionTree(hpGroup: Option[DecisionTreeHPGroup] = None)(implicit va
              .setEstimatorParamMaps(paramGrid)
              .setNumFolds(2)
 
-           cv.fit(trainDF)
+           val modelGSCV= cv.fit(trainDF)
+           val predictions = modelGSCV.transform(testDF)
+
+           val f1: Double = evaluator.setMetricName("f1").evaluate(predictions)
+           val accuracy: Double = evaluator.setMetricName("accuracy").evaluate(predictions)
+
+           info(s"Finished. $name : F1 metric = " + f1 + s". Number of rows = ${trainDF.count()} / ${testDF.count()}")
+           FitnessResult(Map("f1" -> f1, "accuracy" -> accuracy), problemType, predictions)
 
          } else {
 
            val activeHPGroup = getActiveHPGroup(config, hpGroup, hyperParametersField)
-           val classifier = activeHPGroup.hpParameters.foldLeft(dtr)((res, next) => next match {
+
+           // We can't train CV on `train+test` data and then predict on itself -> overfitted resuls.
+           // We need at least `test` split  to get predictions which could be used to find phenotypic similarity.
+           // But we can use CV averaged estimate instead of estimate on test split
+           if(validationStrategy == "cv") {
+             val paramGrid = new ParamGridBuilder()
+             val configuredParamGrid = activeHPGroup.hpParameters.foldLeft(paramGrid)((res, next) => next match {
+               case p@MaxDepth(_) =>
+                 debug(s"DecisionTree's max_depth hyper-parameter was set to ${p.currentValue}")
+                 res.addGrid(dtr.maxDepth, Array(p.currentValue.toInt))
+             }).build()
+             val cv = new CrossValidator()
+               .setEstimator(dtr)
+               .setEvaluator(evaluator)
+               .setEstimatorParamMaps(configuredParamGrid)
+               .setNumFolds(2)
+               .setParallelism(2) // TODO 2 or ??
+
+             val modelCV = cv.fit(trainDF) // TODO maybe we need to make testDF to be optional and used trainingDF as CV
+             val f1CV = modelCV.avgMetrics(0) // <- this is averaged metric whereas `evaluator.setMetricName("f1").evaluate(predictions)` will return metric computed only on test data
+             val predictions = modelCV.transform(testDF)
+
+             //Unused
+             val f1 = evaluator.setMetricName("f1").evaluate(predictions)
+             //        MulticlassMetricsHelper.showStatistics(predictions)
+
+             FitnessResult(Map("f1" -> f1CV, "accuracy" -> -1), problemType, predictions)
+           } else {
+             val classifier = activeHPGroup.hpParameters.foldLeft(dtr)((res, next) => next match {
                case p@MaxDepth(_) =>
                  debug(s"DecisionTree max_depth hyper-parameter was set to ${p.currentValue}")
                  res.setMaxDepth(p.currentValue.toInt)
              })
+             val pipeline = new Pipeline()
+               .setStages(Array(classifier))
 
-           val pipeline = new Pipeline()
-             .setStages(Array(classifier))
+             val modelTT = pipeline.fit(trainDF)
 
+             val predictions = modelTT.transform(testDF)
 
-           pipeline.fit(trainDF)
+             val f1: Double = evaluator.setMetricName("f1").evaluate(predictions)
+             val accuracy: Double = evaluator.setMetricName("accuracy").evaluate(predictions)
+
+             //         val indexOfStageForModelInPipeline = 0
+             //         val treeModel = model.stages(indexOfStageForModelInPipeline).asInstanceOf[DecisionTreeClassificationModel]
+             //         debug("Learned classification tree model:\n" + treeModel.toDebugString)
+
+             info(s"Finished. $name : F1 metric = " + f1 + s". Number of rows = ${trainDF.count()} / ${testDF.count()}")
+             FitnessResult(Map("f1" -> f1, "accuracy" -> accuracy), problemType, predictions)
+           }
          }
 
 //         debug("Learned classification tree model:\n" + model.asInstanceOf[CrossValidatorModel].bestModel.asInstanceOf[DecisionTreeClassificationModel].toDebugString)
 //         debug("Learned classification tree model:\n" + model.asInstanceOf[PipelineModel].stages(0).asInstanceOf[DecisionTreeClassificationModel].toDebugString)
 
-
-         val predictions = model.transform(testDF)
-
-         val f1: Double = evaluator.setMetricName("f1").evaluate(predictions)
-         val accuracy: Double = evaluator.setMetricName("accuracy").evaluate(predictions)
-
-//         val indexOfStageForModelInPipeline = 0
-//         val treeModel = model.stages(indexOfStageForModelInPipeline).asInstanceOf[DecisionTreeClassificationModel]
-//         debug("Learned classification tree model:\n" + treeModel.toDebugString)
-
-         info(s"Finished. $name : F1 metric = " + f1 + s". Number of rows = ${trainDF.count()} / ${testDF.count()}")
-         FitnessResult(Map("f1" -> f1, "accuracy" -> accuracy), problemType, predictions)
      }
 
   }

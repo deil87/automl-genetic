@@ -12,6 +12,7 @@ import com.automl.teststrategy.{TestStrategy, TrainingTestSplitStrategy}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.ml.classification.NaiveBayes
 import org.apache.spark.ml.evaluation.{MulticlassClassificationEvaluator, RegressionEvaluator}
+import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
 import org.apache.spark.mllib.evaluation.MulticlassMetrics
 import org.apache.spark.sql._
 import org.apache.spark.sql.types.{DoubleType, StringType}
@@ -64,6 +65,7 @@ case class Bayesian(hpGroup: Option[BayesianHPGroup] = None)(implicit val logPad
       case MultiClassClassificationProblem | BinaryClassificationProblem => //TODO generalize to a common method of evaluation for this type of problem.
 
         val config = ConfigProvider.config.getConfig("evolution")
+        val validationStrategy = config.getString("templateDimension.validationStrategy")
 
         val classes = trainDF.select("indexedLabel").distinct().collect().map(_.getDouble(0))
 
@@ -76,49 +78,78 @@ case class Bayesian(hpGroup: Option[BayesianHPGroup] = None)(implicit val logPad
           .setModelType("multinomial")
           .setLabelCol("indexedLabel")
 
+        val evaluator = new MulticlassClassificationEvaluator()
+          .setLabelCol("indexedLabel")
+          .setPredictionCol("prediction")
+          .setMetricName("f1")
+
         val activeHPGroup = getActiveHPGroup(config, hpGroup, hyperParametersField)
 
-        val naiveBayesWithHP = activeHPGroup.hpParameters.foldLeft(nb)((res, next) => next match {
-          case p@Smoothing(_) =>
-            debug(s"Bayesian smoothing hyper-parameter was set to ${p.currentValue}")
-            res.setSmoothing(p.currentValue)
-        })
+        if(validationStrategy == "cv") {
+          val paramGrid = new ParamGridBuilder()
+          val configuredParamGrid = activeHPGroup.hpParameters.foldLeft(paramGrid)((res, next) => next match {
+            case p@Smoothing(_) =>
+              debug(s"Bayesian's smoothing hyper-parameter was set to ${p.currentValue}")
+              res.addGrid(nb.smoothing, Array(p.currentValue))
+          }).build()
+          val cv = new CrossValidator()
+            .setEstimator(nb)
+            .setEvaluator(evaluator)
+            .setEstimatorParamMaps(configuredParamGrid)
+            .setNumFolds(2)
+            .setParallelism(2) // TODO 2 or ??
 
-//        val paramGrid = new ParamGridBuilder()
-//          .addGrid(nb.smoothing, Array(1.0/*, 2.0, 3.0*/))
-//          .build()
-//
-//        val pipeline = new Pipeline()
-//          .setStages(Array(nb))
-//
-//        val evaluator = new MulticlassClassificationEvaluator()
-//          .setLabelCol("indexedLabel")
-//          .setPredictionCol("prediction")
-//
-//        val isLargerBetter = evaluator.isLargerBetter // TODO
-//
-//        val cv = new CrossValidator()
-//          .setEstimator(pipeline)
-//          .setEvaluator(evaluator)
-//          .setEstimatorParamMaps(paramGrid)
-//          .setNumFolds(3)
+          val modelCV = cv.fit(trainDF)
+          val f1CV = modelCV.avgMetrics(0) // <- this is averaged metric whereas `evaluator.setMetricName("f1").evaluate(predictions)` will return metric computed only on test data
+          val predictions = modelCV.transform(testDF)
 
-        val model = naiveBayesWithHP.fit(trainDF)  //best out of grid's parameters will be returned based on averaged over `setNumFolds` folds validation
+          //Unused
+//          val metrics = new MulticlassMetrics(predictions.select("prediction", "indexedLabel").rdd.map(r => (r.getDouble(0), r.getDouble(1))))
 
-//        debug("Best Bayesian params: " + model.getEstimatorParamMaps.zip(model.avgMetrics).mkString(",").toString)
+          FitnessResult(Map("f1" -> f1CV, "accuracy" -> -1), problemType, predictions)
+        } else {
 
-        val predictions = model.transform(testDF)
+          val naiveBayesWithHP = activeHPGroup.hpParameters.foldLeft(nb)((res, next) => next match {
+            case p@Smoothing(_) =>
+              debug(s"Bayesian smoothing hyper-parameter was set to ${p.currentValue}")
+              res.setSmoothing(p.currentValue)
+          })
 
-        val metrics = new MulticlassMetrics(predictions.select("prediction", "indexedLabel").rdd.map(r => (r.getDouble(0), r.getDouble(1))))
+          //        val paramGrid = new ParamGridBuilder()
+          //          .addGrid(nb.smoothing, Array(1.0/*, 2.0, 3.0*/))
+          //          .build()
+          //
+          //        val pipeline = new Pipeline()
+          //          .setStages(Array(nb))
+          //
+          //        val evaluator = new MulticlassClassificationEvaluator()
+          //          .setLabelCol("indexedLabel")
+          //          .setPredictionCol("prediction")
+          //
+          //        val isLargerBetter = evaluator.isLargerBetter // TODO
+          //
+          //        val cv = new CrossValidator()
+          //          .setEstimator(pipeline)
+          //          .setEvaluator(evaluator)
+          //          .setEstimatorParamMaps(paramGrid)
+          //          .setNumFolds(3)   //best out of grid's parameters will be returned based on averaged over `setNumFolds` folds validation
 
-//        MulticlassMetricsHelper.showStatistics(predictions)
+          val model = naiveBayesWithHP.fit(trainDF)
 
-        if(metrics.weightedFMeasure <= 0.01 )
-          throw SuspiciousPerformanceException("Bayesian predictions are too low")
+          //        debug("Best Bayesian params: " + model.getEstimatorParamMaps.zip(model.avgMetrics).mkString(",").toString)
 
-        info(s"Finished. $name : F1 metric = " + metrics.weightedFMeasure + s". Number of rows = ${trainDF.count()} / ${testDF.count()}")
-        FitnessResult(Map("f1" -> metrics.weightedFMeasure, "weightedPrecision" -> metrics.weightedPrecision, "weightedRecall" -> metrics.weightedRecall), problemType, predictions)
+          val predictions = model.transform(testDF)
 
+          val metrics = new MulticlassMetrics(predictions.select("prediction", "indexedLabel").rdd.map(r => (r.getDouble(0), r.getDouble(1))))
+
+          //        MulticlassMetricsHelper.showStatistics(predictions)
+
+          if (metrics.weightedFMeasure <= 0.01)
+            throw SuspiciousPerformanceException("Bayesian predictions are too low")
+
+          info(s"Finished. $name : F1 metric = " + metrics.weightedFMeasure + s". Number of rows = ${trainDF.count()} / ${testDF.count()}")
+          FitnessResult(Map("f1" -> metrics.weightedFMeasure, "weightedPrecision" -> metrics.weightedPrecision, "weightedRecall" -> metrics.weightedRecall), problemType, predictions)
+        }
     }
   }
 }

@@ -94,11 +94,28 @@ class MutableHParameterTest extends FunSuite with Matchers{
     val newValue = maxDepth.mutate()
     firstValue == newValue.currentValue shouldBe false
 
-    maxDepth.numberOfEntries shouldEqual 10
+    maxDepth.numberOfEntries shouldEqual 6
 
     1 to 50 foreach { _ =>
       maxDepth = maxDepth.mutate().asInstanceOf[MaxDepth]
       println(maxDepth.currentValue)
     }
+  }
+
+  test ("Eventually we will explore all the values from the range of MaxDepth. Also checking that values are within range.") {
+    val explored = mutable.Map.empty[Double, Boolean]
+
+    var maxDepth = MaxDepth()
+    maxDepth.numberOfEntries shouldEqual 6
+
+    1 to 10000 foreach { _ =>
+      maxDepth = maxDepth.mutate().asInstanceOf[MaxDepth]
+      explored(maxDepth.currentValue) = true
+      println(maxDepth.currentValue)
+
+      maxDepth.currentValue <= maxDepth.max && maxDepth.currentValue >= maxDepth.min shouldBe true
+    }
+
+    explored.size == maxDepth.numberOfEntries shouldBe true
   }
 }
