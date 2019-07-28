@@ -22,7 +22,7 @@ import scala.util.Random
   * @param evolveEveryGenerations is not used for now
   * @param problemType We need to take into account which models we can mutate into filtered out by problemType
   */
-class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, evolveEveryGenerations: Int = 1, problemType: ProblemType, seed: Long = new Random().nextLong())
+class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, evolveEveryGenerations: Int = 1, val problemType: ProblemType, seed: Long = new Random().nextLong())
     (implicit val as: ActorSystem, val logPaddingSize: Int)
     extends EvolutionDimension[TPopulation, TemplateTree[TemplateMember], EvaluatedTemplateData]
     with PaddedLogging{

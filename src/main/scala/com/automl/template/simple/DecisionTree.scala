@@ -8,18 +8,16 @@ import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiCla
 import com.automl.spark.SparkSessionProvider
 import com.automl.template.EvaluationMagnet
 import com.automl.teststrategy.{TestStrategy, TrainingTestSplitStrategy}
-import com.typesafe.config.Config
-import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.ml.{Pipeline, PipelineModel}
-import org.apache.spark.ml.classification.{DecisionTreeClassificationModel, DecisionTreeClassifier, NaiveBayes}
+import org.apache.spark.ml.classification.{ DecisionTreeClassifier}
 import org.apache.spark.ml.evaluation.{MulticlassClassificationEvaluator, RegressionEvaluator}
 import org.apache.spark.ml.regression.DecisionTreeRegressor
-import org.apache.spark.ml.tuning.{CrossValidator, CrossValidatorModel, ParamGridBuilder}
+import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
 import org.apache.spark.sql._
 import utils.SparkMLUtils
 
 
-case class DecisionTree(hpGroup: DecisionTreeHPGroup = DecisionTreeHPGroup.default)(implicit val logPaddingSize: Int = 0)
+case class DecisionTree(hpGroup: Option[DecisionTreeHPGroup] = None)(implicit val logPaddingSize: Int = 0)
   extends SimpleModelMember
   with SparkSessionProvider with PaddedLogging{
 

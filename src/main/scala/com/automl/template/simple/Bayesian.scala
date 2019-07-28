@@ -10,18 +10,14 @@ import com.automl.spark.SparkSessionProvider
 import com.automl.template.EvaluationMagnet
 import com.automl.teststrategy.{TestStrategy, TrainingTestSplitStrategy}
 import com.typesafe.scalalogging.LazyLogging
-import org.apache.spark.ml.Pipeline
-import org.apache.spark.ml.attribute.Attribute
 import org.apache.spark.ml.classification.NaiveBayes
 import org.apache.spark.ml.evaluation.{MulticlassClassificationEvaluator, RegressionEvaluator}
-import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
 import org.apache.spark.mllib.evaluation.MulticlassMetrics
-import org.apache.spark.mllib.stat.{MultivariateStatisticalSummary, Statistics}
 import org.apache.spark.sql._
 import org.apache.spark.sql.types.{DoubleType, StringType}
 import utils.SparkMLUtils
 
-case class Bayesian(hpGroup: BayesianHPGroup = BayesianHPGroup.default)(implicit val logPaddingSize: Int = 0)
+case class Bayesian(hpGroup: Option[BayesianHPGroup] = None)(implicit val logPaddingSize: Int = 0)
   extends SimpleModelMember
   with SparkSessionProvider with PaddedLogging with ConsistencyChecker{
 

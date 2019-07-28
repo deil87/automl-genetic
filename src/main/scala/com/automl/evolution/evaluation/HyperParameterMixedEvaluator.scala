@@ -55,14 +55,14 @@ class HyperParameterMixedEvaluator(parentTemplateEvDimension: TemplateEvolutionD
           debug(s"Evaluating 1nd term for hpfield on base models:")
           val metricsFromBaseModels = hpField.modelsHParameterGroups.map {
             case hpGroup@BayesianHPGroup(_) =>
-              val metric = Bayesian(hpGroup)(currentLogPadding).fitnessError(trainingSplit, testSplit, problemType).getCorrespondingMetric
+              val metric = Bayesian(Some(hpGroup))(currentLogPadding).fitnessError(trainingSplit, testSplit, problemType).getCorrespondingMetric
               // We should get last Best Population from the TemplateCoevolution and estimate on the whole population or representative sample
               metric
             case hpGroup@LogisticRegressionHPGroup(_) =>
-              val metric = LogisticRegressionModel(hpGroup)(currentLogPadding).fitnessError(trainingSplit, testSplit, problemType).getCorrespondingMetric
+              val metric = LogisticRegressionModel(Some(hpGroup))(currentLogPadding).fitnessError(trainingSplit, testSplit, problemType).getCorrespondingMetric
               metric
             case hpGroup@DecisionTreeHPGroup(_) =>
-              val metric = DecisionTree(hpGroup)(currentLogPadding).fitnessError(trainingSplit, testSplit, problemType).getCorrespondingMetric
+              val metric = DecisionTree(Some(hpGroup))(currentLogPadding).fitnessError(trainingSplit, testSplit, problemType).getCorrespondingMetric
               metric
             case _ => throw new IllegalStateException("Unmatched HPGroup found in HP's evaluatePopulation method")
           }

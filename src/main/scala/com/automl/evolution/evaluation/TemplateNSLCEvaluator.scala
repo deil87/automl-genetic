@@ -31,13 +31,12 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
 
   override def evaluateIndividuals(population: TPopulation,
                                    workingDF: DataFrame,
-                                   problemType: ProblemType,
+                                   problemType: ProblemType, // TODO could be removed as we can use templateEvDimension.problemType
                                    seed: Long)
                                   (implicit cache: mutable.Map[(TemplateTree[TemplateMember], Option[HyperParametersField], Long), FitnessResult]): Seq[EvaluatedTemplateData] = {
-
     debug("TemplateNSLCEvaluator. Evaluation of templates have started.")
 
-    val bestHPField = hyperParamsEvDimOpt.map{ hyperParamsEvDim =>
+    val bestHPField: Option[HyperParametersField] = hyperParamsEvDimOpt.map{ hyperParamsEvDim =>
       /* Template dimension depends on others dimensions and we need to get data from them first.
       This could be implemented in a custom hardcoded evaluator or with dependencies tree */
       //TODO  For how long we want to search for a hyperparameters? We can introduce HPSearchStepsPerGeneration parameter or we need to add logic that decides how often we need to evolve subdimensions
@@ -63,7 +62,7 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
         // TODO we don't use Wildcards and therefore no need in materialization. Should we use them ? It could be a variance regulator.
         val materializedTemplate = TemplateTreeHelper.materialize(individualTemplate)
 
-        val cacheKey = generateCacheKey(workingDF, bestHPField, materializedTemplate)
+        val cacheKey = generateCacheKey(workingDF, bestHPField, individualTemplate)
         if (cache.isDefinedAt(cacheKey)) {
           debug(s"Cache hit happened for $idx-th individual based on: template: $cacheKey")
           debug(s"Retrieved value from the cache with hashCode = ${cacheKey.hashCode()} : ${cache(cacheKey)}")
@@ -80,7 +79,7 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
           fitnessResult
         })
         val usedHPField = bestHPField.orElse(individualTemplate.internalHyperParamsMap)
-        val result = EvaluatedTemplateData(idx.toString + ":" + materializedTemplate.id, individualTemplate,
+        val result = EvaluatedTemplateData(idx.toString + ":" + individualTemplate.id, individualTemplate,
           materializedTemplate, fitness, hyperParamsField = usedHPField)
         templateEvDimension.hallOfFame += result
         result
@@ -88,10 +87,10 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
     evaluatedTemplatesData
   }
 
-  private def generateCacheKey(workingDF: DataFrame, bestHPField: Option[HyperParametersField], materializedTemplate: TemplateTree[TemplateMember]) = {
+  private def generateCacheKey(workingDF: DataFrame, bestHPField: Option[HyperParametersField], individualTemplate: TemplateTree[TemplateMember]) = {
     if(bestHPField.isDefined) // TODO it would be great to have concise representation for Template to use it as a hashcode.
-      (materializedTemplate, bestHPField, workingDF.count())
+      (individualTemplate, bestHPField, workingDF.count())
     else
-      (materializedTemplate, None, workingDF.count())
+      (individualTemplate, individualTemplate.internalHyperParamsMap, workingDF.count())
   }
 }

@@ -22,13 +22,14 @@ trait SimpleModelMember extends TemplateMember { self: PaddedLogging =>
   /**
     * Selects hpGroup based on the way how we decided to derive it. Either from coevolution or through regular mutation from TemplateTree
     */
-  def getActiveHPGroup(config: Config, hpGroup: HyperParametersGroup[_], hyperParametersField: Option[HyperParametersField]) = {
+  def getActiveHPGroup(config: Config, hpGroup: Option[HyperParametersGroup[_]], hyperParametersField: Option[HyperParametersField]): HyperParametersGroup[_] = {
     val hpCoevolutionIsEnabled = config.getBoolean("hyperParameterDimension.enabled")
 
     // It is assumed that we have only one relevant HPGroup per model
-    def getRelevantHPGroup = hyperParametersField.get.modelsHParameterGroups.filter(_.isRelevantTo(this)).head
+    def getRelevantHPGroup = hyperParametersField.get.modelsHParameterGroups.find(_.isRelevantTo(this))
 
-    if (hpCoevolutionIsEnabled) hpGroup else getRelevantHPGroup
+    val hpGroupOpt = if (hpCoevolutionIsEnabled) hpGroup else getRelevantHPGroup
+    hpGroupOpt.get
   }
 }
 
