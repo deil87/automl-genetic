@@ -8,7 +8,7 @@ import com.automl.helper.{FitnessResult, TemplateTreeHelper}
 import com.automl.population.TPopulation
 import com.automl.problemtype.ProblemType
 import com.automl.template.{TemplateMember, TemplateTree}
-import com.automl.{ConsistencyChecker, EvaluatedTemplateData, PaddedLogging}
+import com.automl.{ConfigProvider, ConsistencyChecker, EvaluatedTemplateData, PaddedLogging}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.DataFrame
 import utils.BenchmarkHelper
@@ -28,6 +28,10 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
 
 
   override type CacheKeyType = (TemplateTree[TemplateMember], Option[HyperParametersField], Long)
+
+  val tdConfig = ConfigProvider.config.getConfig("evolution.templateDimension")
+
+  lazy val testSplitRatio: Double = tdConfig.getDouble("testSplitRatio")
 
   override def evaluateIndividuals(population: TPopulation,
                                    workingDF: DataFrame,
@@ -52,7 +56,7 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
 
     //TODO make use of hyperParamsMap for templates/nodes/classifiers
 
-    val Array(trainingSplit, testSplit) = workingDF.randomSplit(Array(0.67, 0.33), seed)
+    val Array(trainingSplit, testSplit) = workingDF.randomSplit(Array(1 - testSplitRatio, testSplitRatio), seed)
     trainingSplit.cache()
     testSplit.cache()
 
