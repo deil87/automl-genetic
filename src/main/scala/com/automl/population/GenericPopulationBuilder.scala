@@ -1,23 +1,31 @@
 package com.automl.population
 
 import com.automl.evolution.dimension.hparameter.HyperParametersField
-import com.automl.template.{TemplateMember, TemplateTree}
+import com.automl.problemtype.ProblemType
+import com.automl.template.simple.SimpleModelMember
+import com.automl.template.{LeafTemplate, TemplateMember, TemplateTree}
 
 import scala.util.Random
 import scala.reflect.runtime.{universe => ru}
 
-case class PopulationBuilder[Item : ru.TypeTag, M : ru.TypeTag](population: M)(implicit ev: M <:< Population[Item]) {
+case class PopulationBuilder[Item : ru.TypeTag, M : ru.TypeTag](population: M, problemType: Option[ProblemType] = None)(implicit ev: M <:< Population[Item]) {
 
   import scala.reflect.runtime.universe._
   val myTT = implicitly[TypeTag[Item]]
   val populationType = implicitly[TypeTag[M]]
+
+  def withProblemType(problemType: ProblemType): PopulationBuilder[Item, M] = {
+    this.copy(problemType = Some(problemType))
+  }
 
   def withSize(populationSize: Int): PopulationBuilder[Item, M] = {
     val individuals = population.individuals
     val newIndividuals = if(populationSize >= population.individuals.size) {
       val rnd = new Random()
       val diff = populationSize - population.individuals.size
-      val spanned = Seq.fill(diff)(individuals(rnd.nextInt(individuals.size)))
+      val spanned = problemType.map(pt => Seq.fill(diff)(LeafTemplate(SimpleModelMember.randomMember(pt))))
+        .getOrElse(Seq.fill(diff)(LeafTemplate(SimpleModelMember.randomMember())))
+//      val spanned = Seq.fill(diff)(individuals(rnd.nextInt(individuals.size)))
       individuals ++ spanned
 
     } else {

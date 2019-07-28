@@ -64,6 +64,7 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
   override def getInitialColdStartPopulation: TPopulation = {
     initialPopulation.map{population =>
       GenericPopulationBuilder.fromSeedPopulation(population)
+        .withProblemType(problemType)
         .withSize(populationSize)
         .build
     }.getOrElse(throw new IllegalStateException("Initial population was not specified")) // TODO we should provide default populatin here

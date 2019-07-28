@@ -20,7 +20,7 @@ object HPPopulation {
     )
   )
 
-  private val allPossibleHPGroups = Set(BayesianHPGroup(), LogisticRegressionHPGroup(), DecisionTreeHPGroup())
+  private def allPossibleHPGroups = Set(BayesianHPGroup(), LogisticRegressionHPGroup(), DecisionTreeHPGroup())
 
   def randomRelevantHPFieldFor(templateMember: TemplateMember) =
     HyperParametersField(

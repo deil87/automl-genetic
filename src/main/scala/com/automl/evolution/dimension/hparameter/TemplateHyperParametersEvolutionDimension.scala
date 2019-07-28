@@ -169,6 +169,7 @@ trait DoubleHPRange[V <: MutableHParameter[Double, V]] extends HPRange[Double] {
 //      println(s"Cache hit: $newValue")
       newValue = getNextClosestWithinTheRange(newValue)
     }
+    validate(newValue)
     val newVersion = newInstance
     newVersion.currentValue = newValue
     explored(newVersion.currentValue) = true
@@ -176,6 +177,8 @@ trait DoubleHPRange[V <: MutableHParameter[Double, V]] extends HPRange[Double] {
     newVersion.explored = explored
     newVersion
   }
+
+  def validate(value: Double): Unit = require(value <= max && value >=min, "Mutated value is outside of the allowed range")
 }
 
 sealed trait HParameter[+T] {

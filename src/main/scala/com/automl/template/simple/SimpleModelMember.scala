@@ -64,11 +64,18 @@ object SimpleModelMember {
     case "bayesian" => Bayesian
   }
 
-  def randomMember(problemType: ProblemType): SimpleModelMember = randomMemberWithExclusion(problemType, Nil).get //there should not be and empty list when we don't use exclusion
+  def randomMember(problemType: ProblemType): SimpleModelMember = randomMemberWithExclusion(Some(problemType), Nil).get //there should not be and empty list when we don't use exclusion
+  def randomMember(): SimpleModelMember = randomMemberWithExclusion(None, Nil).get //there should not be and empty list when we don't use exclusion
 
   def randomMemberWithExclusion(problemType: ProblemType, exclude: Seq[SimpleModelMember]): Option[SimpleModelMember] = {
+    randomMemberWithExclusion(Some(problemType), exclude)
+  }
 
-    val optionsToChooseFrom = poolOfSimpleModelsByNames(poolOfSimpleModelsNames).filter(_.canHandleProblemType(problemType)).diff(exclude)
+  def randomMemberWithExclusion(problemType: Option[ProblemType], exclude: Seq[SimpleModelMember]): Option[SimpleModelMember] = {
+
+    val members = poolOfSimpleModelsByNames(poolOfSimpleModelsNames)
+    val optionsToChooseFrom = members.filter(e => problemType.map(pt => e.canHandleProblemType(pt)).getOrElse(true)).diff(exclude)
+
     if (optionsToChooseFrom.nonEmpty)
       Some(optionsToChooseFrom.randElement)
     else None
