@@ -22,7 +22,7 @@ class GlassDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvid
       """
         |evolution {
         |  templateDimension {
-        |    populationSize = 10
+        |    populationSize = 4
         |    poolOfSimpleModels = ["logistic_regression", "decision_tree", "bayesian"]
         |    poolOfEnsemblingModels = ["bagging", "stacking"]
         |    maxEnsembleDepth = 5

@@ -161,9 +161,16 @@ trait DoubleHPRange[V <: MutableHParameter[Double, V]] extends HPRange[Double] {
     defaultValue
   }
 
+  var isExplored: Boolean = false
+
   // Note: In DepthDependentTemplateMutationStrategy we use strategy to mutate.
   // Here it is opposite... class has mutate method in its API and we can pass Strategy as parameter.
   override def mutate(): V = {
+    if(!isExplored && explored.size == numberOfEntries) {
+      isExplored = true
+      //  this should be thrown once so that parent TemplateTree can estimate exploration degree for its submembers
+      throw new HPRangeWasExploredException()
+    }
     var newValue = getNextClosestWithinTheRange(currentValue)
     while(explored.contains(newValue) && explored.size < numberOfEntries) {
 //      println(s"Cache hit: $newValue")

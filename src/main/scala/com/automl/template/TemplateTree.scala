@@ -33,6 +33,8 @@ sealed trait TemplateTree[+A <: TemplateMember]{
 
   def subMembers: Seq[TemplateTree[A]]
 
+  var parent: Option[NodeTemplate[TemplateMember]] = None
+
   /**
     * @param hyperParamsMap can come from coevolution outside of the TemplateTree or could be present in TemplateTree itself.
     */
@@ -82,7 +84,6 @@ sealed trait TemplateTree[+A <: TemplateMember]{
 case class LeafTemplate[+A <: TemplateMember](member: A) extends TemplateTree[A] {
   override def subMembers: Seq[TemplateTree[A]] = throw new UnsupportedOperationException("Leaf template isn't supposed to have subMembers")
 
-
   override def setLogPadding(size: Int): Unit = member.setLogPadding(size)
 
   override def evaluateFitness(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParamsMap: Option[HyperParametersField], seed: Long)(implicit tc: TreeContext = TreeContext()): FitnessResult = {
@@ -115,6 +116,8 @@ case class NodeTemplate[+A <: TemplateMember](member: A, subMembers: Seq[Templat
     //or
     member.asInstanceOf[EnsemblingModelMember].ensemblingFitnessError(trainDF, testDF, subMembers, problemType, hyperParamsField, seed)(updatedTC)
   }
+
+  var degreeOfExploration: Double = 0
 }
 
 object TemplateTree extends PaddedLogging {

@@ -1,6 +1,6 @@
 package com.automl.evolution.mutation
 
-import com.automl.evolution.dimension.hparameter.TemplateHyperParametersEvolutionDimension
+import com.automl.evolution.dimension.hparameter.{HPRangeWasExploredException, TemplateHyperParametersEvolutionDimension}
 import com.automl.{ConfigProvider, PaddedLogging}
 import com.automl.evolution.diversity.DiversityStrategy
 import com.automl.evolution.selection.{RankBasedSelectionProbabilityAssigner, RouletteWheel}
@@ -100,7 +100,9 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
       val randomEnsemblingMember = getRandomEnsemblingMember
       val oneForOriginalTemplate = 1
       info(s"\t\t Mutation happened from leaf node $lt to ensembling of ${numberOfNewChildren + oneForOriginalTemplate} submembers - $randomEnsemblingMember , causing increasing of complexity.")
-      NodeTemplate(randomEnsemblingMember, Seq(lt) ++ (0 until numberOfNewChildren).map(_ => LeafTemplate(getRandomBaseMemberBasedOnProblemType)))
+      val nt = NodeTemplate(randomEnsemblingMember, Seq(lt) ++ (0 until numberOfNewChildren).map(_ => LeafTemplate(getRandomBaseMemberBasedOnProblemType)))
+      nt.subMembers.foreach(_.parent = Some(nt))
+      nt
     }
 
     // We should perform one action of mutation per template. Somewhere in the tree. TODO probably it is more efficient to store level in nodes
@@ -110,11 +112,32 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
         if (targetLevelOfMutation == currentLevel) {
           val rg = new Random()
           val pivotStructureVsHPs = rg.nextDouble()
-          if (pivotStructureVsHPs > pivotBetweenStructureAndHPMutations) {
-            mutateHPMap(lt)
-          } else {
-            mutateStructureInCaseOfLeafNode(getRandomBaseMemberWithExclusion _, mutateLeafToNode _, currentLevel, lt, member, rg)
+          if(lt.parent.isDefined) {
+
+            if (pivotStructureVsHPs > lt.parent.get.degreeOfExploration / (lt.parent.get.subMembers.size * 2)) {
+              try {
+                mutateHPMap(lt)
+              } catch {
+                case ex: HPRangeWasExploredException =>
+                  lt.parent.get.degreeOfExploration = lt.parent.get.degreeOfExploration + 1
+                  lt
+              }
+            } else {
+              mutateStructureInCaseOfLeafNode(getRandomBaseMemberWithExclusion _, mutateLeafToNode _, currentLevel, lt, member, rg)
+            }
+          } else { // single level template
+            if (pivotStructureVsHPs > pivotBetweenStructureAndHPMutations) { // TODO maybe we don't need `pivotBetweenStructureAndHPMutations` as we are going to estimate exploration degree for submembers
+              try {
+                mutateHPMap(lt)
+              } catch {
+                case ex: HPRangeWasExploredException =>
+                  mutateStructureInCaseOfLeafNode(getRandomBaseMemberWithExclusion _, mutateLeafToNode _, currentLevel, lt, member, rg)// TODO or keep mutating HPs?
+              }
+            } else {
+              mutateStructureInCaseOfLeafNode(getRandomBaseMemberWithExclusion _, mutateLeafToNode _, currentLevel, lt, member, rg)
+            }
           }
+
         } else { // TODO how we end up here? Should not get here.
           info("Dead end. Lost an opportunity to mutate. Should not happen.")
           lt
