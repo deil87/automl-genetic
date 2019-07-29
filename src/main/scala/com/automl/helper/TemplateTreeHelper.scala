@@ -27,10 +27,10 @@ object TemplateTreeHelper {
   def traverse2(template: TemplateTree[TemplateMember]): Queue[String] = {
     def recursive(prefix: String = "", childrenPrefix: String = "", template: TemplateTree[TemplateMember], acc: Queue[String]): Queue[String] = template match {
       case lt@LeafTemplate(x) =>
-        acc.enqueue(/*"L" + */prefix + x.name + " hps: " + lt.internalHyperParamsMap.map(_.toString).getOrElse("--"))
+        acc.enqueue(/*"L" + */prefix + x.name + " hps: " + lt.internalHyperParamsMap.map(_.toString).getOrElse("--") + " hasParent:" + lt.parent.isDefined)
         acc
       case nt@NodeTemplate(x, subMembers) =>
-        acc.enqueue(/*"N" + */prefix + x.name + " hps: " + nt.internalHyperParamsMap.map(_.toString).getOrElse("--"))
+        acc.enqueue(/*"N" + */prefix + x.name + " hps: " + nt.internalHyperParamsMap.map(_.toString).getOrElse("--") + " hasParent:" + nt.parent.isDefined)
 
         subMembers.zipWithIndex.foldLeft(acc){case (ac, (subMember, i)) =>
           if (subMembers.size - 1 != i) {

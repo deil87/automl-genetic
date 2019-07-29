@@ -53,6 +53,7 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
     // We would have to compensate this restriction with more search-time for best individuals
     ////val res = diversityStrategy.apply(population, mutateIndividual)
     val mutatedIndividuals = population.individuals.foldLeft(List.empty[TemplateTree[TemplateMember]])((res, next) => {
+      info(s"\nMutating \n${next.render} --------------------------------------------------------------------------\n")
       var attempts = 1
       var newMutant: TemplateTree[TemplateMember] = null
       do {
@@ -61,6 +62,7 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
         attempts += 1
       } while ( (population.individuals ++ res ++ populationNotToIntersectWith.individuals).contains(newMutant) && attempts <= maxNumberOfMutationAttempts) // Not to overlap with itself, with recently mutated new individuals and custom individuals from `notToIntersectWith`
       info(s"Mutation of the ${next.id}:${next.member.name.take(5)} individual took ${attempts-1} attempts.")
+      info(s"Mutated from \n ${next.render} into \n ${newMutant.render}")
       require(attempts != maxNumberOfMutationAttempts, s"Too many attempts to mutate ${next.id} with DepthDependentTemplateMutationStrategy.") // Just to inform that probably we have some issue
       val list = newMutant +: res
       list
@@ -101,6 +103,8 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
       val oneForOriginalTemplate = 1
       info(s"\t\t Mutation happened from leaf node $lt to ensembling of ${numberOfNewChildren + oneForOriginalTemplate} submembers - $randomEnsemblingMember , causing increasing of complexity.")
       val nt = NodeTemplate(randomEnsemblingMember, Seq(lt) ++ (0 until numberOfNewChildren).map(_ => LeafTemplate(getRandomBaseMemberBasedOnProblemType)))
+      //Setting new parent for all submembers including original leaf template
+      nt.parent = lt.parent
       nt.subMembers.foreach(_.parent = Some(nt))
       nt
     }
@@ -111,77 +115,110 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
       case lt@LeafTemplate(member) =>
         if (targetLevelOfMutation == currentLevel) {
           val rg = new Random()
-          val pivotStructureVsHPs = rg.nextDouble()
+          val randomValue = rg.nextDouble()
           if(lt.parent.isDefined) {
 
-            if (pivotStructureVsHPs > lt.parent.get.degreeOfExploration / (lt.parent.get.subMembers.size * 2)) {
+            val pivotForMutatingStructureVsHPs = lt.parent.get.degreeOfExploration / (lt.parent.get.subMembers.size * 2)
+            if (randomValue > pivotForMutatingStructureVsHPs) {
               try {
+                info(s"\t\t- Mutating hps of $lt at level = $currentLevel with based on degree of exploration pivot = $pivotForMutatingStructureVsHPs (case 1)")
                 mutateHPMap(lt)
               } catch {
                 case ex: HPRangeWasExploredException =>
+                  info(s"\t\t- Mutating hps of $lt at level = $currentLevel resulted in an increase of parent's degree of exploration (case 2)")
                   lt.parent.get.degreeOfExploration = lt.parent.get.degreeOfExploration + 1
-                  lt
+                  mutateHPMap(lt)
               }
             } else {
+              info(s"\t\t- Mutating of $lt at level = $currentLevel resulted in a structure mutation (case 3)")
               mutateStructureInCaseOfLeafNode(getRandomBaseMemberWithExclusion _, mutateLeafToNode _, currentLevel, lt, member, rg)
             }
           } else { // single level template
-            if (pivotStructureVsHPs > pivotBetweenStructureAndHPMutations) { // TODO maybe we don't need `pivotBetweenStructureAndHPMutations` as we are going to estimate exploration degree for submembers
+            if (randomValue > pivotBetweenStructureAndHPMutations) { // TODO maybe we don't need `pivotBetweenStructureAndHPMutations` as we are going to estimate exploration degree for submembers
               try {
+                info(s"\t\t- Mutating hps of $lt at level = $currentLevel with based on pivotBetweenStructureAndHPMutations pivot = $pivotBetweenStructureAndHPMutations (case 4)")
                 mutateHPMap(lt)
               } catch {
                 case ex: HPRangeWasExploredException =>
+                  info(s"\t\t- Mutating hps of $lt at level = $currentLevel resulted in a structure mutation as we don't have parent node (case 5)")
                   mutateStructureInCaseOfLeafNode(getRandomBaseMemberWithExclusion _, mutateLeafToNode _, currentLevel, lt, member, rg)// TODO or keep mutating HPs?
               }
             } else {
+              info(s"\t\t- Mutating $lt at level = $currentLevel with structure mutation as we exceeded `pivotBetweenStructureAndHPMutations` parameter (case 6)")
               mutateStructureInCaseOfLeafNode(getRandomBaseMemberWithExclusion _, mutateLeafToNode _, currentLevel, lt, member, rg)
             }
           }
 
         } else { // TODO how we end up here? Should not get here.
-          info("Dead end. Lost an opportunity to mutate. Should not happen.")
+          info("Dead end. Lost an opportunity to mutate (dead end case 2)")
           lt
         }
 
       case nt@NodeTemplate(ensemblingMember, subMembers) =>
         if(targetLevelOfMutation == currentLevel) {
           val pivot = new Random().nextDouble()
-          if(currentLevel < maxEnsembleDepth - 1 && pivot > 0.7) {
-            info("\t\t Mutate ensembling node by adding new ensembling node to its submembers")
+          if(currentLevel < maxEnsembleDepth - 1 && pivot > 1 - nt.degreeOfExploration) {
+            info("\t\t- Mutate ensembling node by adding new ensembling node to its submembers (case 7)")
             //TODO not just add ensembling node but replace some of the sub members
             val numberOfNewChildren = new Random().nextInt(2) + 1
             val randomEnsemblingMember = getRandomEnsemblingMember
-            NodeTemplate(ensemblingMember, subMembers :+ NodeTemplate(randomEnsemblingMember,  (0 until numberOfNewChildren).map(_ => LeafTemplate(getRandomBaseMemberBasedOnProblemType))))
+            val newSubNT = NodeTemplate(randomEnsemblingMember, (0 until numberOfNewChildren).map(_ => LeafTemplate(getRandomBaseMemberBasedOnProblemType)))
+            newSubNT.subMembers.foreach(m => m.parent = Some(newSubNT))
+            val newNT = NodeTemplate(ensemblingMember, subMembers :+ newSubNT)
+            newNT.degreeOfExploration = subMembers.head.parent.get.degreeOfExploration // Note: we can't use nt as it is a new instance due to pattern matching - ie it is not a real parent
+            newNT.subMembers.foreach(_.parent = Some(newNT))
+            newSubNT.parent = Some(newNT)
+            newNT.parent = nt.parent
+            newNT
           }
-          else {
-            info("\t\t Mutate ensembling node by adding new leaf template to its submembers")
-            NodeTemplate(ensemblingMember, subMembers :+ LeafTemplate(getRandomBaseMemberBasedOnProblemType))
+          else if(pivot > 1 - nt.degreeOfExploration){
+            info("\t\t- Mutate ensembling node by adding new leaf template to its submembers (case 8)")
+            val additionalLT = LeafTemplate(getRandomBaseMemberBasedOnProblemType)
+            val newNT = NodeTemplate(ensemblingMember, subMembers :+ additionalLT)
+            newNT.degreeOfExploration = subMembers.head.parent.get.degreeOfExploration
+            newNT.subMembers.foreach(_.parent = Some(newNT))
+            newNT.parent = nt.parent
+            newNT
+          } else {
+            info("Dead end. Lost an opportunity to mutate node template. (dead end case 3)")
+            nt
           }
         } else {
           val randSubmember = subMembers.randElement
+          val mutatedSubmember = traverseAndMutate(randSubmember, currentLevel + 1, targetLevelOfMutation)
           //TODO we are changing order here and it might change representation that we will be using as a key for caching
-          NodeTemplate(ensemblingMember, subMembers.diff(Seq(randSubmember)) :+ traverseAndMutate(randSubmember, currentLevel + 1, targetLevelOfMutation))
+          val newNT = NodeTemplate(ensemblingMember, subMembers.diff(Seq(randSubmember)) :+ mutatedSubmember)
+          newNT.degreeOfExploration = mutatedSubmember.parent.get.degreeOfExploration
+          newNT.subMembers.foreach(_.parent = Some(newNT))
+          newNT.parent = nt.parent
+          newNT
         }
 
     }
 
     val targetLevelOfMutation = chooseLevelOfMutationBasedOnDepth(individual.height)
 
-    traverseAndMutate(individual, 0, targetLevelOfMutation)
+    val res = traverseAndMutate(individual, 0, targetLevelOfMutation)
+    res
   }
 
   private def mutateStructureInCaseOfLeafNode(getRandomBaseMemberWithExclusion: Seq[SimpleModelMember] => Option[TemplateMember], mutateLeafToNode: LeafTemplate[TemplateMember] => NodeTemplate[TemplateMember], currentLevel: Int, lt: LeafTemplate[TemplateMember], member: TemplateMember, rg: Random) = {
     if (rg.nextDouble() > 0.8 && currentLevel < maxEnsembleDepth - 1) { // Note currentLevel is zero-based
-      mutateLeafToNode(lt.asInstanceOf[LeafTemplate[SimpleModelMember]])
+      val newNode = mutateLeafToNode(lt.asInstanceOf[LeafTemplate[SimpleModelMember]])
+      newNode
     } else {
       val randomBaseMemberBasedOnProblemType = getRandomBaseMemberWithExclusion(Seq(member.asInstanceOf[SimpleModelMember])).asInstanceOf[Option[SimpleModelMember]]
       // TODO rewrite so that we don't need to cast member to SimpleModelMember
       randomBaseMemberBasedOnProblemType match {
         case Some(randomBaseMember) =>
           info(s"\t\t Mutation happened from leaf node $lt to another leaf node $randomBaseMemberBasedOnProblemType")
-          LeafTemplate(randomBaseMember)
+          val newLeafTemplate = LeafTemplate(randomBaseMember)
+          newLeafTemplate.parent = lt.parent
+          //newLeafTemplate.internalHyperParamsMap //TODO ? should we copy something here or take some knowledge from others ??
+          newLeafTemplate
         case None =>
           if (currentLevel < maxEnsembleDepth - 1) {
+            info(s"\t\t Mutation happened from leaf node $lt to ensembling node due to randomBaseMemberBasedOnProblemType method returned NONE")
             mutateLeafToNode(lt.asInstanceOf[LeafTemplate[SimpleModelMember]])
           } else {
             info("Dead end. Lost an opportunity to mutate. Just mutate HyperParameters field")
@@ -195,6 +232,7 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
     val hpPopulationToMutate = new HPPopulation(lt.internalHyperParamsMap.toSeq)
     val ltWithMutatedHPs = LeafTemplate(lt.member)
     ltWithMutatedHPs.internalHyperParamsMap = hPMutationStrategy.mutate(hpPopulationToMutate).individuals.headOption
+    ltWithMutatedHPs.parent = lt.parent
     ltWithMutatedHPs
   }
 

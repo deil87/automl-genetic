@@ -126,7 +126,10 @@ trait HPRange[RangeType <: AnyVal] {
 
 trait DoubleHPRange[V <: MutableHParameter[Double, V]] extends HPRange[Double] { this: MutableHParameter[Double, V] =>
 
-  val numberOfEntries: Int = (max - min + 1/ step).asInstanceOf[Int]
+  val numberOfEntries: Int = {
+    val d = (max - min + step) / step
+    Math.round(d).asInstanceOf[Int]
+  }
 
   def round(value: Double, places: Int): Double = {
     if (places < 0) throw new IllegalArgumentException
@@ -135,7 +138,7 @@ trait DoubleHPRange[V <: MutableHParameter[Double, V]] extends HPRange[Double] {
   }
 
   def getNextWithinTheRange: Double = {
-    new Random().nextInt(max.toInt) + min
+    new Random().nextInt(max.toInt - min.toInt) + min
   }
 
   def getNextClosestWithinTheRange(currentValue: Double): Double = {
@@ -161,26 +164,29 @@ trait DoubleHPRange[V <: MutableHParameter[Double, V]] extends HPRange[Double] {
     defaultValue
   }
 
-  var isExplored: Boolean = false
-
   // Note: In DepthDependentTemplateMutationStrategy we use strategy to mutate.
   // Here it is opposite... class has mutate method in its API and we can pass Strategy as parameter.
   override def mutate(): V = {
+    // TODO issue: after a structure transformation we loose explored local cache and just being rejected by comparing
+    //  in population and hallOfFame - meaning that `explored.size == numberOfEntries` will not be satisfied => `isExplored = true` will
+    //  not be set to true => `if(!isExplored) {` will not prevent us from using while loop
     if(!isExplored && explored.size == numberOfEntries) {
       isExplored = true
       //  this should be thrown once so that parent TemplateTree can estimate exploration degree for its submembers
       throw new HPRangeWasExploredException()
     }
     var newValue = getNextClosestWithinTheRange(currentValue)
-    while(explored.contains(newValue) && explored.size < numberOfEntries) {
-//      println(s"Cache hit: $newValue")
-      newValue = getNextClosestWithinTheRange(newValue)
+    if(!isExplored) { // when space is explored we are ok with any next value within range (from code line above)
+      while (explored.contains(newValue) /*&& explored.size < numberOfEntries*/ ) {
+        println(s"Cache hit: $newValue")
+        newValue = getNextClosestWithinTheRange(newValue)
+        validate(newValue)
+      }
     }
-    validate(newValue)
     val newVersion = newInstance
     newVersion.currentValue = newValue
     explored(newVersion.currentValue) = true
-//    println("Updated cache:" + explored.toList.mkString(","))
+    newVersion.isExplored = isExplored
     newVersion.explored = explored
     newVersion
   }
@@ -197,6 +203,7 @@ trait MutableHParameter[T, V <: MutableHParameter[T, V]] extends HParameter[T] {
   var currentValue: T
   def mutate(): V
   var explored = mutable.Map.empty[Double, Boolean]
+  var isExplored: Boolean = false
 }
 
 case class EvaluatedHyperParametersField(field: HyperParametersField, score:Double) extends Evaluated[EvaluatedHyperParametersField] {

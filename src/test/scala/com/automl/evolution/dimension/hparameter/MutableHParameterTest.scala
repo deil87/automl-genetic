@@ -15,7 +15,9 @@ class MutableHParameterTest extends FunSuite with Matchers{
     smoothing.numberOfEntries shouldEqual 10
 
     1 to 50 foreach { _ =>
-      smoothing = smoothing.mutate().asInstanceOf[Smoothing]
+      ignoreControllableException {
+        smoothing = smoothing.mutate().asInstanceOf[Smoothing]
+      }
       println(smoothing.currentValue)
     }
   }
@@ -27,7 +29,9 @@ class MutableHParameterTest extends FunSuite with Matchers{
     elasticNet.numberOfEntries shouldEqual 11
 
     1 to 1000 foreach { _ =>
-      elasticNet = elasticNet.mutate().asInstanceOf[ElasticNet]
+      ignoreControllableException {
+        elasticNet = elasticNet.mutate().asInstanceOf[ElasticNet]
+      }
       explored(elasticNet.currentValue) = true
       println(elasticNet.currentValue)
 
@@ -52,7 +56,9 @@ class MutableHParameterTest extends FunSuite with Matchers{
     smoothing.numberOfEntries shouldEqual 10
 
     1 to 50 foreach { _ =>
-      smoothing = smoothing.mutate().asInstanceOf[Smoothing]
+      ignoreControllableException {
+        smoothing = smoothing.mutate().asInstanceOf[Smoothing]
+      }
       println(smoothing.currentValue)
     }
 
@@ -68,7 +74,9 @@ class MutableHParameterTest extends FunSuite with Matchers{
     elasticNet.numberOfEntries shouldEqual 11
 
     1 to 50 foreach { _ =>
-      elasticNet = elasticNet.mutate().asInstanceOf[ElasticNet]
+      ignoreControllableException {
+        elasticNet = elasticNet.mutate().asInstanceOf[ElasticNet]
+      }
       println(elasticNet.currentValue)
     }
   }
@@ -80,10 +88,12 @@ class MutableHParameterTest extends FunSuite with Matchers{
     val newValue = regParam.mutate()
     firstValue == newValue.currentValue shouldBe false
 
-    regParam.numberOfEntries shouldEqual 11
+    regParam.numberOfEntries shouldEqual 6
 
     1 to 50 foreach { _ =>
-      regParam = regParam.mutate().asInstanceOf[LRRegParam]
+      ignoreControllableException {
+        regParam = regParam.mutate().asInstanceOf[LRRegParam]
+      }
       println(regParam.currentValue)
     }
   }
@@ -97,7 +107,9 @@ class MutableHParameterTest extends FunSuite with Matchers{
     maxDepth.numberOfEntries shouldEqual 6
 
     1 to 50 foreach { _ =>
-      maxDepth = maxDepth.mutate().asInstanceOf[MaxDepth]
+      ignoreControllableException {
+        maxDepth = maxDepth.mutate().asInstanceOf[MaxDepth]
+      }
       println(maxDepth.currentValue)
     }
   }
@@ -109,7 +121,9 @@ class MutableHParameterTest extends FunSuite with Matchers{
     maxDepth.numberOfEntries shouldEqual 6
 
     1 to 10000 foreach { _ =>
-      maxDepth = maxDepth.mutate().asInstanceOf[MaxDepth]
+      ignoreControllableException {
+        maxDepth = maxDepth.mutate().asInstanceOf[MaxDepth]
+      }
       explored(maxDepth.currentValue) = true
       println(maxDepth.currentValue)
 
@@ -118,4 +132,13 @@ class MutableHParameterTest extends FunSuite with Matchers{
 
     explored.size == maxDepth.numberOfEntries shouldBe true
   }
+
+  def ignoreControllableException(fun: => Unit): Unit = {
+    try {
+      fun
+    } catch {
+      case ex: HPRangeWasExploredException =>
+    }
+  }
+
 }

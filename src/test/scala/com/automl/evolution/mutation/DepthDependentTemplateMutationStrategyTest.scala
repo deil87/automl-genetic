@@ -268,4 +268,48 @@ class DepthDependentTemplateMutationStrategyTest extends FunSuite with Matchers{
     originalPopulation.individuals diff newPopulation.individuals shouldNot be( Seq())
   }
 
+  test("mutation of the individual will result in an increase of degree of exploration variable in the parent node") {
+
+    val testOverride: Config = ConfigFactory.parseString(
+      """
+        |evolution {
+        |  hpGridSearch = false
+        |  hyperParameterDimension {
+        |     enabled = false
+        |  }
+        |  templateDimension {
+        |     pivotBetweenStructureAndHPMutations = 0
+        |     maxNumberOfMutationAttempts = 1000
+        |  }
+        |}
+      """.stripMargin)
+    ConfigProvider.clearOverride.addOverride(testOverride)
+
+    implicit val padding: Int = 0
+    val strategy = new DepthDependentTemplateMutationStrategy(null, ProblemType.MultiClassClassificationProblem)
+
+    val dt = LeafTemplate(DecisionTree())
+
+    val bayesian = LeafTemplate(Bayesian())
+
+    val individual: NodeTemplate[TemplateMember] =
+      NodeTemplate(SparkGenericBagging(),
+        Seq(
+          dt,
+          bayesian
+          //            LeafTemplate(RandomForest())
+        )
+      )
+    dt.parent = Some(individual)
+    bayesian.parent = Some(individual)
+
+    var currentStateOfIndividual: TemplateTree[TemplateMember] = individual
+    1 to 100 foreach { i =>
+      println(s"\n\nIteration: $i")
+      currentStateOfIndividual = strategy.mutateIndividual(currentStateOfIndividual)
+      println("Degree of exploration: " + currentStateOfIndividual.asInstanceOf[NodeTemplate[TemplateMember]].degreeOfExploration)
+      println(currentStateOfIndividual.render)
+    }
+  }
+
 }
