@@ -127,6 +127,7 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
     val evolvedPopulation = new TPopulation(survivedForNextGenerationEvaluatedTemplates.map(_.template))
 
     // Do backpropagation of fitness. Evolve other dimensions by using new evaluations/best templates
+    debug(s"Evolving dependent coevolution hyperParamsEvDim: enabled = ${hyperParamsEvDim.isDefined}")
     hyperParamsEvDim.foreach(_.evolveFromLastPopulation(workingDF))
 
     _population = evolvedPopulation
@@ -134,7 +135,9 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
   }
 
   override def selectSurvived(populationSize: Int, evaluationResultsForNewExpandedGeneration: Seq[EvaluatedTemplateData]) = {
-    rankSelectionStrategy.selectionBySizeWithLocalCompetitions(populationSize, evaluationResultsForNewExpandedGeneration)
+    val res = rankSelectionStrategy.selectionBySizeWithLocalCompetitions(populationSize, evaluationResultsForNewExpandedGeneration)
+    info("selectSurvived is finished")
+    res
   }
 
 

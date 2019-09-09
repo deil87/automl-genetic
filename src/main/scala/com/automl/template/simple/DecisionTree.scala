@@ -9,15 +9,17 @@ import com.automl.spark.SparkSessionProvider
 import com.automl.template.EvaluationMagnet
 import com.automl.teststrategy.{TestStrategy, TrainingTestSplitStrategy}
 import org.apache.spark.ml.{Pipeline, PipelineModel}
-import org.apache.spark.ml.classification.{ DecisionTreeClassifier}
+import org.apache.spark.ml.classification.DecisionTreeClassifier
 import org.apache.spark.ml.evaluation.{MulticlassClassificationEvaluator, RegressionEvaluator}
 import org.apache.spark.ml.regression.DecisionTreeRegressor
 import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
 import org.apache.spark.sql._
 import utils.SparkMLUtils
 
+import scala.util.Random
 
-case class DecisionTree(hpGroup: Option[DecisionTreeHPGroup] = None)(implicit val logPaddingSize: Int = 0)
+
+case class DecisionTree(hpGroup: Option[DecisionTreeHPGroup] = None, seed: Long = Random.nextLong())(implicit val logPaddingSize: Int = 0)
   extends SimpleModelMember
   with SparkSessionProvider with PaddedLogging{
 
@@ -114,6 +116,7 @@ case class DecisionTree(hpGroup: Option[DecisionTreeHPGroup] = None)(implicit va
                .setEstimatorParamMaps(configuredParamGrid)
                .setNumFolds(2)
                .setParallelism(2) // TODO 2 or ??
+               .setSeed(seed)
 
              val modelCV = cv.fit(trainDF) // TODO maybe we need to make testDF to be optional and used trainingDF as CV
              val f1CV = modelCV.avgMetrics(0) // <- this is averaged metric whereas `evaluator.setMetricName("f1").evaluate(predictions)` will return metric computed only on test data

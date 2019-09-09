@@ -43,6 +43,7 @@ class RankSelectionStrategy()(implicit val logPaddingSize: Int = 0) extends Padd
       debug(s"Selecting by rank based probabilities from [ ${evaluatedTemplateDataWithAssignedProbs.map { case (individual, assignedProb) => s"${individual.idShort} ${TemplateTreeHelper.renderAsString_v2(individual.item)} with assigned probability to be drawn = $assignedProb" }.mkString("  ,  ")} ]")
 
       val selector = new RouletteWheel[EvaluatedTemplateData](evaluatedTemplateDataWithAssignedProbs)
+      debug(s"Selector RouletteWheel is created")
       val selected = selector.sample(1).map(_._1)
 
       debug(s"Selected: ${selected.head.idShort}")
@@ -56,7 +57,9 @@ class RankSelectionStrategy()(implicit val logPaddingSize: Int = 0) extends Padd
     require(individuals.forall(_.neighbours.nonEmpty) , "We should not call local competition version without having neighbours")
     val numberOfParents = ratioToSIze(selectionShare, individuals)
 
-    selectionBySizeWithLocalCompetitions(numberOfParents, individuals)
+    val res = selectionBySizeWithLocalCompetitions(numberOfParents, individuals)
+    info("parentSelectionByShareWithLocalCompetitions is finished")
+    res
   }
 
   def parentSelectionBySize(numberOfParentsToSelect: Int, individuals: Seq[EvaluatedTemplateData]): Seq[EvaluatedTemplateData] = {

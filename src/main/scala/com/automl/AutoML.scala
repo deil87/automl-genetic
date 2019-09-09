@@ -146,7 +146,7 @@ class AutoML(data: DataFrame,
           logger.info(s"Evolution number still $evolutionNumber - next generation number $generationNumber is launched.")
 
           templateEvDim.evolveFromLastPopulation(workingDataSet)
-
+          logger.info(s"Finished generation number $generationNumber")
           generationNumber += 1
           generationNumberKamon.increment(1)
         }

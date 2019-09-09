@@ -14,7 +14,10 @@ class HPMutationStrategy()(implicit val logPaddingSize: Int) extends PaddedLoggi
         val newField = HyperParametersField(modelsHParameterGroups = hpField.modelsHParameterGroups.map { hpGroup =>
           hpGroup.mutate()
         })
-        require(hpField.hashCode() != newField.hashCode(), "Hash codes should be different")
+
+        // TODO maybe it is fine as other nodes in the tree could be different and repeating particular value within this node does not mean that we repead template as a whole
+        debug("WARNING!!! We started to allow repeated values.")
+//        require(hpField.hashCode() != newField.hashCode(), s"Hash codes for original and mutated hps should be different but were: $hpField vs $newField")
         debug(s"\t\t HyperParametersField mutated from $hpField to $newField")
         newField
       }
