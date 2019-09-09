@@ -5,6 +5,14 @@ AutoML is a pretty general term and could be thought of and implemented in many 
 
 Here we are trying to employ evolutionary algorithms and concepts to search the space of classifiers. In particularly we are interested in automatic construction of ensembles of classifiers because nowadays they have proved to be very efficient. 
 
+Two of the most prominent technics to explore space of models are evolutionary approach and Sequential Model-Based Optimisation approach.
+
+Couple of important notes about these two algos:
+ - SMBO could be used only for relatively small hyperspaces as we need to materialise it in order to get predictions from a Surrogate model.
+ - SMBO is unbiased as it considers all the entries in the grid on every iteration. Evolutionary approach is prone to stuck in a local min/max as it considers only entries that happened to be selected into the population.
+
+Evolutionary approach (genetic) is the one that is being used in the current project. For those who are interested in the SMBO method and want to experiment with it there is an another project on my github account [smbo-java](https://github.com/deil87/smbo-java)
+
 This project has it's roots growing from following [paper](https://link.springer.com/article/10.1007/s10994-017-5682-0) and basically represents an attempt to implement, experiment and extend those ideas and provide convenient framework with simple API for researchers and businesses.
 
 Contributions of any kind are very welcome! Please contact me deil_87@mail.ru for coordination of our efforts.
