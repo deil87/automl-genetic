@@ -115,4 +115,26 @@ object Datasets extends SparkSessionProvider {
     preparedData.showAllAndContinue
 
   }
+
+  def getBalanceDataFrame(shufflingSeed: Long): DataFrame = {
+    val data = SparkMLUtils.loadResourceDF("/dataset/balance_scale/balance-scale.csv")
+
+    val labelIndexer = new StringIndexer()
+      .setInputCol("className")
+      .setOutputCol("indexedLabel")
+      .setStringOrderType("alphabetAsc")
+
+    def basePredictorsFeaturesAssembler = new VectorAssembler()
+      .setInputCols(Array("leftWeight","leftDistance","rightWeight","rightDistance"))
+      .setOutputCol("features")
+
+    val preparedData = data
+      .orderBy(rand(shufflingSeed))
+      .applyIndexer(labelIndexer)
+      .withColumn("uniqueIdColumn", monotonically_increasing_id)
+      .applyTransformation(basePredictorsFeaturesAssembler)
+
+    preparedData.showAllAndContinue
+
+  }
 }

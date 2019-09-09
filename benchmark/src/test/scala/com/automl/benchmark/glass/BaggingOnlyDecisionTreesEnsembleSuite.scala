@@ -16,6 +16,7 @@ import org.scalatest.{BeforeAndAfterAll, FunSuite, Matchers, WordSpec}
 import scala.util.Random
 
 
+// These tests do not use AutoML but directly compute performance on a specific ensembles
 class BaggingOnlyDecisionTreesEnsembleSuite extends FunSuite with Matchers with BeforeAndAfterAll with SparkSessionProvider {
 
   implicit val system = ActorSystem("AutoML-system")
@@ -29,7 +30,7 @@ class BaggingOnlyDecisionTreesEnsembleSuite extends FunSuite with Matchers with 
 
   }
 
-  test("Glass dataset - Spark Bagging should calculate over multiple decision trees( Classification problem ) and berform on average better than single decision tree") {
+  test("Glass dataset - Spark Bagging should calculate over multiple decision trees( Classification problem ) and perform on average better than single decision tree") {
 
     val seed = new Random().nextLong()
     println(s"Seed for current test: $seed")
