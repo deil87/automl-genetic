@@ -126,6 +126,9 @@ trait HPRange[RangeType <: AnyVal] {
 
 trait DoubleHPRange[V <: MutableHParameter[Double, V]] extends HPRange[Double] { this: MutableHParameter[Double, V] =>
 
+  val config = ConfigProvider.config.getConfig("evolution")
+  val randomMutationFrequency = config.getDouble("hyperParameterDimension.randomMutationFrequency")
+
   val numberOfEntries: Int = {
     val d = (max - min + step) / step
     Math.round(d).asInstanceOf[Int]
@@ -138,15 +141,34 @@ trait DoubleHPRange[V <: MutableHParameter[Double, V]] extends HPRange[Double] {
   }
 
   def getNextWithinTheRange: Double = {
-    new Random().nextInt(max.toInt - min.toInt) + min
+    try {
+      if(max <= 1.0 && min >= 0.0) {
+        (new Random().nextInt(((max*10).toInt + 1) - (min *10).toInt) + min *10 ) / 10
+      } else {
+        new Random().nextInt(max.toInt - min.toInt) + min
+      }
+
+    } catch  {
+      case ex: IllegalArgumentException =>
+        val bound = max.toInt - min.toInt
+        println(s"Boundary must be appropriate for a Random.nextInt() but was ${bound}")
+        throw ex
+    }
   }
 
   def getNextClosestWithinTheRange(currentValue: Double): Double = {
-    val mutated = if(new Random().nextDouble() < 0.5) {
-      currentValue - step
-    } else {
-      currentValue + step
-    }
+
+    val mutated =
+      if (new Random().nextDouble() < randomMutationFrequency) {
+        println(s"Random jump will be performed for ${this.getClass} hps")
+        getNextWithinTheRange
+      }
+      else if (new Random().nextDouble() < 0.5) {
+        currentValue - step
+      } else {
+        currentValue + step
+      }
+
     val next = if (mutated > max) min
     else if (mutated < min) max
     else mutated
