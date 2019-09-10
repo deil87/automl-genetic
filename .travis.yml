@@ -1,7 +1,7 @@
 language: scala
 scala:
   - 2.12
-  -
+
 before_install:
   - git clone --recursive https://github.com/dmlc/xgboost
   when: "xgboost".stat.exists
