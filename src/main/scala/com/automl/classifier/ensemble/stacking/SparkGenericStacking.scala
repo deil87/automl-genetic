@@ -175,7 +175,7 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) extends LazyLog
     val reunitedSplits: DataFrame = splitsWithPredictions
       .reduceLeft((reunitedDataFrame, next) => reunitedDataFrame.union(next))
       .select("uniqueIdColumn", weightedProbCol)
-        .showAllAndContinue
+//        .showAllAndContinue
 
     require(trainDataSet.count() == reunitedSplits.count(), "Reunited splits do not sum up to the original training dataset's size.")
 
@@ -197,7 +197,7 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) extends LazyLog
         .dfWithPredictions
         .withColumnRenamed("prediction", predictionCol)
         .withColumn(weightedProbCol, weightedProbability(col("probability"), lit(fitnessResultOnWholeData.getCorrespondingMetric)))
-        .showN_AndContinue(500, "Test weighted probs")
+//        .showN_AndContinue(500, "Test weighted probs")
         .select("uniqueIdColumn", predictionCol, weightedProbCol)
 
     logger.info(s"Predictions based on the whole training dataset were calculated by ${member.member.name} and added to `testModelsPredictionsDF`")
@@ -289,7 +289,7 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) extends LazyLog
       .drop(metaFeatures:_*)
       .drop(metaFeaturesWP:_*)
 
-    trainAssembled.showN_AndContinue(50, "All combined with foldLeft metafeatures of the train dataset")
+//    trainAssembled.showN_AndContinue(50, "All combined with foldLeft metafeatures of the train dataset")
 
     val testModelsPredictionsDFWithAccumulator = testModelsPredictionsDF.withColumn("weightedProbSoftVoted", emptyArray(lit(numClasses)))
     val combinedTestWeightedProabilities = metaFeaturesWP.foldLeft(testModelsPredictionsDFWithAccumulator)((res, next) =>
@@ -301,7 +301,7 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) extends LazyLog
       .drop(metaFeatures:_*)
       .drop(metaFeaturesWP:_*)
 
-    testAssembled.showN_AndContinue(50, "All weighted probabilities combined with foldLeft  of the test dataset")
+//    testAssembled.showN_AndContinue(50, "All weighted probabilities combined with foldLeft  of the test dataset")
 
 
     val metaModel = metaPredictor match {

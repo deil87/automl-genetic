@@ -76,7 +76,7 @@ case class SparkGenericBagging()(implicit val logPaddingSize: Int = 0) extends B
 
     val joinedPredictions: Dataset[Row] =
       dfWithPredictionsFromBaseModels
-        .map(_.showN_AndContinue(20))
+//        .map(_.showN_AndContinue(20))
         .zipWithIndex
         .map{case (df, idx) =>
           df.select($"uniqueIdColumn", $"prediction", $"$fitnessWeightColName")
@@ -86,7 +86,7 @@ case class SparkGenericBagging()(implicit val logPaddingSize: Int = 0) extends B
         .reduce((a, b) => {
           a.join(b, "uniqueIdColumn")
         }).cache()
-        .showN_AndContinue(1000, "After joining predictions and weights")
+//        .showN_AndContinue(1000, "After joining predictions and weights")
 
     def generateMajorityVoteUDF = {
       import org.apache.spark.sql.functions.udf
@@ -162,7 +162,7 @@ case class SparkGenericBagging()(implicit val logPaddingSize: Int = 0) extends B
             joinedPredictions
               .applyTransformation(predictionsAssembler)
               .applyTransformation(fitnessWeightsAssembler)
-              .showN_AndContinue(1000, "After predictions assembler")
+//              .showN_AndContinue(1000, "After predictions assembler")
               .withColumn("majority_prediction", generateMajorityVoteUDF($"$baseModelsPredictionsColName", $"$baseModelsFitnessWeights"))
               .withColumn("weighted_preds", generateVotesUDF($"$baseModelsPredictionsColName", $"$baseModelsFitnessWeights"))
               .withColumn("isDisputable", markDisputableInstanceUDF($"$baseModelsPredictionsColName")) // TODO this is for debug purposes
@@ -170,13 +170,13 @@ case class SparkGenericBagging()(implicit val logPaddingSize: Int = 0) extends B
               //            .drop(predictionColumns.map(_.toString): _*)
               .join(dfWithPredictionsFromBaseModels.head.drop("prediction"), Seq("uniqueIdColumn"), joinType = "left_outer")
               .withColumn("misclassified", $"prediction" =!= $"indexedLabel") // TODO this is for debug purposes
-              .showN_AndContinue(1000, "With majority prediction")
+//              .showN_AndContinue(1000, "With majority prediction")
               .cache()
 
         // TODO remove or disable as it is only for debugging purposes
         mergedAndRegressedDF
           .select($"$baseModelsPredictionsColName", $"indexedLabel", $"prediction", $"isDisputable", $"misclassified", $"$baseModelsFitnessWeights")
-          .showN_AndContinue(1000, "With majority prediction")
+//          .showN_AndContinue(1000, "With majority prediction")
 
         results.foreach(_._2.dfWithPredictions.unpersist()) //TODO doubling see below
 
