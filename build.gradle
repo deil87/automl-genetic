@@ -116,11 +116,6 @@ dependencies {
 
 }
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '3.3'
-    distributionType = 'all' // Wrapper.DistributionType.ALL
-}
-
 task scalaTest(dependsOn: ['testClasses'], type: JavaExec) {
   main = 'org.scalatest.tools.Runner'
   args = ['-R', 'build/classes/test', '-o']
