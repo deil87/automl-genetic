@@ -1,10 +1,11 @@
 package com.automl.evolution.dimension.hparameter
 
+import com.typesafe.scalalogging.LazyLogging
 import org.scalatest.{FunSuite, Matchers}
 
 import scala.collection.mutable
 
-class MutableHParameterTest extends FunSuite with Matchers{
+class MutableHParameterTest extends FunSuite with Matchers with LazyLogging{
 
   test("Mutation should return only new values") {
     var smoothing = Smoothing()
@@ -18,7 +19,7 @@ class MutableHParameterTest extends FunSuite with Matchers{
       ignoreControllableException {
         smoothing = smoothing.mutate().asInstanceOf[Smoothing]
       }
-      println(smoothing.currentValue)
+      logger.debug("Smoothing:" + smoothing.currentValue)
     }
   }
 
@@ -33,7 +34,7 @@ class MutableHParameterTest extends FunSuite with Matchers{
         elasticNet = elasticNet.mutate().asInstanceOf[ElasticNet]
       }
       explored(elasticNet.currentValue) = true
-      println(elasticNet.currentValue)
+      logger.debug("ElasticNet:" + elasticNet.currentValue)
 
       elasticNet.currentValue <= elasticNet.max && elasticNet.currentValue >= elasticNet.min shouldBe true
     }
@@ -59,7 +60,7 @@ class MutableHParameterTest extends FunSuite with Matchers{
       ignoreControllableException {
         smoothing = smoothing.mutate().asInstanceOf[Smoothing]
       }
-      println(smoothing.currentValue)
+      logger.debug("Smoothing:" + smoothing.currentValue)
     }
 
     smoothing.explored.size == smoothing.numberOfEntries shouldBe true
@@ -77,7 +78,7 @@ class MutableHParameterTest extends FunSuite with Matchers{
       ignoreControllableException {
         elasticNet = elasticNet.mutate().asInstanceOf[ElasticNet]
       }
-      println(elasticNet.currentValue)
+      logger.debug("ElasticNet:" + elasticNet.currentValue)
     }
   }
 
@@ -94,7 +95,7 @@ class MutableHParameterTest extends FunSuite with Matchers{
       ignoreControllableException {
         regParam = regParam.mutate().asInstanceOf[LRRegParam]
       }
-      println(regParam.currentValue)
+      logger.debug("LRRegParam:" + regParam.currentValue)
     }
   }
 
@@ -110,7 +111,7 @@ class MutableHParameterTest extends FunSuite with Matchers{
       ignoreControllableException {
         maxDepth = maxDepth.mutate().asInstanceOf[MaxDepth]
       }
-      println(maxDepth.currentValue)
+      logger.debug("MaxDepth:" + maxDepth.currentValue)
     }
   }
 
@@ -125,7 +126,7 @@ class MutableHParameterTest extends FunSuite with Matchers{
         maxDepth = maxDepth.mutate().asInstanceOf[MaxDepth]
       }
       explored(maxDepth.currentValue) = true
-      println(maxDepth.currentValue)
+      logger.debug("MaxDepth:" + maxDepth.currentValue)
 
       maxDepth.currentValue <= maxDepth.max && maxDepth.currentValue >= maxDepth.min shouldBe true
     }
