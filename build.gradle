@@ -1,0 +1,130 @@
+plugins {
+  id 'java'
+  id 'maven'
+  id 'scala'
+}
+
+sourceCompatibility = 1.8
+
+group = 'ai.automl-genetic'
+version = '0.1.0-SNAPSHOT'
+
+ext {
+  javaslangVersion = '2.0.5'
+  scalaMajorVersion = '2.12'
+  scalaMinorVersion = '1'
+  scalaVersion = "${scalaMajorVersion}.${scalaMinorVersion}"
+  sparkVersion = '2.4.0'
+  deeplearning4jVersion = '0.9.1'
+}
+
+allprojects {
+
+  apply plugin: 'java'
+  apply plugin: 'scala'
+
+
+  repositories {
+    jcenter()
+    maven {
+      url "http://maven.jzy3d.org/releases"
+    }
+  }
+
+  if (plugins.hasPlugin('scala')) {
+    dependencies {
+
+      compile "org.scala-lang:scala-library:${scalaVersion}"
+      compile "org.scala-lang:scala-reflect:${scalaVersion}"
+      testCompile "org.scalatest:scalatest_${scalaMajorVersion}:3.0.1"
+    }
+  }
+  if (plugins.hasPlugin('java')) {
+    dependencies {
+      // ------------------------------------------------------------
+      // Testing
+
+      testCompile 'junit:junit:4.12'
+      testCompile 'org.assertj:assertj-core:3.6.1'
+      testCompile 'org.mockito:mockito-core:1.10.19'
+
+      testRuntime 'org.pegdown:pegdown:1.1.0' // TODO: is this necessary?
+    }
+  }
+
+}
+
+subprojects{
+
+}
+
+repositories {
+    maven {
+      url "https://repo.jfrog.org/artifactory/libs-release-bintray/"
+    }
+}
+
+sourceSets.main.java.srcDirs = []
+sourceSets.main.scala.srcDir "src/main/java"
+
+dependencies {
+
+
+  // Spark
+  compile "org.apache.spark:spark-core_${scalaMajorVersion}:${sparkVersion}"
+  compile "org.apache.spark:spark-mllib_${scalaMajorVersion}:${sparkVersion}"
+  compile "org.apache.spark:spark-sql_${scalaMajorVersion}:${sparkVersion}"
+  compile "org.apache.spark:spark-streaming_${scalaMajorVersion}:${sparkVersion}"
+
+  // Akka
+  compile "com.typesafe.akka:akka-stream_${scalaMajorVersion}:2.5.12"
+  compile "com.typesafe.akka:akka-http_${scalaMajorVersion}:10.1.1"
+
+  // WEKA
+  compile "nz.ac.waikato.cms.weka:weka-stable:3.8.1"
+  compile "nz.ac.waikato.cms.weka:SMOTE:1.0.3"
+
+  // Deeplearning4j
+  compile "org.bytedeco:javacpp:1.3.3'"
+  compile "org.nd4j:nd4j-native:${deeplearning4jVersion}"
+  compile "org.nd4j:nd4j-native-platform:${deeplearning4jVersion}"
+  compile "org.deeplearning4j:deeplearning4j-core:${deeplearning4jVersion}"
+  compile "org.deeplearning4j:deeplearning4j-nn:${deeplearning4jVersion}"
+  //   compile "org.deeplearning4j:deeplearning4j-ui-components:${deeplearning4jVersion}"
+
+  // Visualization
+  compile "org.jzy3d:jzy3d-api:1.0.0"
+
+  compile 'com.google.guava:guava:21.0'
+  compile "io.javaslang:javaslang:${javaslangVersion}"
+  compile "io.javaslang:javaslang-jackson:${javaslangVersion}"
+  compile "org.typelevel:squants_${scalaMajorVersion}:1.2.0"
+  compile "org.scalactic:scalactic_${scalaMajorVersion}:3.0.1"
+
+  compile fileTree(include: ['*.jar'], dir: 'libs')
+
+  // Monitoring
+  compile "io.kamon:kamon-core_${scalaMajorVersion}:1.0.0"
+  compile "io.kamon:kamon-prometheus_${scalaMajorVersion}:1.0.0"
+  compile "io.kamon:kamon-datadog_${scalaMajorVersion}:1.0.0"
+
+  // Logging
+  compile "com.typesafe.scala-logging:scala-logging_${scalaMajorVersion}:3.7.2"
+
+  // Performance benchmarking
+  compile "com.storm-enroute:scalameter_${scalaMajorVersion}:0.19"
+
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '3.3'
+    distributionType = 'all' // Wrapper.DistributionType.ALL
+}
+
+task scalaTest(dependsOn: ['testClasses'], type: JavaExec) {
+  main = 'org.scalatest.tools.Runner'
+  args = ['-R', 'build/classes/test', '-o']
+  classpath = sourceSets.test.runtimeClasspath
+}
+
+test.dependsOn scalaTest

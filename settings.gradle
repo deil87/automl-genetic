@@ -1,0 +1,4 @@
+include 'benchmark','webserver'
+
+rootProject.name = 'core'
+

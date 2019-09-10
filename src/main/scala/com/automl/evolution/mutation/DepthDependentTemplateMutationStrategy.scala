@@ -12,7 +12,6 @@ import com.automl.template.simple.SimpleModelMember.poolOfSimpleModels
 import com.automl.template.{LeafTemplate, NodeTemplate, TemplateMember, TemplateTree}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
-import scalaz.Lens
 
 import scala.collection.immutable
 import scala.util.Random

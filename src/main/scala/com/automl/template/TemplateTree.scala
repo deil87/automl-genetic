@@ -14,8 +14,6 @@ import com.typesafe.scalalogging.LazyLogging
 import kamon.Kamon
 import kamon.metric.MeasurementUnit
 import org.apache.commons.lang3.RandomStringUtils
-import scalaz.Lens
-import scalaz.std.set
 
 import scala.util.Random
 

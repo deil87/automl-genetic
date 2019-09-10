@@ -1,8 +1,6 @@
 package com.automl
 
 import com.typesafe.scalalogging.LazyLogging
-import scalaz._
-import Scalaz._
 
 trait PaddedLogging extends LazyLogging{
 

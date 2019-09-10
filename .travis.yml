@@ -1,8 +1,8 @@
 language: scala
 scala:
-  - 2.11.7
+  - 2.12
 before_install:
   - git clone --recursive https://github.com/dmlc/xgboost
   - cd xgboost/jvm-packages; mvn -q clean install -DskipTests -Dmaven.test.skip=true; cd ../../
-install:
-  - sbt ++2.11.7 -q test
+script:
+  - ./gradlew clean test --info
