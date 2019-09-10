@@ -17,7 +17,7 @@ object Datasets extends SparkSessionProvider {
 
   def getWineDataframe: DataFrame = {
     val wineDF = SparkMLUtils.loadResourceDF("/dataset/wine.csv") // Exploratory data analysis https://rpubs.com/alicew1800/edwine_eda3
-      .showN_AndContinue(5)
+//      .showN_AndContinue(5)
       .withColumnRenamed("Nonflavanoid.phenols", "nf_flavonoid")
       .withColumnRenamed("Malic.acid", "malic_acid")
       .withColumnRenamed("Color.int", "color_int")
@@ -112,7 +112,8 @@ object Datasets extends SparkSessionProvider {
       .withColumn("uniqueIdColumn", monotonically_increasing_id)
         .applyTransformation(basePredictorsFeaturesAssembler)
 
-    preparedData.showAllAndContinue
+      preparedData
+//    preparedData.showAllAndContinue
 
   }
 
@@ -134,7 +135,8 @@ object Datasets extends SparkSessionProvider {
       .withColumn("uniqueIdColumn", monotonically_increasing_id)
       .applyTransformation(basePredictorsFeaturesAssembler)
 
-    preparedData.showAllAndContinue
+    preparedData
+//    preparedData.showAllAndContinue
 
   }
 }

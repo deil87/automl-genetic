@@ -3,8 +3,9 @@ package com.automl.template.simple
 import com.automl.spark.SparkSessionProvider
 import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.sql.DataFrame
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.{Ignore, Matchers, WordSpec}
 
+@Ignore
 class NeuralNetworkSuite extends WordSpec with Matchers with SparkSessionProvider {
   import ss.implicits._
 

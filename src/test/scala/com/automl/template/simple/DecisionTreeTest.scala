@@ -31,7 +31,7 @@ class DecisionTreeTest extends FunSuite with SparkSessionProvider with Matchers{
       val dt = DecisionTree(null)
 
       val preparedGlassDF = Datasets.getGlassDataFrame(seed).sampleRand(50, seed)
-      preparedGlassDF.showAllAndContinue
+//      preparedGlassDF.showAllAndContinue
 
       val Array(trainingSplit, testSplit) = preparedGlassDF.randomSplit(Array(0.67, 0.33), seed)
       println("Fitness baseline:")
@@ -51,7 +51,7 @@ class DecisionTreeTest extends FunSuite with SparkSessionProvider with Matchers{
 
       val dt = DecisionTree(null)
       val preparedGlassDF = Datasets.getGlassDataFrame(seed).sampleRand(50, seed)
-      preparedGlassDF.showAllAndContinue
+//      preparedGlassDF.showAllAndContinue
 
       val Array(trainingSplit, testSplit) = preparedGlassDF.randomSplit(Array(0.67, 0.33), seed)
       println("Fitness with RGS:")

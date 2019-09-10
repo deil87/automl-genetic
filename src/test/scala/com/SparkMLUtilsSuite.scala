@@ -27,7 +27,7 @@ class SparkMLUtilsSuite extends FunSuite with Matchers with SparkSessionProvider
       .toDouble("num")
       .repairNullWithRangeMean("num", -3)
 
-    repaired.showAll()
+//    repaired.showAll()
 
     2.0 should be(2.0)
   }
@@ -38,7 +38,7 @@ class SparkMLUtilsSuite extends FunSuite with Matchers with SparkSessionProvider
       .toDouble("num")
       .repairNullWithRangeMeanRate("num", -3)
 
-    repaired.showAll()
+//    repaired.showAll()
 
     repaired.filter($"b" === 140.0).select("num").first().getDouble(0) should be(20.0)
   }
@@ -59,7 +59,7 @@ class SparkMLUtilsSuite extends FunSuite with Matchers with SparkSessionProvider
       .toDouble("num")
       .repairNullWithRangeMeanRate("num", -3)
 
-    repaired.showAll()
+//    repaired.showAll()
 
     repaired.filter($"b" === 140.0).select("num").first().getDouble(0) should be(30.0)
   }

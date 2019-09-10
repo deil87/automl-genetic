@@ -108,7 +108,7 @@ object SparkMLUtils {
           .transform(res)
           .drop(indexer.getInputCol)
           .withColumnReplace(indexer.getOutputCol, indexer.getInputCol)
-          .showN_AndContinue(20)
+//          .showN_AndContinue(20)
       }
     }
 

@@ -48,7 +48,7 @@ class StratifiedSamplingTest extends FunSuite with Matchers with SparkSessionPro
 
     val sampled = stratifier.sampleExact(observations, 0.5, seed, "grades").cache()
 
-    sampled.showAllAndContinue
+//    sampled.showAllAndContinue
 
     sampled.filter($"grades" === 0.0).count().toDouble shouldBe 2.0
     sampled.filter($"grades" === 1.0).count().toDouble shouldBe 1.0

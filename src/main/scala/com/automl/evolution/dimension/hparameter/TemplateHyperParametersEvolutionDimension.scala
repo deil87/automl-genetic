@@ -10,6 +10,7 @@ import com.automl.evolution.mutation.{DepthDependentTemplateMutationStrategy, HP
 import com.automl.helper.PopulationHelper
 import com.automl.population.{GenericPopulationBuilder, HPPopulation}
 import com.automl.template.{TemplateMember, TemplateTree}
+import com.typesafe.scalalogging.LazyLogging
 
 import scala.collection.mutable
 import scala.math.BigDecimal.RoundingMode
@@ -124,7 +125,7 @@ trait HPRange[RangeType <: AnyVal] {
   def numberOfEntries: Int
 }
 
-trait DoubleHPRange[V <: MutableHParameter[Double, V]] extends HPRange[Double] { this: MutableHParameter[Double, V] =>
+trait DoubleHPRange[V <: MutableHParameter[Double, V]] extends HPRange[Double] with LazyLogging{ this: MutableHParameter[Double, V] =>
 
   val config = ConfigProvider.config.getConfig("evolution")
   val randomMutationFrequency = config.getDouble("hyperParameterDimension.randomMutationFrequency")
@@ -151,7 +152,7 @@ trait DoubleHPRange[V <: MutableHParameter[Double, V]] extends HPRange[Double] {
     } catch  {
       case ex: IllegalArgumentException =>
         val bound = max.toInt - min.toInt
-        println(s"Boundary must be appropriate for a Random.nextInt() but was ${bound}")
+        logger.info(s"Boundary must be appropriate for a Random.nextInt() but was ${bound}")
         throw ex
     }
   }
@@ -160,7 +161,7 @@ trait DoubleHPRange[V <: MutableHParameter[Double, V]] extends HPRange[Double] {
 
     val mutated =
       if (new Random().nextDouble() < randomMutationFrequency) {
-        println(s"Random jump will be performed for ${this.getClass} hps")
+        logger.debug(s"Random jump will be performed for ${this.getClass} hps")
         getNextWithinTheRange
       }
       else if (new Random().nextDouble() < 0.5) {
@@ -200,7 +201,7 @@ trait DoubleHPRange[V <: MutableHParameter[Double, V]] extends HPRange[Double] {
     var newValue = getNextClosestWithinTheRange(currentValue)
     if(!isExplored) { // when space is explored we are ok with any next value within range (from code line above)
       while (explored.contains(newValue) /*&& explored.size < numberOfEntries*/ ) {
-        println(s"Cache hit: $newValue")
+        logger.info(s"Cache hit: $newValue")
         newValue = getNextClosestWithinTheRange(newValue)
         validate(newValue)
       }

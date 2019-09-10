@@ -1,5 +1,6 @@
 package com.automl.classifier
 
+import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.ml.feature.OneHotEncoder
 import org.apache.spark.ml.linalg.{DenseVector, Vector}
 import org.apache.spark.mllib.linalg.{Matrices, Vectors}
@@ -12,7 +13,7 @@ import org.apache.spark.mllib.linalg.{Vector => VectorMLLib}
 import scala.util.Random
 import utils.SparkMLUtils._
 
-class LinearPerceptronClassifier {
+class LinearPerceptronClassifier extends LazyLogging{
 
   def getNumberOfClasses(df: DataFrame): Int = {
     df.select("label").distinct().count().toInt
@@ -105,7 +106,7 @@ class LinearPerceptronClassifier {
       val activation = Matrices.dense(numFeatures, 1, Array(1, row.features.toArray:_* )).transpose.multiply(vectorOfParameters) // or we can reshape?
 
       val activationValue = activation.values(0)
-      println("Activation value:" + activationValue)
+      logger.debug("Activation value:" + activationValue)
       transferFunction(activationValue, row.label.toInt)
     }
 
@@ -125,7 +126,7 @@ class LinearPerceptronClassifier {
         minVectorOfParameters = vectorOfParameters
       }
       else numberOfUnsuccessfulLearningIterations += 1
-      println("Number of misclassifications: " + numberOfMissclassifications)
+      logger.info("Number of misclassifications: " + numberOfMissclassifications)
       !currentStateOfClassification.forall(_ == false)
     }
 

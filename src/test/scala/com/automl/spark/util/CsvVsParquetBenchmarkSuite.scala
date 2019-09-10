@@ -6,9 +6,10 @@ import java.nio.file.{Files, Paths}
 import com.automl.spark.SparkSessionProvider
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.functions.rand
-import org.scalatest.{BeforeAndAfterAll, FunSuite, Matchers}
+import org.scalatest.{BeforeAndAfterAll, FunSuite, Ignore, Matchers}
 import utils.{BenchmarkHelper, SparkMLUtils}
 
+@Ignore
 class CsvVsParquetBenchmarkSuite extends FunSuite with Matchers with SparkSessionProvider with BeforeAndAfterAll{
 
   //TODO later move it to benchmarking subproject

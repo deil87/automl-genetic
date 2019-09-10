@@ -63,7 +63,7 @@ case class SVMModel()(implicit val logPaddingSize: Int = 0) extends LinearModelM
         trainDF.cache()
         testDF.cache()
 
-        trainDF.showAllAndContinue
+//        trainDF.showAllAndContinue
         val lsvc = new LinearSVC()
           .setMaxIter(10)
           .setRegParam(0.1)

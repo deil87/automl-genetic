@@ -59,12 +59,12 @@ class GenericStackingShowcaseSuite extends FunSuite with Matchers with SparkSess
     val predictor4 = new GBTRegressor()
     stacking.addModel(predictor4, trainingSplit, testSplit, problemType)
 
-    stacking.trainModelsPredictionsDF.showAll()
-    stacking.testModelsPredictionsDF.showAll()
+//    stacking.trainModelsPredictionsDF.showAll()
+//    stacking.testModelsPredictionsDF.showAll()
 
     val finalPredictions = stacking.performStacking(predictor4)
     logger.info("Final predictions GenericStackingShowcaseSuite:")
-    finalPredictions.showAll()
+//    finalPredictions.showAll()
 
   }
 

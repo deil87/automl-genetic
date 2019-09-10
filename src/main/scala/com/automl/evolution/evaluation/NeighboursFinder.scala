@@ -73,7 +73,7 @@ class NeighboursFinder[DistMetric <: MultidimensionalDistanceMetric](distanceStr
           val df = etd.fitness.dfWithPredictions.select("uniqueIdColumn","prediction")
           debug("Count of rows in prediction column" + df.count())
           debug(etd.template.render)
-          df.showN_AndContinue(20)
+//          df.showN_AndContinue(20)
         }
         throw new IllegalStateException("Order of uniqueIdColumn is different in predictions")
       }

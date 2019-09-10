@@ -32,8 +32,8 @@ class RandomGridSearchTest extends WordSpec with Matchers with BeforeAndAfterAll
         trainingSplit.cache()
         testSplit.cache()
 
-        trainingSplit.showAllAndContinue
-        testSplit.showAllAndContinue
+//        trainingSplit.showAllAndContinue
+//        testSplit.showAllAndContinue
 
         val dtr = new DecisionTreeClassifier()
           .setLabelCol("indexedLabel")

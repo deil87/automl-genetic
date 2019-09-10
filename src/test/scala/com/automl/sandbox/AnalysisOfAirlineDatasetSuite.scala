@@ -53,7 +53,7 @@ class AnalysisOfAirlineDatasetSuite extends WordSpec with Matchers with BeforeAn
     .filterOutNull("label")
     .printSchema_AndContinue
     .withColumn("uniqueIdColumn", monotonically_increasing_id)
-    .showN_AndContinue(500)
+//    .showN_AndContinue(500)
     .cache()
 
 

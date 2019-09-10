@@ -2,6 +2,7 @@ plugins {
   id 'java'
   id 'maven'
   id 'scala'
+  id "com.github.maiflai.scalatest" version "0.25"
 }
 
 sourceCompatibility = 1.8
@@ -48,7 +49,7 @@ allprojects {
       testCompile 'org.assertj:assertj-core:3.6.1'
       testCompile 'org.mockito:mockito-core:1.10.19'
 
-      testRuntime 'org.pegdown:pegdown:1.1.0' // TODO: is this necessary?
+      testRuntime 'org.pegdown:pegdown:1.4.2' // Scalatest html reporting
     }
   }
 
@@ -116,10 +117,13 @@ dependencies {
 
 }
 
-task scalaTest(dependsOn: ['testClasses'], type: JavaExec) {
-  main = 'org.scalatest.tools.Runner'
-  args = ['-R', 'build/classes/test', '-o']
-  classpath = sourceSets.test.runtimeClasspath
+test {
+  forkEvery = 1
+  maxParallelForks = 4
 }
 
-test.dependsOn scalaTest
+//task scalaTest(dependsOn: ['testClasses'], type: JavaExec) {
+//  main = 'org.scalatest.tools.Runner'
+//  args = ['-R', 'build/classes/test', '-o']
+//  classpath = sourceSets.test.runtimeClasspath
+//}

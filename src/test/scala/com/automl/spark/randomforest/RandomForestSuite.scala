@@ -38,7 +38,7 @@ class RandomForestSuite extends FunSuite with Matchers with SparkSessionProvider
     .toDouble("label")
     .filterOutNull("label")
     .withColumn("uniqueIdColumn", monotonically_increasing_id)
-    .showN_AndContinue(100)
+//    .showN_AndContinue(100)
     .cache()
 
 

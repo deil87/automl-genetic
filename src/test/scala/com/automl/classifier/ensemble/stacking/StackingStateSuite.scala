@@ -55,7 +55,7 @@ class StackingStateSuite extends FunSuite with Matchers with SparkSessionProvide
 
     val transformed = stackingStage.firstStage(preparedObservations)
 
-    transformed.showAll()
+//    transformed.showAll()
     transformed.schema.fields.exists(_.name == "foldId") should be(true)
     transformed.schema.fields.exists(_.name == "prediction0") should be(true)
     transformed.schema.fields.exists(_.name == "prediction1") should be(true)
@@ -113,13 +113,13 @@ class StackingStateSuite extends FunSuite with Matchers with SparkSessionProvide
     println("RMSE 1:" + evaluator.evaluate(transformedTraining.withColumnRenamed("prediction1", "prediction")))
     println("RMSE 2:" + evaluator.evaluate(transformedTraining.withColumnRenamed("prediction2", "prediction")))
 
-    transformedTraining.showAll()
+//    transformedTraining.showAll()
 
     val transformedTest = stacking.secondStage(trainingSplit, testSplit)
 
     val finalPredictions = stacking.finalStage(transformedTraining, transformedTest).cache()
 
-    finalPredictions.showAll()
+//    finalPredictions.showAll()
 
     println("RMSE Final:" + evaluator.evaluate(finalPredictions))
   }

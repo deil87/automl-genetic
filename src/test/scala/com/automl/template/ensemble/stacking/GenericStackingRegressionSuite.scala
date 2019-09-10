@@ -55,7 +55,7 @@ class GenericStackingRegressionSuite extends FunSuite with Matchers with SparkSe
     .filterOutNull("label")
     .withColumn("uniqueIdColumn", monotonically_increasing_id)
 //    .printSchema_AndContinue
-    .showN_AndContinue(30)
+//    .showN_AndContinue(30)
 
   val Array(trainingSplit, testSplit) = prepairedAirlineDF.randomSplit(Array(0.8, 0.2))
 
