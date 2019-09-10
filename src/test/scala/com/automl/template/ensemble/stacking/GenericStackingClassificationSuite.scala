@@ -20,7 +20,8 @@ class GenericStackingClassificationSuite extends FunSuite with Matchers with Bef
   import ss.implicits._
   import utils.SparkMLUtils._
 
-  val Array(trainDF, testDF) = Datasets.getWineDataframe.randomSplit(Array(0.8, 0.2))
+  val shufflingSeed = 1256
+  val Array(trainDF, testDF) = Datasets.getWineDataframe(shufflingSeed).randomSplit(Array(0.8, 0.2))
   trainDF.cache()
   testDF.cache()
 

@@ -15,7 +15,12 @@ object Datasets extends SparkSessionProvider {
   import SparkMLUtils._
   import ss.implicits._
 
-  def getWineDataframe: DataFrame = {
+  /**
+    *
+    * @param shufflingSeed to make sure we will have same data in the splits when we do `randomSplit(Array(0.8, 0.2), seed)` afterwards
+    * @return
+    */
+  def getWineDataframe(shufflingSeed: Long): DataFrame = {
     val wineDF = SparkMLUtils.loadResourceDF("/dataset/wine.csv") // Exploratory data analysis https://rpubs.com/alicew1800/edwine_eda3
 //      .showN_AndContinue(5)
       .withColumnRenamed("Nonflavanoid.phenols", "nf_flavonoid")
@@ -40,7 +45,7 @@ object Datasets extends SparkSessionProvider {
 
     // We are selecting only 1 and 3 classes to make it binary classification problem
     val preparedWineDF = wineDF
-      .orderBy(rand())
+      .orderBy(rand(shufflingSeed))
       .applyTransformation(featuresAssembler)
       .applyTransformation(scaler)
       .drop("features")
