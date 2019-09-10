@@ -1,9 +1,10 @@
 language: scala
 scala:
   - 2.12
-before_install:
-  - git clone --recursive https://github.com/dmlc/xgboost
-  - cd xgboost/jvm-packages; mvn -q clean install -DskipTests -Dmaven.test.skip=true; cd ../../
+  -
+#before_install:
+#  - git clone --recursive https://github.com/dmlc/xgboost
+#  - cd xgboost/jvm-packages; mvn -q clean install -DskipTests -Dmaven.test.skip=true; cd ../../
 
 install:
   gradle wrapper --gradle-version 5.6.2
