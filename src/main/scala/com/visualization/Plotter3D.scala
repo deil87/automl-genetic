@@ -35,7 +35,7 @@ class Plotter3D {
     val chart = AWTChartComponentFactory.chart(Quality.Advanced, "awt") // "newt"
     chart.getScene.add(scatter)
     val rectangle: Rectangle = new Rectangle(200, 200, 600, 600)
-    ChartLauncher.openChart(chart, rectangle, "Title")
+    ChartLauncher.openChart(chart, rectangle, "Title for 3D plotter")
     val t = 42
   }
 

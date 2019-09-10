@@ -4,8 +4,9 @@ import com.automl.spark.SparkSessionProvider
 import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.ml.linalg.Vectors
 import org.apache.spark.sql.DataFrame
-import org.scalatest.FunSuite
+import org.scalatest.{FunSuite, Ignore}
 
+@Ignore
 class Plotter3DTest extends FunSuite with SparkSessionProvider {
   import ss.implicits._
 
