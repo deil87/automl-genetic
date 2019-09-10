@@ -10,3 +10,8 @@ install:
 
 script:
   - ./gradlew clean test --info
+
+cache:
+  directories:
+    - xgboost
+    - $HOME/.m2
