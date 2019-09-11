@@ -108,10 +108,6 @@ class SparkGenericBaggingSuite extends FunSuite with Matchers with SparkSessionP
       LeafTemplate(DecisionTree()),
       LeafTemplate(DecisionTree()),
       LeafTemplate(DecisionTree()),
-//      LeafTemplate(DecisionTree()),
-//      LeafTemplate(DecisionTree()),
-//      LeafTemplate(DecisionTree()),
-//      LeafTemplate(DecisionTree()),
       LeafTemplate(DecisionTree()),
       LeafTemplate(DecisionTree())
     )
@@ -120,16 +116,16 @@ class SparkGenericBaggingSuite extends FunSuite with Matchers with SparkSessionP
 
     println(TemplateTreeHelper.renderAsString_v2(ensemb))
 
-    val seed = new Random().nextLong()
-    println(s"Seed for current test: $seed")
+    val shufflingSeed = new Random().nextLong()
+    println(s"Shuffling seed for current test: $shufflingSeed")
 
-    val data = Datasets.getIrisDataFrame(seed)
+    val data = Datasets.getIrisDataFrame(shufflingSeed)
 
-    val Array(trainingSplit, testSplit) = data.randomSplit(Array(0.67, 0.33), seed)
+    val Array(trainingSplit, testSplit) = data.randomSplit(Array(0.67, 0.33), shufflingSeed)
 
     val problemType = ProblemType.MultiClassClassificationProblem
 
-    val baggingF1 = ensemb.evaluateFitness(trainingSplit, testSplit, problemType, hyperParamsField = Some(HyperParametersField.default), seed = seed).getCorrespondingMetric
+    val baggingF1 = ensemb.evaluateFitness(trainingSplit, testSplit, problemType, hyperParamsField = Some(HyperParametersField.default), seed = shufflingSeed).getCorrespondingMetric
 
     val dtF1 = DecisionTree().fitnessError(trainingSplit, testSplit, problemType).getMetricByName("f1")
 

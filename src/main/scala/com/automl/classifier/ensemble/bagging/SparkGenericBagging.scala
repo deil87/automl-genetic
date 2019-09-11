@@ -70,7 +70,7 @@ case class SparkGenericBagging()(implicit val logPaddingSize: Int = 0) extends B
     val fitnessWeightColName = "fitness_weight"
 
     val dfWithPredictionsFromBaseModels: Seq[DataFrame] = results
-      .map{r => r._2.dfWithPredictions.withColumn(fitnessWeightColName, lit(r._2.getCorrespondingMetric))}
+      .map{r => r._2.dfWithPredictions.withColumn(fitnessWeightColName, lit(r._2.getCorrespondingMetric)).cache()}
 
     import SparkMLUtils._
 
@@ -174,8 +174,8 @@ case class SparkGenericBagging()(implicit val logPaddingSize: Int = 0) extends B
               .cache()
 
         // TODO remove or disable as it is only for debugging purposes
-        mergedAndRegressedDF
-          .select($"$baseModelsPredictionsColName", $"indexedLabel", $"prediction", $"isDisputable", $"misclassified", $"$baseModelsFitnessWeights")
+//        mergedAndRegressedDF
+//          .select($"$baseModelsPredictionsColName", $"indexedLabel", $"prediction", $"isDisputable", $"misclassified", $"$baseModelsFitnessWeights")
 //          .showN_AndContinue(1000, "With majority prediction")
 
         results.foreach(_._2.dfWithPredictions.unpersist()) //TODO doubling see below

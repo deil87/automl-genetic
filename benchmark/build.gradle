@@ -10,20 +10,29 @@ sourceCompatibility = 1.8
 
 dependencies {
 
-    
     compile rootProject
     testCompile rootProject
 
     compile project (':webserver')
 }
 
-task scalaTest(dependsOn: ['testClasses'], type: JavaExec) {
-    main = 'org.scalatest.tools.Runner'
-    args = ['-R', 'build/classes/test', '-o']
-    classpath = sourceSets.test.runtimeClasspath
-}
+//processResources {
+//    from("data") {
+//        include '**/*.csv'
+//    }
+//}
 
-test.dependsOn scalaTest
+//sourceSets {
+//    main {
+//        resources {
+//            srcDirs += [
+//                    "data"
+////                    rootProject.sourceSets.main.resources,
+////                    rootProject.sourceSets.test.resources
+//            ]
+//        }
+//    }
+//}
 
 test {
     // Benchmarks are not tests so lets not run them on CI
