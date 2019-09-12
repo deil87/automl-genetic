@@ -85,7 +85,7 @@ case class DecisionTree(hpGroup: Option[DecisionTreeHPGroup] = None, seed: Long 
              .setEstimator(dtr)
              .setEvaluator(evaluator)
              .setEstimatorParamMaps(paramGrid)
-             .setNumFolds(2)
+             .setNumFolds(3)
 
            val modelGSCV= cv.fit(trainDF)
            val predictions = modelGSCV.transform(testDF)
@@ -114,7 +114,7 @@ case class DecisionTree(hpGroup: Option[DecisionTreeHPGroup] = None, seed: Long 
                .setEstimator(dtr)
                .setEvaluator(evaluator)
                .setEstimatorParamMaps(configuredParamGrid)
-               .setNumFolds(2)
+               .setNumFolds(3)
                .setParallelism(2) // TODO 2 or ??
                .setSeed(seed)
 

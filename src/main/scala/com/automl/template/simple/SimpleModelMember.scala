@@ -29,7 +29,7 @@ trait SimpleModelMember extends TemplateMember { self: PaddedLogging =>
     def getRelevantHPGroup = hyperParametersField.get.modelsHParameterGroups.find(_.isRelevantTo(this))
 
     val hpGroupOpt = if (hpCoevolutionIsEnabled) hpGroup else getRelevantHPGroup
-    hpGroupOpt.get
+    hpGroupOpt.getOrElse(throw new IllegalStateException(s"No HP group found for a given estimator. Note: hpCoevolutionIsEnabled=$hpCoevolutionIsEnabled"))
   }
 }
 
@@ -40,6 +40,7 @@ object SimpleModelMember {
   val Bayesian: SimpleModelMember = new Bayesian()
   val GLM: SimpleModelMember = new LinearRegressionModel()
   val DT: SimpleModelMember = new DecisionTree()
+  val RF: SimpleModelMember = new RandomForest()
   val KNN: SimpleModelMember = new KNearestNeighbours()
   val LogisticRegression: SimpleModelMember = new LogisticRegressionModel()
   val OneVsRestModel: SimpleModelMember = new OneVsRestModel()
@@ -48,7 +49,7 @@ object SimpleModelMember {
   val LinearPerceptron: SimpleModelMember = new LinearPerceptron()
   val GradientBoosting: SimpleModelMember = new GradientBoosting() // Can we consider this as a simple model? It is actually an ensemble of trees
 
-  val poolOfSimpleModels: Seq[SimpleModelMember] = Seq(/*DeepNeuralNetwork,*/ Bayesian, GLM, DT/*, SVM*//*,GradientBoosting,  KNN, LogisticRegression, SupportVectorRegression, LinearPerceptron*/)
+  val poolOfSimpleModels: Seq[SimpleModelMember] = Seq(/*DeepNeuralNetwork,*/ Bayesian, GLM, DT, RF/*, SVM*//*,GradientBoosting,  KNN, LogisticRegression, SupportVectorRegression, LinearPerceptron*/)
 
   def poolOfSimpleModels(problemType: ProblemType): Seq[SimpleModelMember] = {
     poolOfSimpleModels.filter(_.canHandleProblemType(problemType))
@@ -61,6 +62,7 @@ object SimpleModelMember {
   def poolOfSimpleModelsByNames(names: Seq[String]): Seq[SimpleModelMember] = names.map {
     case "logistic_regression" => LogisticRegression
     case "decision_tree" => DT
+    case "random_forest" => RF
     case "bayesian" => Bayesian
   }
 

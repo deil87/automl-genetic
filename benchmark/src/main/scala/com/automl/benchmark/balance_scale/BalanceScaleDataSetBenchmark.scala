@@ -20,7 +20,7 @@ class BalanceScaleDataSetBenchmark(implicit as: ActorSystem) extends SparkSessio
         |evolution {
         |  templateDimension {
         |    populationSize = 10
-        |    poolOfSimpleModels = ["logistic_regression", "decision_tree", "bayesian"]
+        |    poolOfSimpleModels = ["logistic_regression", "decision_tree", "bayesian", "random_forest"]
         |    poolOfEnsemblingModels = ["bagging", "stacking"]
         |    maxEnsembleDepth = 5
         |  }
@@ -55,11 +55,8 @@ class BalanceScaleDataSetBenchmark(implicit as: ActorSystem) extends SparkSessio
     bayesian.parent = Some(nt)
     dt.parent = Some(nt)
 
+    // Rest will be added randomly
     val individuals = Seq(
-//      LeafTemplate(SVMModel()),
-      LeafTemplate(LogisticRegressionModel()),
-      LeafTemplate(Bayesian()),
-      LeafTemplate(DecisionTree()),
       nt
     )
 

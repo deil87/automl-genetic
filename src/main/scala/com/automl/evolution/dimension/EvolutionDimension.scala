@@ -10,7 +10,7 @@ import scala.collection.mutable
 
 
 /**
-  * For fast implementions of coevolutions
+  * For fast implementations of co-evolutions
   *
   * @tparam T
   */

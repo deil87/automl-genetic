@@ -16,23 +16,21 @@ dependencies {
     compile project (':webserver')
 }
 
-//processResources {
-//    from("data") {
-//        include '**/*.csv'
-//    }
-//}
+processResources {
+    from("$rootDir/data")
+}
 
-//sourceSets {
-//    main {
-//        resources {
-//            srcDirs += [
-//                    "data"
-////                    rootProject.sourceSets.main.resources,
-////                    rootProject.sourceSets.test.resources
-//            ]
-//        }
-//    }
-//}
+sourceSets {
+    main {
+        resources {
+            srcDirs += [
+                    "$rootDir/data"
+//                    rootProject.sourceSets.main.resources,
+//                    rootProject.sourceSets.test.resources
+            ]
+        }
+    }
+}
 
 test {
     // Benchmarks are not tests so lets not run them on CI

@@ -1,6 +1,6 @@
 package com.automl.population
 
-import com.automl.evolution.dimension.hparameter.{BayesianHPGroup, DecisionTreeHPGroup, HyperParametersField, LogisticRegressionHPGroup}
+import com.automl.evolution.dimension.hparameter._
 import com.automl.template.{TemplateMember, TemplateTree}
 
 
@@ -14,13 +14,13 @@ object HPPopulation {
     Seq(
       HyperParametersField(
         Seq(
-          BayesianHPGroup(), LogisticRegressionHPGroup(), DecisionTreeHPGroup()
+          BayesianHPGroup(), LogisticRegressionHPGroup(), DecisionTreeHPGroup(), RandomForestHPGroup()
         )
       )
     )
   )
 
-  private def allPossibleHPGroups = Set(BayesianHPGroup(), LogisticRegressionHPGroup(), DecisionTreeHPGroup())
+  private def allPossibleHPGroups = Set(BayesianHPGroup(), LogisticRegressionHPGroup(), DecisionTreeHPGroup(), RandomForestHPGroup())
 
   def randomRelevantHPFieldFor(templateMember: TemplateMember) =
     HyperParametersField(

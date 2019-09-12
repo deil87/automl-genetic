@@ -42,6 +42,11 @@ allprojects {
   }
   if (plugins.hasPlugin('java')) {
     dependencies {
+
+      // Logging
+      compile "ch.qos.logback:logback-classic:1.2.3"
+      compile "com.typesafe.scala-logging:scala-logging_${scalaMajorVersion}:3.7.2"
+      
       // ------------------------------------------------------------
       // Testing
 
@@ -109,9 +114,6 @@ dependencies {
   compile "io.kamon:kamon-core_${scalaMajorVersion}:1.0.0"
   compile "io.kamon:kamon-prometheus_${scalaMajorVersion}:1.0.0"
   compile "io.kamon:kamon-datadog_${scalaMajorVersion}:1.0.0"
-
-  // Logging
-  compile "com.typesafe.scala-logging:scala-logging_${scalaMajorVersion}:3.7.2"
 
   // Performance benchmarking
   compile "com.storm-enroute:scalameter_${scalaMajorVersion}:0.19"

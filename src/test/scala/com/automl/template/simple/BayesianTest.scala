@@ -107,7 +107,7 @@ class BayesianTest extends FunSuite with SparkSessionProvider with Matchers with
     val rowRDD = zippedValues.map( value => HistRow(value._1,value._2))
     println(rowRDD.mkString(" , "))
 
-    val bayesianF1 = Bayesian().fitnessError(trainDF.union(testDF), testDF, problemType, bayesianHPFieldOpt).getCorrespondingMetric
+    val bayesianF1 = Bayesian().fitnessError(trainDF, testDF, problemType, bayesianHPFieldOpt).getCorrespondingMetric
     println(s"F1 computed for Bayesian model $bayesianF1")
 
     bayesianF1 shouldBe 0.4 +- 0.1

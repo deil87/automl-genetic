@@ -69,6 +69,7 @@ sealed trait TemplateTree[+A <: TemplateMember]{
             BayesianHPGroup(Seq( smoothing ))//bhpg.copy()
           case bhpg: DecisionTreeHPGroup  => DecisionTreeHPGroup()//bhpg.copy()
           case bhpg: LogisticRegressionHPGroup  => LogisticRegressionHPGroup()//bhpg.copy()
+          case bhpg: RandomForestHPGroup  => RandomForestHPGroup()//bhpg.copy()
           case unknown  => throw new IllegalStateException(s"Method copy failed due to unsupported copy for $unknown")
         }
         nt.internalHyperParamsMap = Some(lt.internalHyperParamsMap.get.copy(modelsHParameterGroups = copyOfHPGroups))

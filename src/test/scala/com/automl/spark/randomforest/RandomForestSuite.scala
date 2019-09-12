@@ -1,6 +1,12 @@
 package com.automl.spark.randomforest
 
+import com.automl.ConfigProvider
+import com.automl.dataset.Datasets
+import com.automl.evolution.dimension.hparameter._
+import com.automl.problemtype.ProblemType
 import com.automl.spark.SparkSessionProvider
+import com.automl.template.simple.RandomForest
+import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.ml.feature.{VectorAssembler, VectorIndexer}
@@ -13,6 +19,18 @@ class RandomForestSuite extends FunSuite with Matchers with SparkSessionProvider
 
 
   import utils.SparkMLUtils._
+
+  val testOverride: Config = ConfigFactory.parseString(
+    """
+      |evolution {
+      |  hpGridSearch = false
+      |  hyperParameterDimension {
+      |     enabled = false
+      |  }
+      |}
+    """.stripMargin)
+  ConfigProvider.clearOverride.addOverride(testOverride)
+
 
   val airlineDF = SparkMLUtils.loadParquet("src/test/resources/airline_allcolumns_sampled_100k_parquet")
     .select("DayOfWeek", "Distance", "DepTime", "CRSDepTime", "DepDelay")
@@ -42,7 +60,7 @@ class RandomForestSuite extends FunSuite with Matchers with SparkSessionProvider
     .cache()
 
 
-  test("Random forest should calculate over two base models") {
+  test("Random forest should work with regression problems") {
 
     val rfr =  new RandomForestRegressor()
       .setLabelCol("label")
@@ -65,6 +83,29 @@ class RandomForestSuite extends FunSuite with Matchers with SparkSessionProvider
       val predictions = model.transform(testSplit)
 
     val evaluator = new RegressionEvaluator()
+  }
+
+  test("Random forest should work with classification problems") {
+
+    val shuffleSeed = 1234
+    val data = Datasets.getBalanceDataFrame(shuffleSeed)
+
+    val Array(trainingSplit, testSplit) = data.randomSplit(Array(0.8, 0.2))
+
+    trainingSplit.show(10)
+
+    val problemType = ProblemType.MultiClassClassificationProblem
+
+    val rfHPFieldOpt = Some(HyperParametersField(
+      Seq(
+        RandomForestHPGroup(Seq(MaxDepthRF(Some(5.0))))
+      )
+    ))
+
+    val f1 = RandomForest().fitnessError( trainingSplit, testSplit, problemType, rfHPFieldOpt).getCorrespondingMetric
+    println(s"F1 computed for Random Forest model $f1")
+
+    f1 shouldBe 0.8 +- 0.1
   }
 
 
