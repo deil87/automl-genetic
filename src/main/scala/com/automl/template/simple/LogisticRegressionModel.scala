@@ -13,7 +13,10 @@ import org.apache.spark.ml.feature.StandardScaler
 import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
 import org.apache.spark.sql._
 
-case class LogisticRegressionModel(hpGroup: Option[LogisticRegressionHPGroup] = None)(implicit val logPaddingSize: Int = 0) extends LinearModelMember with PaddedLogging{
+case class LogisticRegressionModel(hpGroup: Option[LogisticRegressionHPGroup] = None)(implicit val logPaddingSize: Int = 0)
+  extends LinearModelMember
+    with ClassificationMetricsHelper
+    with PaddedLogging{
 
   override def name: String = "LogisticRegressionModel " + super.name
 
@@ -89,7 +92,7 @@ case class LogisticRegressionModel(hpGroup: Option[LogisticRegressionHPGroup] = 
             .setEstimator(lrEstimator)
             .setEvaluator(evaluator)
             .setEstimatorParamMaps(configuredParamGrid)
-            .setNumFolds(2)
+            .setNumFolds(3)
             .setParallelism(2) // TODO 2 or ??
 
           val modelCV = cv.fit(trainDF)
@@ -97,6 +100,7 @@ case class LogisticRegressionModel(hpGroup: Option[LogisticRegressionHPGroup] = 
           val predictions = modelCV.transform(testDF)
           //Unused
           //          val metrics = new MulticlassMetrics(predictions.select("prediction", "indexedLabel").rdd.map(r => (r.getDouble(0), r.getDouble(1))))
+          printConfusionMatrix(predictions, testDF)
 
           FitnessResult(Map("f1" -> f1CV, "accuracy" -> -1), problemType, predictions)
         } else {

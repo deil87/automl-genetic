@@ -20,7 +20,10 @@ import utils.SparkMLUtils
 
 case class Bayesian(hpGroup: Option[BayesianHPGroup] = None)(implicit val logPaddingSize: Int = 0)
   extends SimpleModelMember
-  with SparkSessionProvider with PaddedLogging with ConsistencyChecker{
+    with ClassificationMetricsHelper
+    with SparkSessionProvider
+    with PaddedLogging
+    with ConsistencyChecker{
 
   override def name: String = "Bayesian " + super.name
 
@@ -96,7 +99,7 @@ case class Bayesian(hpGroup: Option[BayesianHPGroup] = None)(implicit val logPad
             .setEstimator(nb)
             .setEvaluator(evaluator)
             .setEstimatorParamMaps(configuredParamGrid)
-            .setNumFolds(2)
+            .setNumFolds(3)
             .setParallelism(2) // TODO 2 or ??
 
           val modelCV = cv.fit(trainDF)
@@ -104,7 +107,9 @@ case class Bayesian(hpGroup: Option[BayesianHPGroup] = None)(implicit val logPad
           val predictions = modelCV.transform(testDF)
 
           //Unused
-//          val metrics = new MulticlassMetrics(predictions.select("prediction", "indexedLabel").rdd.map(r => (r.getDouble(0), r.getDouble(1))))
+          //val metrics = new MulticlassMetrics(predictions.select("prediction", "indexedLabel").rdd.map(r => (r.getDouble(0), r.getDouble(1))))
+
+          printConfusionMatrix(predictions, testDF)
 
           FitnessResult(Map("f1" -> f1CV, "accuracy" -> -1), problemType, predictions)
         } else {

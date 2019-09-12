@@ -13,11 +13,16 @@ import org.apache.spark.ml.evaluation.{MulticlassClassificationEvaluator, Regres
 import org.apache.spark.ml.feature.VectorIndexer
 import org.apache.spark.ml.regression.RandomForestRegressor
 import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
+import org.apache.spark.mllib.evaluation.MulticlassMetrics
 import org.apache.spark.sql._
 
 import scala.util.Random
 
-case class RandomForest(hpGroup: Option[DecisionTreeHPGroup] = None, seed: Long = Random.nextLong())(implicit val logPaddingSize: Int = 0) extends SimpleModelMember with SparkSessionProvider with PaddedLogging{
+case class RandomForest(hpGroup: Option[DecisionTreeHPGroup] = None, seed: Long = Random.nextLong())(implicit val logPaddingSize: Int = 0)
+  extends SimpleModelMember
+    with ClassificationMetricsHelper
+    with SparkSessionProvider
+    with PaddedLogging{
   override def name: String = "Random forest " + super.name
 
 
@@ -102,6 +107,8 @@ case class RandomForest(hpGroup: Option[DecisionTreeHPGroup] = None, seed: Long 
           val modelCV = cv.fit(trainDF) // TODO maybe we need to make testDF to be optional and used trainingDF as CV
           val f1CV = modelCV.avgMetrics(0) // <- this is averaged metric whereas `evaluator.setMetricName("f1").evaluate(predictions)` will return metric computed only on test data
           val predictions = modelCV.transform(testDF)
+
+          printConfusionMatrix(predictions, testDF)
 
           //Unused
           val f1 = evaluator.setMetricName("f1").evaluate(predictions)

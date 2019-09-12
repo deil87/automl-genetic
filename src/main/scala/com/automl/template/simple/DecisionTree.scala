@@ -21,7 +21,9 @@ import scala.util.Random
 
 case class DecisionTree(hpGroup: Option[DecisionTreeHPGroup] = None, seed: Long = Random.nextLong())(implicit val logPaddingSize: Int = 0)
   extends SimpleModelMember
-  with SparkSessionProvider with PaddedLogging{
+    with ClassificationMetricsHelper
+    with SparkSessionProvider
+    with PaddedLogging{
 
   override def name: String = "DecisionTree " + super.name
 
@@ -124,6 +126,8 @@ case class DecisionTree(hpGroup: Option[DecisionTreeHPGroup] = None, seed: Long 
 
              //Unused
              val f1 = evaluator.setMetricName("f1").evaluate(predictions)
+
+             printConfusionMatrix(predictions, testDF)
              //        MulticlassMetricsHelper.showStatistics(predictions)
 
              FitnessResult(Map("f1" -> f1CV, "accuracy" -> -1), problemType, predictions)

@@ -24,9 +24,9 @@ sourceSets {
     main {
         resources {
             srcDirs += [
-                    "$rootDir/data"
+                    "$rootDir/data",
 //                    rootProject.sourceSets.main.resources,
-//                    rootProject.sourceSets.test.resources
+                    rootProject.sourceSets.test.resources
             ]
         }
     }
