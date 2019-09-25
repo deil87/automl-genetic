@@ -81,7 +81,7 @@ case class LogisticRegressionModel(hpGroup: Option[LogisticRegressionHPGroup] = 
         if(validationStrategy == "cv") {
           val paramGrid = new ParamGridBuilder()
           val configuredParamGrid = activeHPGroup.hpParameters.foldLeft(paramGrid)((res, next) => next match {
-            case p@LRRegParam(_) =>
+            case p@RegParamLR(_) =>
               debug(s"LogisticRegression's regParam hyper-parameter was set to ${p.currentValue}")
               res.addGrid(lrEstimator.regParam, Array(p.currentValue))
             case p@ElasticNet(_) =>
@@ -105,7 +105,7 @@ case class LogisticRegressionModel(hpGroup: Option[LogisticRegressionHPGroup] = 
           FitnessResult(Map("f1" -> f1CV, "accuracy" -> -1), problemType, predictions)
         } else {
           val lrWithHP = activeHPGroup.hpParameters.foldLeft(lrEstimator)((res, next) => next match {
-            case p@LRRegParam(_) =>
+            case p@RegParamLR(_) =>
               debug(s"LogisticRegression lambda hyper-parameter was set to ${p.currentValue}")
               res.setRegParam(p.currentValue)
             case p@ElasticNet(_) =>

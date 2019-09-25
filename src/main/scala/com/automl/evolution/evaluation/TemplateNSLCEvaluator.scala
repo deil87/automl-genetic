@@ -1,12 +1,16 @@
 package com.automl.evolution.evaluation
 
-import akka.actor.ActorSystem
+import java.util.concurrent.TimeUnit
+
+import akka.actor.{ActorRef, ActorSelection, ActorSystem}
+import akka.util.Timeout
 import com.automl.evolution.dimension.TemplateEvolutionDimension
 import com.automl.evolution.dimension.hparameter.{HyperParametersField, TemplateHyperParametersEvolutionDimension}
 import com.automl.evolution.diversity.{CosineSimilarityAssistant, DistanceMetric, DistanceStrategy, MultidimensionalDistanceMetric}
 import com.automl.helper.{FitnessResult, TemplateTreeHelper}
 import com.automl.population.TPopulation
 import com.automl.problemtype.ProblemType
+import com.automl.route.UpdateWeb
 import com.automl.template.{TemplateMember, TemplateTree}
 import com.automl.{ConfigProvider, ConsistencyChecker, EvaluatedTemplateData, PaddedLogging}
 import com.typesafe.scalalogging.LazyLogging
@@ -15,6 +19,10 @@ import utils.BenchmarkHelper
 
 import scala.collection.mutable
 import utils.SparkMLUtils._
+
+import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
+
 
 /**
   * Neighbourhoods are going to be found based on Phenotypic notion of the distance
@@ -32,6 +40,11 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
   val tdConfig = ConfigProvider.config.getConfig("evolution.templateDimension")
 
   lazy val testSplitRatio: Double = tdConfig.getDouble("testSplitRatio")
+
+  // Updating UI
+  import scala.concurrent.ExecutionContext.Implicits.global
+  implicit val timeout = Timeout(FiniteDuration(1, TimeUnit.SECONDS))
+  val webClientNotifier: ActorSelection = as.actorSelection("user/webClientNotifier")
 
   override def evaluateIndividuals(population: TPopulation,
                                    workingDF: DataFrame,
@@ -86,6 +99,8 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
         val result = EvaluatedTemplateData(idx.toString + ":" + individualTemplate.id, individualTemplate,
           materializedTemplate, fitness, hyperParamsField = usedHPField)
         templateEvDimension.hallOfFame += result
+
+        webClientNotifier ! UpdateWeb(s"From TemplateNSLCEvaluator. ${result.render(problemType)}")
         result
       }
     evaluatedTemplatesData

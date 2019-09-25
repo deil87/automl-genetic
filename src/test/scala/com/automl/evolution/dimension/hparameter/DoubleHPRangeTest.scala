@@ -27,7 +27,7 @@ class DoubleHPRangeTest extends FunSuite with Matchers with LazyLogging{
   }
 
   test("testGetNextWithinTheRange method works as expected when step is less then 1") {
-    val regParam = LRRegParam()
+    val regParam = RegParamLR()
     logger.debug("Max boundary:" + regParam.max)
     logger.debug("Min boundary:" + regParam.min)
     val occurancesMap = mutable.Map.empty[Double, Int]
@@ -46,7 +46,7 @@ class DoubleHPRangeTest extends FunSuite with Matchers with LazyLogging{
 
   // But with random jump it always actually can. Need to relax requirement
   test("test that mutate() will not return the same value after mutation") {
-    val regParam = LRRegParam()
+    val regParam = RegParamLR()
     logger.debug("Max boundary:" + regParam.max)
     logger.debug("Min boundary:" + regParam.min)
     1 to 10000 foreach (idx => {

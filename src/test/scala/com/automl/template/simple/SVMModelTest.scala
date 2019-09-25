@@ -1,10 +1,25 @@
 package com.automl.template.simple
 
+import com.automl.ConfigProvider
 import com.automl.dataset.Datasets
+import com.automl.evolution.dimension.hparameter._
 import com.automl.problemtype.ProblemType.MultiClassClassificationProblem
+import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{FunSuite, Matchers}
 
 class SVMModelTest extends FunSuite with Matchers{
+
+  val testOverride: Config = ConfigFactory.parseString(
+    """
+      |evolution {
+      |  hpGridSearch = false
+      |  hyperParameterDimension {
+      |     enabled = false
+      |  }
+      |}
+    """.stripMargin)
+  ConfigProvider.clearOverride.addOverride(testOverride)
+
 
   ignore("testFitnessError") {
 
@@ -31,8 +46,18 @@ class SVMModelTest extends FunSuite with Matchers{
     trainDF.cache()
     testDF.cache()
 
+    val svmHPFieldOpt = Some(HyperParametersField(
+      Seq(
+        SVMHPGroup(
+          Seq(
+            MaxIterSVM(Some(50.0)),
+            RegParamSVM(Some(0.3)))
+        )
+      )
+    ))
+
     val problemType = MultiClassClassificationProblem
-    val svmF1 = SVMModel().fitnessError(trainDF, testDF, problemType).getCorrespondingMetric
+    val svmF1 = SVMModel().fitnessError(trainDF, testDF, problemType, svmHPFieldOpt).getCorrespondingMetric
     println(s"F1 computed for SVM model $svmF1")
 
     svmF1 shouldBe 0.9 +- 0.1

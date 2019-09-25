@@ -6,7 +6,8 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
-import com.automl.route.{ClientConnectionActor, WebClientNotifierActor, StaticResourcesRoute, WebSocketServiceRoute}
+import com.automl.benchmark.glass.GlassDataSetBenchmark
+import com.automl.route.{ClientConnectionActor, StaticResourcesRoute, WebClientNotifierActor, WebSocketServiceRoute}
 
 import scala.io.StdIn
 import scala.util.{Failure, Success}
@@ -19,7 +20,7 @@ object AutoMLWeb extends App {
 
   implicit val executionContext = system.dispatcher
 
-  val notifier = system.actorOf(Props(classOf[WebClientNotifierActor]))
+  val notifier = system.actorOf(Props(classOf[WebClientNotifierActor]), "webClientNotifier")
 
   val staticRoute = new StaticResourcesRoute().staticResources
   val wsRoute = new WebSocketServiceRoute(notifier).route
@@ -27,6 +28,8 @@ object AutoMLWeb extends App {
 
   private val port = 8088
   val bindingFuture = Http().bindAndHandle(staticRoute ~ wsRoute, "localhost", port)
+
+  val benchmark = new GlassDataSetBenchmark().run()
 
   println(s"Server online at http://localhost:$port/automl/\nPress RETURN to stop...")
   StdIn.readLine() // let it run until user presses return

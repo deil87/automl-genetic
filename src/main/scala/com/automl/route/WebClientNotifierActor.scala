@@ -23,7 +23,7 @@ class WebClientNotifierActor extends Actor {
       })
       context.watch(webClientActor.get)
     }
-    case UpdateWeb(t) ⇒ webClientActor.foreach(_ ! TextMessage.Strict(s"updating trees $t"))
+    case UpdateWeb(t) ⇒ webClientActor.foreach(_ ! TextMessage.Strict(s"Progress: $t"))
     case 'sinkclose ⇒
       context.stop(self)
   }

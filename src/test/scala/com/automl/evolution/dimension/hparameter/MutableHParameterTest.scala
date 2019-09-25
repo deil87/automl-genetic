@@ -84,7 +84,7 @@ class MutableHParameterTest extends FunSuite with Matchers with LazyLogging{
 
   //TODO AG-133
   test("Mutation of LRRegParam should return only new values") {
-    var regParam = LRRegParam()
+    var regParam = RegParamLR()
     val firstValue = regParam.currentValue
     val newValue = regParam.mutate()
     firstValue == newValue.currentValue shouldBe false
@@ -93,7 +93,7 @@ class MutableHParameterTest extends FunSuite with Matchers with LazyLogging{
 
     1 to 50 foreach { _ =>
       ignoreControllableException {
-        regParam = regParam.mutate().asInstanceOf[LRRegParam]
+        regParam = regParam.mutate().asInstanceOf[RegParamLR]
       }
       logger.debug("LRRegParam:" + regParam.currentValue)
     }

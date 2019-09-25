@@ -6,7 +6,7 @@ import com.automl.template.{TemplateMember, TemplateTree}
 import scala.util.Random
 
 
-case class LogisticRegressionHPGroup(hpParameters:Seq[LogisticRegressionHParameter[Double]] = Seq(LRRegParam(), ElasticNet()))
+case class LogisticRegressionHPGroup(hpParameters:Seq[LogisticRegressionHParameter[Double]] = Seq(RegParamLR(), ElasticNet()))
   extends HyperParametersGroup[LogisticRegressionHParameter[Double]] {
 
   override def isRelevantTo(templateTree: TemplateMember): Boolean = templateTree.isInstanceOf[LogisticRegressionModel]
@@ -35,7 +35,7 @@ trait LogisticRegressionHParameter[T <: AnyVal] extends MutableHParameter[T, Log
   * Keep in mind that whatever value of lambda you decide is appropriate for your subsampled data, you can likely use
   * a smaller value to achieve comparable regularization on the full data set.
   */
-case class LRRegParam(initialValue: Option[Double] = None) extends LogisticRegressionHParameter[Double] with DoubleHPRange[LogisticRegressionHParameter[Double]] { // we can specialize with Marker trait which parameter can be used with which Model
+case class RegParamLR(initialValue: Option[Double] = None) extends LogisticRegressionHParameter[Double] with DoubleHPRange[LogisticRegressionHParameter[Double]] { // we can specialize with Marker trait which parameter can be used with which Model
   override def min: Double = 0.0
 
   override def max: Double = 0.5
@@ -44,7 +44,7 @@ case class LRRegParam(initialValue: Option[Double] = None) extends LogisticRegre
 
   override def getDefault: Double = round(new Random().nextDouble(), 1) // In theory we are interested not only on round values but on the best ones
 
-  override def newInstance: LogisticRegressionHParameter[Double] = LRRegParam()
+  override def newInstance: LogisticRegressionHParameter[Double] = RegParamLR()
 
   override def toString: String = "lambda:" + currentValue.toString
 }

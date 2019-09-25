@@ -1,4 +1,4 @@
 include 'benchmark','webserver'
 
-rootProject.name = 'core'
+rootProject.name = 'automl-genetic'
 

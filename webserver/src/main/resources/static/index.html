@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" xmlns="http://www.w3.org/1999/html">
 <head>
     <!-- Required meta tags -->
     <meta charset="utf-8">
@@ -12,76 +12,36 @@
 </head>
 <body>
 <div class="container">
-    <h1>My First Bootstrap Page</h1>
-    <p>This part is inside a .container class.</p>
-    <p>The .container class provides a responsive fixed width container.</p>
+    <h1>AutoML Genetic</h1>
 </div>
-
-<div class="dropdown">
-    <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-        Dropdown button
-    </button>
-    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-        <a class="dropdown-item" href="#">Action</a>
-        <a class="dropdown-item" href="#">Another action</a>
-        <a class="dropdown-item" href="#">Something else here</a>
-    </div>
-</div>
-
-<form>
-    connection to: <input type="text" id="endpoint" name="endpoint" value="ws://localhost:8088/ws"  style="width: 200px" ><br>
-</form>
-
-<input type="button" onclick="connectToWS()" value="connect to WebSocket endpoint" /><br><br>
-
-<form>
-    message: <input type="text" id="myMessage" name="myMessage" value="hi there!"><br>
-</form>
-
-<input type="button" onclick="sendMsg()" value="Send message" />
-
-<input type="button" onclick="closeConn()" value="Close connection" />
 
 <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.0/umd/popper.min.js" integrity="sha384-cs/chFZiN24E4KMATLdqdvsezGxaGsi4hLGOzlXwp5UZB1LY//20VyM2taTB4QvJ" crossorigin="anonymous"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js" integrity="sha384-uefMccjFJAIv6A+rW+L4AHf99KvxDjWSu1z9VI8SKNVmz4sk7buKt/6v9KI65qnm" crossorigin="anonymous"></script>
-<script>
 
-    var myWebSocket;
-    function connectToWS() {
-        var endpoint = document.getElementById("endpoint").value;
-        if (myWebSocket !== undefined) {
-            myWebSocket.close()
-        }
-        myWebSocket = new WebSocket(endpoint);
-        myWebSocket.onmessage = function(event) {
-            var leng;
-            if (event.data.size === undefined) {
-                leng = event.data.length
-            } else {
-                leng = event.data.size
-            }
-            console.log("onmessage. size: " + leng + ", content: " + event.data + ", time:" + (new Date()).getTime());
-        };
-        myWebSocket.onopen = function(evt) {
-            console.log("onopen.");
-        };
-        myWebSocket.onclose = function(evt) {
-            console.log("onclose.");
-        };
-        myWebSocket.onerror = function(evt) {
-            console.log("Error!");
-        };
-    }
-    function sendMsg() {
-        var message = document.getElementById("myMessage").value;
-        myWebSocket.send(message);
-        console.log("Time of sending message to server:" + (new Date()).getTime());
-    }
-    function closeConn() {
-        myWebSocket.close();
-    }
+<script type="text/javascript" src="js/d3-dispatch/d3-dispatch.js"></script>
+<script type="text/javascript" src="js/d3-selection/d3-selection.js"></script>
+<script type="text/javascript" src="js/d3-hierarchy/d3-hierarchy.js"></script>
+<script type="text/javascript" src="js/d3-timer/d3-timer.js"></script>
+<script type="text/javascript" src="js/d3-interpolate/d3-interpolate.js"></script>
+<script type="text/javascript" src="js/d3-color/d3-color.js"></script>
+<script type="text/javascript" src="js/d3-ease/d3-ease.js"></script>
+<script type="text/javascript" src="js/d3-transition/d3-transition.js"></script>
 
-</script>
+<br>
+<br>
+
+<div id="table_container"></div>
+<!-- Load React. -->
+<!-- Note: when deploying, replace "development.js" with "production.min.js". -->
+<script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
+
+<!--<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>-->
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<!-- Load our React component. -->
+<script type="text/babel" src="table.js" ></script>
+
 </body>
 </html>

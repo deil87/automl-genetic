@@ -10,7 +10,7 @@ import org.scalatest.{FunSuite, Matchers}
 
 import scala.util.Random
 
-class LRRegParamTest extends FunSuite with Matchers with LazyLogging{
+class RegParamLRTest extends FunSuite with Matchers with LazyLogging{
 
   implicit val system = ActorSystem("AutoMLSuite-system")
   implicit val logPaddingSize = 0
@@ -43,7 +43,7 @@ class LRRegParamTest extends FunSuite with Matchers with LazyLogging{
     val evolveFun: HPPopulation => HPPopulation = dimension.evolve(_, workingDF)
     repeatRecursively(initialPopulation, evolveFun, 15)
 
-    val bestRegParamValue = dimension.getBestFromHallOfFame.modelsHParameterGroups.head.hpParameters.filter { case LRRegParam(_) => true }.head.currentValue
+    val bestRegParamValue = dimension.getBestFromHallOfFame.modelsHParameterGroups.head.hpParameters.filter { case RegParamLR(_) => true }.head.currentValue
 
     bestRegParamValue should be(0.3)
   }
@@ -51,7 +51,7 @@ class LRRegParamTest extends FunSuite with Matchers with LazyLogging{
   //TODO does not test anything
   test("rounding for default values") {
 
-    1 to 10 foreach(i => logger.info("LRRegParam rounded to: " + LRRegParam().round(new Random().nextDouble(), 1)))
+    1 to 10 foreach(i => logger.info("LRRegParam rounded to: " + RegParamLR().round(new Random().nextDouble(), 1)))
   }
 
 }
