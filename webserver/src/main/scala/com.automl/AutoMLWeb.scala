@@ -1,4 +1,5 @@
 package com.automl
+import java.net.URI
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorSystem, Props}
@@ -28,11 +29,18 @@ object AutoMLWeb extends App {
 
   private val port = 8088
   val bindingFuture = Http().bindAndHandle(staticRoute ~ wsRoute, "localhost", port)
+  val webInterfaceURL = s"http://localhost:$port/automl/"
+  println(s"Server online at $webInterfaceURL\n Press RETURN to stop...")
+
+  import java.awt.Desktop
+
+  if (Desktop.isDesktopSupported && Desktop.getDesktop.isSupported(Desktop.Action.BROWSE))
+    Desktop.getDesktop.browse(new URI(webInterfaceURL))
 
   val benchmark = new GlassDataSetBenchmark().run()
 
-  println(s"Server online at http://localhost:$port/automl/\nPress RETURN to stop...")
-  StdIn.readLine() // let it run until user presses return
+//  StdIn.readLine() // let it run until user presses return
+
   bindingFuture
     .flatMap(_.unbind()) // trigger unbinding from the port
     .onComplete(_ => system.terminate()) // and shutdown when done

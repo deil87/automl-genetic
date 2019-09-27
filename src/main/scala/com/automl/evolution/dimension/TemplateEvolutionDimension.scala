@@ -1,31 +1,40 @@
 package com.automl.evolution.dimension
-import akka.actor.{ActorRef, ActorSystem}
-import com.automl.EvaluatedTemplateData.logger
+import akka.actor.{ActorRef, ActorSelection, ActorSystem}
 import com.automl.evolution.dimension.hparameter.{EvaluatedHyperParametersField, HyperParametersField, TemplateHyperParametersEvolutionDimension}
 import com.automl.evolution.diversity.{DistinctDiversityStrategy, MisclassificationDistance}
 import com.automl.evolution.evaluation.{NeighboursFinder, TemplateNSLCEvaluator}
-import com.automl.{ConfigProvider, EvaluatedTemplateData, PaddedLogging}
+import com.automl.{ConfigProvider, EvaluatedTemplateData, EvaluatedTemplateDataDTOJsonProtocol, EvolutionProgressDTO, PaddedLogging}
 import com.automl.evolution.mutation.{DepthDependentTemplateMutationStrategy, MutationProbabilities}
 import com.automl.evolution.selection.RankSelectionStrategy
 import com.automl.helper.{FitnessResult, PopulationHelper}
 import com.automl.population.{GenericPopulationBuilder, TPopulation}
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
+import com.automl.route.UpdateWebWithJson
 import com.automl.template.{TemplateMember, TemplateTree}
 import org.apache.spark.sql.DataFrame
+import spray.json.DefaultJsonProtocol
 
 import scala.collection.mutable
 import scala.util.Random
+import spray.json._
 
+case class PopulationDTO( individuals: Seq[String], key: String = "population")
+
+object PopulationDTOJsonProtocol extends DefaultJsonProtocol {
+  implicit val format = jsonFormat2(PopulationDTO.apply)
+}
 /**
   *
-  * @param evolveEveryGenerations is not used for now
+  * @param evolveEveryNGenerations is not used for now
   * @param problemType We need to take into account which models we can mutate into filtered out by problemType
   */
-class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, evolveEveryGenerations: Int = 1, val problemType: ProblemType, seed: Long = new Random().nextLong())
+class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, evolveEveryNGenerations: Int = 1, val problemType: ProblemType, seed: Long = new Random().nextLong())
     (implicit val as: ActorSystem, val logPaddingSize: Int)
     extends EvolutionDimension[TPopulation, TemplateTree[TemplateMember], EvaluatedTemplateData]
     with PaddedLogging{
+
+  val webClientNotifier: ActorSelection = as.actorSelection("user/webClientNotifier")
 
   override def dimensionName: String = "TemplateDimension"
 
@@ -79,7 +88,7 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
     else PopulationHelper.print(getPopulation, "Current population without evaluations")
   }
 
-  var skipEvolutionCountDown: Int = evolveEveryGenerations - 1
+  var skipEvolutionCountDown: Int = evolveEveryNGenerations - 1
 
   override def evolve(population: TPopulation, workingDF: DataFrame): TPopulation = {
 
@@ -90,11 +99,15 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
       skipEvolutionCountDown -= 1
       return getPopulation
     }
-    skipEvolutionCountDown = evolveEveryGenerations - 1
+    skipEvolutionCountDown = evolveEveryNGenerations - 1
 
     showCurrentPopulation()
 
     val evaluatedPopulation = getLastEvaluatedPopulation(workingDF)
+
+    import PopulationDTOJsonProtocol._
+    val populationDTO = PopulationDTO(evaluatedPopulation.map(_.id)).toJson
+    webClientNotifier ! UpdateWebWithJson(populationDTO.prettyPrint)
 
     //Need to decide where selecting neighbours should go. To evaluation or selection or to its own phase.
     debug("Finding neighbours for NSLC algorithm:")

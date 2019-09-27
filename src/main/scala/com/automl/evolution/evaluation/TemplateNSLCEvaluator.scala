@@ -10,7 +10,7 @@ import com.automl.evolution.diversity.{CosineSimilarityAssistant, DistanceMetric
 import com.automl.helper.{FitnessResult, TemplateTreeHelper}
 import com.automl.population.TPopulation
 import com.automl.problemtype.ProblemType
-import com.automl.route.UpdateWeb
+import com.automl.route.{UpdateWeb, UpdateWebWithJson}
 import com.automl.template.{TemplateMember, TemplateTree}
 import com.automl.{ConfigProvider, ConsistencyChecker, EvaluatedTemplateData, PaddedLogging}
 import com.typesafe.scalalogging.LazyLogging
@@ -22,6 +22,26 @@ import utils.SparkMLUtils._
 
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
+import spray.json._
+import DefaultJsonProtocol._
+
+
+
+case class EvaluatedTemplateDataDTO(key: String, templateId: String, description: String, fitness: String) {
+}
+
+object EvaluatedTemplateDataDTO {
+  def apply(evaluatedTemplateData: EvaluatedTemplateData, problemType: ProblemType): EvaluatedTemplateDataDTO = new EvaluatedTemplateDataDTO(
+    "evaluatedTemplateData",
+    evaluatedTemplateData.template.id,
+    evaluatedTemplateData.render(problemType),
+    evaluatedTemplateData.fitness.getCorrespondingMetric.toString
+  )
+}
+
+object EvaluatedTemplateDataDTOJsonProtocol extends DefaultJsonProtocol {
+  implicit val colorFormat = jsonFormat4(EvaluatedTemplateDataDTO.apply)
+}
 
 
 /**
@@ -42,8 +62,6 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
   lazy val testSplitRatio: Double = tdConfig.getDouble("testSplitRatio")
 
   // Updating UI
-  import scala.concurrent.ExecutionContext.Implicits.global
-  implicit val timeout = Timeout(FiniteDuration(1, TimeUnit.SECONDS))
   val webClientNotifier: ActorSelection = as.actorSelection("user/webClientNotifier")
 
   override def evaluateIndividuals(population: TPopulation,
@@ -100,7 +118,11 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
           materializedTemplate, fitness, hyperParamsField = usedHPField)
         templateEvDimension.hallOfFame += result
 
-        webClientNotifier ! UpdateWeb(s"From TemplateNSLCEvaluator. ${result.render(problemType)}")
+
+        import EvaluatedTemplateDataDTOJsonProtocol._
+        import spray.json._
+        val evaluatedTemplateDataDTO = EvaluatedTemplateDataDTO(result, problemType).toJson
+        webClientNotifier ! UpdateWebWithJson(evaluatedTemplateDataDTO.prettyPrint)
         result
       }
     evaluatedTemplatesData
@@ -113,3 +135,4 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
       (individualTemplate, individualTemplate.internalHyperParamsMap, workingDF.count())
   }
 }
+

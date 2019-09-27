@@ -40,6 +40,15 @@
 <!--<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>-->
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
+<script type="text/babel" >
+
+    var ag_global_vars = {}
+
+    setInterval(function(){
+      ag_global_vars.tableRef.helloWorld()
+    }, 1000);
+
+</script>
 <!-- Load our React component. -->
 <script type="text/babel" src="table.js" ></script>
 

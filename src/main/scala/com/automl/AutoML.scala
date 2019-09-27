@@ -1,6 +1,9 @@
 package com.automl
 
-import akka.actor.ActorSystem
+import java.util.concurrent.TimeUnit
+
+import akka.actor.{ActorSelection, ActorSystem}
+import akka.util.Timeout
 import com.automl.dataset._
 import com.automl.evolution.dimension.TemplateEvolutionDimension
 import com.automl.helper._
@@ -8,9 +11,11 @@ import com.automl.population.TPopulation
 import com.automl.problemtype.ProblemType.BinaryClassificationProblem
 import com.automl.problemtype.{ProblemType, ProblemTypeThresholdEstimator}
 import com.automl.report.AutoMLReporter
+import com.automl.route.UpdateWebWithJson
 import com.typesafe.scalalogging.LazyLogging
 import kamon.Kamon
 import org.apache.spark.sql.DataFrame
+import spray.json.DefaultJsonProtocol
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -21,6 +26,12 @@ class MetaDB() {
   def getPopulationOfTemplates = ???  // Population of base models?
 }
 
+case class EvolutionProgressDTO( evolution: Int, generation: Int, timeBox: String, stage: String, key: String = "evolutionProgress")
+
+object EvaluatedTemplateDataDTOJsonProtocol extends DefaultJsonProtocol {
+  implicit val format = jsonFormat5(EvolutionProgressDTO.apply)
+}
+
 /**
   * Consider using Builder pattern for setting all the parameters.
   */
@@ -28,8 +39,8 @@ class AutoML(data: DataFrame,
              idColumn: Option[String] = None,
              responseColumn: String = null, // TODO move logic for preparation of the DataSet inside AutoML
              maxTime: Long,
-             maxGenerations: Int = 10,
              maxEvolutions: Int = 5,
+             maxGenerations: Int = 10,
              maxDepthOfEnsemble: Int = 3,
              maxNumberOfChildrenPerEnsemblingNode: Int = 10,
              useMetaDB: Boolean,
@@ -38,7 +49,7 @@ class AutoML(data: DataFrame,
              initialPopulationSize: Option[Int] = None,
              isBigSizeThreshold: Long = 500,
              isBigDimensionsThreshold: Long = 200,
-             initialSampleSize: Long = 500,
+             initialSampleSize: Long = 500, // Maybe maxEvolutions is enough to estimate initial sample size?
              dataSetSizeEvolutionStrategy: DataSetSizeEvolutionStrategy = new RandomDataSetSizeEvolutionStrategy(),
              seed: Long = new Random().nextLong()
             ) extends LazyLogging {
@@ -56,11 +67,11 @@ class AutoML(data: DataFrame,
 
   val isDataBig: Boolean = isDataBig(data)
 
-  lazy val evolutionDataSizeFactor: Long = Math.max(totalDataSize / maxEvolutions, 500)
+  lazy val evolutionDataSizeIncrement: Long = (totalDataSize - initialSampleSize) / (maxEvolutions - 1) // Start with `initialSampleSize` for the first evolution then for N-1 evolutions will be increasing equally
 
   def calculateTimeBoxes(isDataBig: Boolean): EvolutionTimeBoxes = {
     val allowanceOfEvolutions = if(isDataBig) maxEvolutions else {
-      logger.info("Data was considered to be big therefore we will override `maxEvolutions` with 1")
+      logger.info("Data was considered as small therefore `maxEvolutions` was set to 1")
       1
     }
     val strategy: EqualEvolutionsStrategy = EqualEvolutionsStrategy(maxTime, allowanceOfEvolutions)
@@ -97,13 +108,15 @@ class AutoML(data: DataFrame,
   /*Probably we need a tree of dimensions in order to predefine dependencies*/
   def runEvolution(implicit as: ActorSystem): Unit = {
 
+    // Updating UI
+//    import scala.concurrent.ExecutionContext.Implicits.global
+    val webClientNotifier: ActorSelection = as.actorSelection("user/webClientNotifier")
+
     // TODO instead of using Option for any disabled dimension we should use Map with keys( dimensionName as a key) to be able to depend on arbitrary number of coevolutions.
     val templateEvDim = new TemplateEvolutionDimension(initialPopulation = seedPopulation, problemType = problemType)(as, logPaddingSize + 0)
 
-    //TODO implement changing of dataset's size as SizeEvolution dimension.
     var workingDataSet: DataFrame = if(isDataBig) {
       val initialSamplingRatio = initialSampleSize.toDouble / totalDataSize.toDouble
-      //TODO maybe we can start using EvolutionStrategy even here?
       samplingStrategy.sampleExact(data, initialSamplingRatio, seed).cache()
     } else data
 
@@ -122,48 +135,69 @@ class AutoML(data: DataFrame,
     val timeBoxes = calculateTimeBoxes(isDataBig)
     logger.info("TimeBoxes schedule: " + timeBoxes.timeBoxes.map(_.upperBoundary).mkString(","))
 
+    def totalTimeLeft = (maxTime - System.currentTimeMillis() + startTime) / 1000
+
     //TODO Consider not creating timeboxes when dataset is not big. We can use generations only as we will not be increasing dataset size over evolutions.
     timeBoxes.timeBoxes foreach { timeBox =>
+
       // Following should be equal to current (timebox.limit - previousTimeBox.limit)
       def restOfTheTimeBox = Math.max(timeBox.upperBoundary - (System.currentTimeMillis() - startTime), 1000)
 
-      val (_,counts) = workingDataSet.select("indexedLabel").rdd.map(value => value.getDouble(0)).histogram(2)
-      logger.debug(s"Distribution of classes for classification after sampling: ${counts.mkString(" , ")} ")
+      if(totalTimeLeft < 10) {
+        logger.info(s"$timeBox is skipped as it is less than 10 secs left.")
+      } else {
 
-      val timeBoxCalculations = Future {
-        logger.info(s"$timeBox launched:")
-        currentDataSize = workingDataSet.count()
-        logger.info(s"Evolution number $evolutionNumber is launched with datasize = $currentDataSize (rows) out of $totalDataSize (rows) ...")
+        val (_, counts) = workingDataSet.select("indexedLabel").rdd.map(value => value.getDouble(0)).histogram(2)
+        logger.debug(s"Distribution of classes for classification after sampling: ${counts.mkString(" , ")} ")
 
-        def condition = System.currentTimeMillis() - startTime < timeBox.upperBoundary
+        val timeBoxCalculations = Future {
+          logger.info(s"$timeBox launched:")
+          currentDataSize = workingDataSet.count()
+          logger.info(s"Evolution number $evolutionNumber is launched with datasize = $currentDataSize (rows) out of $totalDataSize (rows) ...")
 
-        var generationNumber = 0
-        generationNumberKamon.set(0)
+          def condition = System.currentTimeMillis() - startTime < timeBox.upperBoundary
 
-        while (condition) {
+          var generationNumber = 0
+          generationNumberKamon.set(0)
 
-          logger.info(s"Time left: ${(maxTime - System.currentTimeMillis() + startTime) / 1000}")
-          logger.info(s"Evolution number still $evolutionNumber - next generation number $generationNumber is launched.")
+          while (condition) {
 
-          templateEvDim.evolveFromLastPopulation(workingDataSet)
-          logger.info(s"Finished generation number $generationNumber")
-          generationNumber += 1
-          generationNumberKamon.increment(1)
-        }
-      }
+            logger.info(s"Time left: ${totalTimeLeft}")
+            logger.info(s"Evolution number still $evolutionNumber - next generation number $generationNumber is launched.")
 
-      try {
-        Await.result(timeBoxCalculations, restOfTheTimeBox.milliseconds)
-      } catch {
-        case ex:TimeoutException =>
-          val infoMessage = s"Timeout for $timeBox has happened."
-          logger.info(infoMessage)
-          logger.debug(infoMessage + ex.getMessage)
-          if (currentDataSize < totalDataSize) {
-            val newDataSize = currentDataSize + evolutionDataSizeFactor
-            workingDataSet = dataSetSizeEvolutionStrategy.evolve(workingDataSet, newSize = newDataSize, maxEvolutions, data, seed)
-            evolutionNumber += 1
+            import EvaluatedTemplateDataDTOJsonProtocol._
+            import spray.json._
+            val evolutionProgressDTO = EvolutionProgressDTO(evolutionNumber, generationNumber, timeBox.toString, "startingEvaluation").toJson
+            webClientNotifier ! UpdateWebWithJson(evolutionProgressDTO.prettyPrint)
+
+            templateEvDim.evolveFromLastPopulation(workingDataSet)
+            logger.info(s"Finished generation number $generationNumber")
+            generationNumber += 1
+            generationNumberKamon.increment(1)
           }
+        }
+
+        try {
+          Await.result(timeBoxCalculations, restOfTheTimeBox.milliseconds)
+        } catch {
+          case ex: TimeoutException =>
+            val infoMessage = s"Timeout for $timeBox has happened."
+            logger.info(infoMessage)
+            logger.debug(infoMessage + ex.getMessage)
+            if (evolutionNumber == maxEvolutions - 1) {
+              logger.info("Increasing workingDataSet. For the last evolution all data will be used.")
+              workingDataSet = data
+            } else {
+              val newDataSize = currentDataSize + evolutionDataSizeIncrement
+              logger.info(s"Increasing workingDataSet size for the evolution #${evolutionNumber + 1} to  ${newDataSize}.")
+
+              //TODO Default is new RandomDataSetSizeEvolutionStrategy() it means that on every iteration we will have quite a new distribution of points
+              workingDataSet = dataSetSizeEvolutionStrategy.evolve(workingDataSet, newSize = newDataSize, maxEvolutions, data, seed)
+
+            }
+            // We increasing evolution number whenever we have interrupted current TimeBox
+            evolutionNumber += 1
+        }
       }
     }
 
