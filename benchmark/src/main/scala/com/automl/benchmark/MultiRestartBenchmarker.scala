@@ -2,12 +2,14 @@ package com.automl.benchmark
 
 import scala.util.Random
 
-class MultiRestartBenchmarker[T](numberOfRestarts: Int)(fun: MultiRestartBenchmarker[T] => T) {
+class MultiRestartBenchmarker[T](numberOfRestarts: Int, seed: Long)(fun: (MultiRestartBenchmarker[T], Long) => T) {
 
 
-  var avgSpecific = 0.0
-  var avgBaseline = 0.0
-  var countOfSuccesses: Int = 0
+  private var avgSpecific = 0.0
+  private var avgBaseline = 0.0
+  private var countOfSuccesses: Int = 0
+
+  val rg = new Random(seed)
 
   def update(specific: Double, baseline: Double) = {
     avgSpecific += specific
@@ -16,9 +18,8 @@ class MultiRestartBenchmarker[T](numberOfRestarts: Int)(fun: MultiRestartBenchma
   }
 
   for (i <- 0 until numberOfRestarts) {
-    val seed = new Random().nextLong()
-    fun(this)
-
+    val iterationSeed = rg.nextLong()
+    fun(this, iterationSeed)
   }
 
   println(" Avg success rate:" + avgSuccessRate)
@@ -26,9 +27,18 @@ class MultiRestartBenchmarker[T](numberOfRestarts: Int)(fun: MultiRestartBenchma
   def avgSuccessRate = {
     countOfSuccesses.toDouble / numberOfRestarts
   }
+
+  def avgPerformance: Double = {
+    avgSpecific / numberOfRestarts
+  }
+
+  def avgBaselinePerformance: Double = {
+    avgBaseline / numberOfRestarts
+  }
 }
 
 object MultiRestartBenchmarker {
 
-  def apply[T](numberOfRestarts: Int )(fun: MultiRestartBenchmarker[T] => T): MultiRestartBenchmarker[T] = new MultiRestartBenchmarker[T](numberOfRestarts)(fun)
+  def apply[T](numberOfRestarts: Int, seed: Long )(fun: (MultiRestartBenchmarker[T], Long) => T): MultiRestartBenchmarker[T] =
+    new MultiRestartBenchmarker[T](numberOfRestarts, seed)(fun)
 }

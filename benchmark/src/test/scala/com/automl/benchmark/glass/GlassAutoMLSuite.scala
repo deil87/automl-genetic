@@ -17,6 +17,12 @@ class GlassAutoMLSuite extends WordSpec with Matchers with BeforeAndAfterAll wit
 
       val benchmark = new GlassDataSetBenchmark().run()
 
+      val collection = Seq("Hello", "world")
+
+      val res = collection.map(identity)
+
+
+
 
     }
   }

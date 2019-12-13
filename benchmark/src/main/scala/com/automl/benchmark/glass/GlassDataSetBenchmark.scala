@@ -38,7 +38,7 @@ class GlassDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvid
     println(ConfigProvider.config.root().render(ConfigRenderOptions.concise()))
 
 
-    val dt = LeafTemplate(DecisionTree())
+    /*val dt = LeafTemplate(DecisionTree())
     dt.internalHyperParamsMap = Some(HyperParametersField(
       Seq(
         DecisionTreeHPGroup(Seq(MaxDepth(Some(7.0))))
@@ -57,7 +57,7 @@ class GlassDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvid
       )
     )
     bayesian.parent = Some(nt)
-    dt.parent = Some(nt)
+    dt.parent = Some(nt)*/
 
     val individuals = Seq(
 //      LeafTemplate(SVMModel()),

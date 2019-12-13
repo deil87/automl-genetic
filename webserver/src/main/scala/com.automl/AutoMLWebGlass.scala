@@ -13,7 +13,7 @@ import com.automl.route.{ClientConnectionActor, StaticResourcesRoute, WebClientN
 import scala.io.StdIn
 import scala.util.{Failure, Success}
 
-object AutoMLWeb extends App {
+object AutoMLWebGlass extends App {
 
 
   implicit val system = ActorSystem("AutoML-system")

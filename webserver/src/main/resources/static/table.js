@@ -1,4 +1,3 @@
-//import React, { Component } from 'react';
 
 class Table extends React.Component {
 
@@ -7,11 +6,7 @@ class Table extends React.Component {
  this.getHeader = this.getHeader.bind(this);
  this.getRowsData = this.getRowsData.bind(this);
  this.getKeys = this.getKeys.bind(this);
- this.connectToWS = this.connectToWS.bind(this);
- this.sendMsg = this.sendMsg.bind(this);
- this.closeConn = this.closeConn.bind(this);
- this.helloWorld = this.helloWorld.bind(this);
- this.myWebSocket;
+ this.update = this.update.bind(this);
 
  this.state = {
     data: {
@@ -20,7 +15,6 @@ class Table extends React.Component {
         currentPopulation: undefined
     }
  }
- this.connectToWS()
 
  }
 
@@ -33,8 +27,47 @@ class Table extends React.Component {
                                                                      });
   }
 
- helloWorld = function(){
-  console.log("Hello world")
+ update = function(serverDataJson){
+    console.log("Hello update!")
+    //Updating table's state
+    if(serverDataJson.key == "evolutionProgress") {
+      console.log("Evolution progress: Evolution number:" + serverDataJson.evolution + ", Generation number:" + serverDataJson.generation);
+      this.setState((state, props) => {
+          const newProgress = serverDataJson;
+          return {
+                    data: {
+                      population:  state.data.population,
+                      evolutionProgress: newProgress,
+                      currentPopulation:  state.data.currentPopulation
+                    }
+          };
+      });
+    } else if(serverDataJson.key == "population") {
+//          console.log("Current population: " + JSON.stringify(serverDataJson));
+      this.setState((state, props) => {
+          return {
+                data: {
+                  currentPopulation:  serverDataJson,
+                  population:  state.data.population,
+                  evolutionProgress: state.data.evolutionProgress
+                }
+          };
+      });
+    } else {
+        this.setState((state, props) => {
+          const newElement = {'Evolution': 'Apple', 'Generation': 100, 'Population': 'current', 'Stage': 'evaluation',
+           'Description': event.data,
+           'evolutionProgress': state.data.evolutionProgress};
+           console.log(" Updating population with newElement:" + newElement)
+          return {
+             data: {
+                population:  state.data.population.concat(newElement),
+                evolutionProgress:  state.data.evolutionProgress,
+                currentPopulation:  state.data.currentPopulation
+             }
+          };
+        });
+    }
   }
 
   getHeader = function(){
@@ -53,77 +86,6 @@ class Table extends React.Component {
       return items.map((row, index)=>{
         return <tr key={index}><RenderRow key={index} data={row} keys={keys} currentPopulation={cp}/></tr>
       })
-  }
-
-
-  connectToWS = function() {
-      var endpoint = 'ws://localhost:8088/ws';
-      if (this.myWebSocket !== undefined) {
-          this.myWebSocket.close()
-      }
-      this.myWebSocket = new WebSocket(endpoint);
-      this.myWebSocket.onmessage = (event) => {
-
-          var serverDataJson = JSON.parse(event.data);
-          //Updating table's state
-          if(serverDataJson.key == "evolutionProgress") {
-            console.log("Evolution progress: Evolution number:" + serverDataJson.evolution + ", Generation number:" + serverDataJson.generation);
-            this.setState((state, props) => {
-                const newProgress = serverDataJson;
-                return {
-                          data: {
-                            population:  state.data.population,
-                            evolutionProgress: newProgress,
-                            currentPopulation:  state.data.currentPopulation
-                          }
-                };
-            });
-          } else if(serverDataJson.key == "population") {
-//          console.log("Current population: " + JSON.stringify(serverDataJson));
-            this.setState((state, props) => {
-                return {
-                      data: {
-                        currentPopulation:  serverDataJson,
-                        population:  state.data.population,
-                        evolutionProgress: state.data.evolutionProgress
-                      }
-                };
-            });
-          } else {
-              this.setState((state, props) => {
-                const newElement = {'Evolution': 'Apple', 'Generation': 100, 'Population': 'current', 'Stage': 'evaluation',
-                 'Description': event.data,
-                 'evolutionProgress': state.data.evolutionProgress};
-                 console.log(" Updating population with newElement:" + newElement)
-                return {
-                   data: {
-                      population:  state.data.population.concat(newElement),
-                      evolutionProgress:  state.data.evolutionProgress,
-                      currentPopulation:  state.data.currentPopulation
-                   }
-                };
-              });
-          }
-      };
-      this.myWebSocket.onopen = function(evt) {
-          console.log("onopen.");
-      };
-      this.myWebSocket.onclose = function(evt) {
-          console.log("onclose.");
-      };
-      this.myWebSocket.onerror = function(evt) {
-          console.log("Error!");
-      };
-  }
-
-  sendMsg = function() {
-      var message = document.getElementById("myMessage").value;
-      this.myWebSocket.send(message);
-      console.log("Time of sending message to server:" + (new Date()).getTime());
-  }
-
-  closeConn = function() {
-      this.myWebSocket.close();
   }
 
 
