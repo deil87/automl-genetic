@@ -41,4 +41,7 @@ object MultiRestartBenchmarker {
 
   def apply[T](numberOfRestarts: Int, seed: Long )(fun: (MultiRestartBenchmarker[T], Long) => T): MultiRestartBenchmarker[T] =
     new MultiRestartBenchmarker[T](numberOfRestarts, seed)(fun)
+
+  def apply[T](numberOfRestarts: Int)(fun: (MultiRestartBenchmarker[T], Long) => T): MultiRestartBenchmarker[T] =
+    new MultiRestartBenchmarker[T](numberOfRestarts, Random.nextLong())(fun)
 }

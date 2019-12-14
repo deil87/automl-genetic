@@ -76,7 +76,7 @@ class BaggingOnlyDecisionTreesEnsembleSuite extends FunSuite with Matchers with 
 
     println(TemplateTreeHelper.renderAsString_v2(ensemb))
 
-    val bm = MultiRestartBenchmarker(numberOfRestarts = 5) { benchmarker: MultiRestartBenchmarker[_] =>
+    val bm = MultiRestartBenchmarker(numberOfRestarts = 5) { (benchmarker: MultiRestartBenchmarker[_], seed) =>
 
       val Array(trainingSplit, testSplit) = data.randomSplit(Array(0.67, 0.33), seed)
 

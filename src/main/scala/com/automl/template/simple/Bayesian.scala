@@ -16,7 +16,7 @@ import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
 import org.apache.spark.mllib.evaluation.MulticlassMetrics
 import org.apache.spark.sql._
 import org.apache.spark.sql.types.{DoubleType, StringType}
-import utils.SparkMLUtils
+import utils.{LogLossCustom, SparkMLUtils}
 
 case class Bayesian(hpGroup: Option[BayesianHPGroup] = None)(implicit val logPaddingSize: Int = 0)
   extends SimpleModelMember
@@ -107,11 +107,13 @@ case class Bayesian(hpGroup: Option[BayesianHPGroup] = None)(implicit val logPad
           val predictions = modelCV.transform(testDF)
 
           //Unused
-          //val metrics = new MulticlassMetrics(predictions.select("prediction", "indexedLabel").rdd.map(r => (r.getDouble(0), r.getDouble(1))))
+//          val metrics = new MulticlassMetrics(predictions.select("prediction", "indexedLabel").rdd.map(r => (r.getDouble(0), r.getDouble(1))))
+
+          val logLoss = LogLossCustom.compute(predictions)
 
           printConfusionMatrix(predictions, testDF)
 
-          FitnessResult(Map("f1" -> f1CV, "accuracy" -> -1), problemType, predictions)
+          FitnessResult(Map("f1" -> f1CV, "accuracy" -> -1, "logloss" -> logLoss), problemType, predictions)
         } else {
 
           val naiveBayesWithHP = activeHPGroup.hpParameters.foldLeft(nb)((res, next) => next match {
@@ -148,12 +150,17 @@ case class Bayesian(hpGroup: Option[BayesianHPGroup] = None)(implicit val logPad
           val metrics = new MulticlassMetrics(predictions.select("prediction", "indexedLabel").rdd.map(r => (r.getDouble(0), r.getDouble(1))))
 
           //        MulticlassMetricsHelper.showStatistics(predictions)
+          val logLoss = LogLossCustom.compute(predictions)
 
           if (metrics.weightedFMeasure <= 0.01)
             throw SuspiciousPerformanceException("Bayesian predictions are too low")
 
           info(s"Finished. $name : F1 metric = " + metrics.weightedFMeasure + s". Number of rows = ${trainDF.count()} / ${testDF.count()}")
-          FitnessResult(Map("f1" -> metrics.weightedFMeasure, "weightedPrecision" -> metrics.weightedPrecision, "weightedRecall" -> metrics.weightedRecall), problemType, predictions)
+          FitnessResult(
+            Map("f1" -> metrics.weightedFMeasure, "weightedPrecision" -> metrics.weightedPrecision, "weightedRecall" -> metrics.weightedRecall, "logloss" -> logLoss),
+            problemType,
+            predictions
+          )
         }
     }
   }

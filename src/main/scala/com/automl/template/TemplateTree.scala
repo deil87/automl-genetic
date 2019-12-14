@@ -85,7 +85,7 @@ case class LeafTemplate[+A <: TemplateMember](member: A) extends TemplateTree[A]
 
   override def setLogPadding(size: Int): Unit = member.setLogPadding(size)
 
-  override def evaluateFitness(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParamsMap: Option[HyperParametersField], seed: Long)(implicit tc: TreeContext = TreeContext()): FitnessResult = {
+  override def evaluateFitness(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParamsField: Option[HyperParametersField], seed: Long)(implicit tc: TreeContext = TreeContext()): FitnessResult = {
 
     TemplateTree.updateLeafTC(member.name, height,tc)(logPaddingSize)
 

@@ -14,7 +14,7 @@ import org.apache.spark.ml.evaluation.{MulticlassClassificationEvaluator, Regres
 import org.apache.spark.ml.regression.DecisionTreeRegressor
 import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
 import org.apache.spark.sql._
-import utils.SparkMLUtils
+import utils.{LogLossCustom, SparkMLUtils}
 
 import scala.util.Random
 
@@ -92,11 +92,15 @@ case class DecisionTree(hpGroup: Option[DecisionTreeHPGroup] = None, seed: Long 
            val modelGSCV= cv.fit(trainDF)
            val predictions = modelGSCV.transform(testDF)
 
+           predictions.showAll()
+
            val f1: Double = evaluator.setMetricName("f1").evaluate(predictions)
            val accuracy: Double = evaluator.setMetricName("accuracy").evaluate(predictions)
 
+           val logLoss = LogLossCustom.compute(predictions)
+
            info(s"Finished. $name : F1 metric = " + f1 + s". Number of rows = ${trainDF.count()} / ${testDF.count()}")
-           FitnessResult(Map("f1" -> f1, "accuracy" -> accuracy), problemType, predictions)
+           FitnessResult(Map("f1" -> f1, "accuracy" -> accuracy, "logloss" -> logLoss), problemType, predictions)
 
          } else {
 
@@ -127,10 +131,12 @@ case class DecisionTree(hpGroup: Option[DecisionTreeHPGroup] = None, seed: Long 
              //Unused
              val f1 = evaluator.setMetricName("f1").evaluate(predictions)
 
+             val logLoss = LogLossCustom.compute(predictions)
+
              printConfusionMatrix(predictions, testDF)
              //        MulticlassMetricsHelper.showStatistics(predictions)
 
-             FitnessResult(Map("f1" -> f1CV, "accuracy" -> -1), problemType, predictions)
+             FitnessResult(Map("f1" -> f1CV, "accuracy" -> -1, "logloss" -> logLoss), problemType, predictions)
            } else {
              val classifier = activeHPGroup.hpParameters.foldLeft(dtr)((res, next) => next match {
                case p@MaxDepth(_) =>

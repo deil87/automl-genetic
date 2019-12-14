@@ -8,7 +8,7 @@ class MultiRestartBenchmarkerTest extends FunSuite with Matchers{
 
   test("testApply") {
 
-    val res = MultiRestartBenchmarker(numberOfRestarts = 10000) { benchmarker: MultiRestartBenchmarker[_] =>
+    val res = MultiRestartBenchmarker(numberOfRestarts = 10000) { (benchmarker: MultiRestartBenchmarker[_], seed) =>
 
       val specific = new Random().nextDouble() + 0.2
       val baseline = new Random().nextDouble()

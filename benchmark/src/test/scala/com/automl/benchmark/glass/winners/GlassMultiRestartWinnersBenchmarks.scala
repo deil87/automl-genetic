@@ -67,7 +67,7 @@ class GlassMultiRestartWinnersBenchmarks extends FunSuite with Matchers with Bef
 
       val problemType = ProblemType.MultiClassClassificationProblem
 
-      val baggingF1 = ensemb.evaluateFitness(trainingSplit, testSplit, problemType, hyperParamsField = Some(hpField), seed = iterationSeed).getCorrespondingMetric
+      val baggingF1 = ensemb.evaluateFitness(trainingSplit, testSplit, problemType, hyperParamsField = Some(hpField), seed = iterationSeed).getMetricByName("logloss")
 
       val dtF1 = DecisionTree().fitnessError(trainingSplit, testSplit, problemType, Some(hpField)).getMetricByName("f1") // TODO seed
 

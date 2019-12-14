@@ -14,7 +14,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.ml.evaluation.{MulticlassClassificationEvaluator, RegressionEvaluator}
 import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.sql._
-import utils.{BenchmarkHelper, SparkMLUtils}
+import utils.{BenchmarkHelper, LogLossCustom, SparkMLUtils}
 import org.apache.spark.ml.linalg.{DenseVector, Vector => MLVector}
 
 import scala.collection.mutable
@@ -188,8 +188,10 @@ case class SparkGenericBagging()(implicit val logPaddingSize: Int = 0) extends B
         val f1 = evaluator
           .evaluate(mergedAndRegressedDF)
 
-        debug(s"$name : f1 = " + f1)
-        FitnessResult(Map("f1" -> f1), problemType, mergedAndRegressedDF)
+        val logLoss = LogLossCustom.compute(mergedAndRegressedDF) // TODO we need a parameter that specifies metric so that we don't compute all of them every time
+
+        debug(s"$name : f1 = " + f1 + ", logloss = " + logLoss)
+        FitnessResult(Map("f1" -> f1, "logloss" -> logLoss), problemType, mergedAndRegressedDF)
 
       case RegressionProblem =>
 
