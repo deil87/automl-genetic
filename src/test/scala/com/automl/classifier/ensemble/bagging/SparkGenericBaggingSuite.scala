@@ -190,6 +190,24 @@ class SparkGenericBaggingSuite extends FunSuite with Matchers with SparkSessionP
     baggingF1 should be(dtF1 +- 0.2) // This might not be the true all the time
   }
 
+  test("probabilities are generated properly based on rawPredictions from base models") {
+    val predictionFromA = 0.45048842525515953
+    val predictionFromB = 0.4244651871844854
+    val probabilityA = predictionFromA * 1 / (predictionFromA + predictionFromB)
+    val probabilityB = predictionFromB * 1 / (predictionFromA + predictionFromB)
+
+    probabilityA should be >= probabilityB
+    probabilityA + probabilityB should be (1.0)
+  }
+
+  test("grouping") {
+    val list = Seq(1,1,1,5)
+    val weighted = (0.13 / 0.52) + (0.2 / 0.52)
+    val res = list.zipWithIndex.groupBy(_._1).map{case (clazz, items) => (clazz, items.size.toDouble / list.size)}
+
+    val ttt = 3737
+  }
+
 
 }
 

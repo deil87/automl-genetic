@@ -7,18 +7,15 @@ import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
 import com.automl.regressor.{AverageRegressor, EnsemblingRegressor, MajorityVoteRegressor}
-import com.automl.template.ensemble.EnsemblingModelMember
 import com.automl.template.ensemble.bagging.BaggingMember
 import com.automl.template.{TemplateMember, TemplateTree, TreeContext}
-import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.ml.evaluation.{MulticlassClassificationEvaluator, RegressionEvaluator}
 import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.sql._
 import utils.{BenchmarkHelper, LogLossCustom, SparkMLUtils}
 import org.apache.spark.ml.linalg.{DenseVector, Vector => MLVector}
 
-import scala.collection.mutable
-import scala.util.Random
+import scala.collection.{immutable, mutable}
 
 //TODO consider moving closer to BaggingMember
 case class SparkGenericBagging()(implicit val logPaddingSize: Int = 0) extends BaggingMember
@@ -42,6 +39,8 @@ case class SparkGenericBagging()(implicit val logPaddingSize: Int = 0) extends B
     import trainDF.sparkSession.implicits._
     import org.apache.spark.sql.functions._
 
+    // Logloss is the less the better and f1 score is the greater (up to 1) the better
+    val THE_LESS_THE_BETTER = if(/*logloss*/ true) true else false
 
     debug(s"Evaluating $name")
     debug(s"Sampling(stratified/random) without replacement for submembers of $name")
@@ -70,23 +69,20 @@ case class SparkGenericBagging()(implicit val logPaddingSize: Int = 0) extends B
     val fitnessWeightColName = "fitness_weight"
 
     val dfWithPredictionsFromBaseModels: Seq[DataFrame] = results
-      .map{r => r._2.dfWithPredictions.withColumn(fitnessWeightColName, lit(r._2.getCorrespondingMetric)).cache()}
+      .map{r => r._2.dfWithPredictions.withColumn(fitnessWeightColName, lit(r._2.getCorrespondingMetric)).cache()} // TODO getCorrespondingMetric should be parametrized with metric
 
     import SparkMLUtils._
 
     val joinedPredictions: Dataset[Row] =
       dfWithPredictionsFromBaseModels
-//        .map(_.showN_AndContinue(20))
         .zipWithIndex
         .map{case (df, idx) =>
-          df.select($"uniqueIdColumn", $"prediction", $"$fitnessWeightColName")
-            .withColumnRenamed("prediction", s"prediction$idx")
-            .withColumnRenamed(fitnessWeightColName, s"$fitnessWeightColName$idx")
+          df.select($"uniqueIdColumn", $"prediction" as s"prediction$idx", $"$fitnessWeightColName" as s"$fitnessWeightColName$idx", $"probability" as s"probability$idx")
         }
         .reduce((a, b) => {
           a.join(b, "uniqueIdColumn")
         }).cache()
-//        .showN_AndContinue(1000, "After joining predictions and weights")
+        .showN_AndContinue(10, "After joining predictions, weights and probabilities")
 
     def generateMajorityVoteUDF = {
       import org.apache.spark.sql.functions.udf
@@ -107,7 +103,15 @@ case class SparkGenericBagging()(implicit val logPaddingSize: Int = 0) extends B
       }
     }
 
-    def generateVotesUDF = {
+    def generateProbabilityBasedPredictionUDF = {
+      import org.apache.spark.sql.functions.udf
+      udf { probabiliites: MLVector =>
+        probabiliites.argmax.toDouble
+      }
+    }
+
+    //TODO consider to remove as `generateProbabilitiesUDF` provides reasonable rawPrediction -> probabilities transformation
+    /*def generateVotesUDF = {
       import org.apache.spark.sql.functions.udf
       udf { (preds: MLVector, weights: MLVector) =>
         val weightedOccurances: mutable.Map[Double, Double] = mutable.Map.empty
@@ -124,12 +128,61 @@ case class SparkGenericBagging()(implicit val logPaddingSize: Int = 0) extends B
 //          weightedOccurances.update(x, newWeightedSum)
         })
       }
+    }*/
+
+    /**
+      * In case base models agree on the predicted class => probability is 1.0
+      * In case base models don't agree, we use weight to compute corresponding probabilities. Probabilities for all the other classes are set to 0.
+      * @param preds predictions from base models. Has nothing to do with number of classes of the task. Zero based indexing.
+      * @return
+      */
+    def generateWeightedProbabilitiesUDF = {
+      import org.apache.spark.sql.functions.udf
+      udf { ( preds: MLVector, weights: MLVector, baseProbabilities: MLVector) =>
+
+        val predsAsArray = preds.toArray
+        val numberOfPredictors = predsAsArray.length
+        val numberOfClassesAsDouble = baseProbabilities.size.toDouble / numberOfPredictors
+        val numberOfClasses = numberOfClassesAsDouble.toInt
+        require(numberOfClasses == numberOfClassesAsDouble, "Loosing data when casting double to int")
+        val groupedPredictedClasses: Map[Double, Array[(Double, Int)]] = predsAsArray
+          .zipWithIndex.groupBy(_._1)
+
+        val anyNumber: Double = 42.0
+        val paddedWithAllClasses = 0 until numberOfClasses map(classIdx => (classIdx, groupedPredictedClasses.getOrElse(classIdx, Array.empty[(Double, Int)])))
+        val aggregatedSums: immutable.Seq[(Double, Double)] = paddedWithAllClasses
+          .map{ case (predictedClass, predictedClassToPredictorIndexArr) =>
+            predictedClassToPredictorIndexArr.map{case (_, predictorIndex) =>
+              // OPTIMIZE: so we actually need base probabilities for predicted classes only
+              val indexForBaseProbabilityForPredictedClass = predictorIndex * numberOfClasses + predictedClass.toInt
+
+              val baseProbabilityForPredictor = baseProbabilities.apply(indexForBaseProbabilityForPredictedClass)
+
+              val weightForPredictor = if(THE_LESS_THE_BETTER) 1.0 / weights.apply(predictorIndex) else weights.apply(predictorIndex)
+              (baseProbabilityForPredictor * weightForPredictor, weightForPredictor)
+            }.reduceOption((item1, item2) => (item1._1 + item2._1, item1._2 + item2._2)).getOrElse((0.0,anyNumber))
+
+          }
+        val weightedRawProbabilityForPredictedClass: Array[Double] =  aggregatedSums
+          .map(sumTermsPerPredictedClass => sumTermsPerPredictedClass._1 / sumTermsPerPredictedClass._2 ).toArray
+
+        val sumOfRawProbabilities = weightedRawProbabilityForPredictedClass.sum
+        val calibratedProbabilities = weightedRawProbabilityForPredictedClass.map(prob => prob * (1.0 / sumOfRawProbabilities))
+
+        // If check correctness enabled
+        val rounded = BigDecimal(calibratedProbabilities.sum).setScale(5, BigDecimal.RoundingMode.HALF_UP).toDouble
+        require(rounded == 1, s"Sum of probabilities was not equal to 1 (${calibratedProbabilities.sum})")
+
+        // TODO we might want to return rawPredictions ( rawProbabilities) as well.
+        // Note: Calibrated probabilities mask original probabilities especially when predictors agree and normalisation/calibration makes probability equal to 1.0
+        new DenseVector(calibratedProbabilities)
+
+      }
     }
 
     def markDisputableInstanceUDF = {
       import org.apache.spark.sql.functions.udf
       udf { v: MLVector =>
-        val occurrences = mutable.Map.empty[Double, Int]
         if(v.toArray.distinct.length > 1) 1 else 0
       }
     }
@@ -158,25 +211,29 @@ case class SparkGenericBagging()(implicit val logPaddingSize: Int = 0) extends B
           .setInputCols(fitnessWeightColumns.map(_.toString))
           .setOutputCol(baseModelsFitnessWeights)
 
+        val probabilitiesColumns: Array[Column] = dfWithPredictionsFromBaseModels.indices.toArray.map{ idx => col(s"probability$idx")}
+
+        val baseModelsProbabilities = "base_models_probabilities"
+        def probabilitiesAssembler = new VectorAssembler()
+          .setInputCols(probabilitiesColumns.map(_.toString))
+          .setOutputCol(baseModelsProbabilities)
+
         val mergedAndRegressedDF =
             joinedPredictions
               .applyTransformation(predictionsAssembler)
               .applyTransformation(fitnessWeightsAssembler)
-//              .showN_AndContinue(1000, "After predictions assembler")
+              .applyTransformation(probabilitiesAssembler)
+              // TODO `majority_prediction` could be skipped as it is just experimental
               .withColumn("majority_prediction", generateMajorityVoteUDF($"$baseModelsPredictionsColName", $"$baseModelsFitnessWeights"))
-              .withColumn("weighted_preds", generateVotesUDF($"$baseModelsPredictionsColName", $"$baseModelsFitnessWeights"))
+              .withColumn("probability", generateWeightedProbabilitiesUDF( $"$baseModelsPredictionsColName", $"$baseModelsFitnessWeights", $"$baseModelsProbabilities"))
+              .withColumn("prediction", generateProbabilityBasedPredictionUDF( $"probability"))
               .withColumn("isDisputable", markDisputableInstanceUDF($"$baseModelsPredictionsColName")) // TODO this is for debug purposes
-              .withColumnRenamed("majority_prediction", "prediction")
-              //            .drop(predictionColumns.map(_.toString): _*)
-              .join(dfWithPredictionsFromBaseModels.head.drop("prediction"), Seq("uniqueIdColumn"), joinType = "left_outer")
+              .join(dfWithPredictionsFromBaseModels.head.select("uniqueIdColumn", "indexedLabel"), Seq("uniqueIdColumn"), joinType = "left_outer")
               .withColumn("misclassified", $"prediction" =!= $"indexedLabel") // TODO this is for debug purposes
 //              .showN_AndContinue(1000, "With majority prediction")
               .cache()
 
-        // TODO remove or disable as it is only for debugging purposes
-//        mergedAndRegressedDF
-//          .select($"$baseModelsPredictionsColName", $"indexedLabel", $"prediction", $"isDisputable", $"misclassified", $"$baseModelsFitnessWeights")
-//          .showN_AndContinue(1000, "With majority prediction")
+//        mergedAndRegressedDF.show(21, false)
 
         results.foreach(_._2.dfWithPredictions.unpersist()) //TODO doubling see below
 
