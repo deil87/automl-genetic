@@ -17,6 +17,7 @@ import kamon.Kamon
 import org.apache.spark.sql.DataFrame
 import spray.json.DefaultJsonProtocol
 
+import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future, _}
@@ -106,7 +107,7 @@ class AutoML(data: DataFrame,
   val metaDB = new MetaDB() // TODO How it should look like?
 
   /*Probably we need a tree of dimensions in order to predefine dependencies*/
-  def runEvolution(implicit as: ActorSystem): Unit = {
+  def runEvolution(implicit as: ActorSystem): mutable.PriorityQueue[EvaluatedTemplateData] = {
 
     // Updating UI
 //    import scala.concurrent.ExecutionContext.Implicits.global
@@ -201,7 +202,8 @@ class AutoML(data: DataFrame,
       }
     }
 
-    AutoMLReporter.show(templateEvDim.hallOfFame, problemType) // TODO we need to return best individual for validation on testSplit
+    AutoMLReporter.show(templateEvDim.hallOfFame.iterator, problemType)
+    templateEvDim.hallOfFame
   }
 
 }

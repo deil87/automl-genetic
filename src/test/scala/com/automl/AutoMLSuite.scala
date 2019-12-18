@@ -1,6 +1,7 @@
 package com.automl
 
 import akka.actor.ActorSystem
+import com.automl.dataset.Datasets
 import com.automl.evolution.diversity.DistinctDiversityStrategy
 import com.automl.evolution.mutation.DepthDependentTemplateMutationStrategy
 import com.automl.helper.{FitnessResult, PopulationHelper}
@@ -109,6 +110,101 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
 
       autoMl.runEvolution(system)
 
+    }
+
+    "best model was selected with accordance with chosen metric ( f1 is theBiggerTheBetter metric) " in {
+
+      ConfigProvider.addOverride(
+        """
+          |evolution {
+          |  hyperParameterDimension {
+          |    enabled = false
+          |  }
+          |  evaluation {
+          |    multiclass.metric = "f1"
+          |  }
+          |}
+        """)
+
+      implicit val system = ActorSystem("AutoML-system")
+
+      val individuals = Seq(
+        LeafTemplate(LogisticRegressionModel()),
+        LeafTemplate(Bayesian()),
+        LeafTemplate(DecisionTree())
+      )
+
+      val seedPopulation = new TPopulation(individuals)
+
+      val seed = 1234
+      val preparedGlassDF = Datasets.getGlassDataFrame(seed)
+
+      //Note we are passing whole dataset and inside it is being splitted as train/test. Maybe it is a good idea to hold test split for a final examination.
+      val autoMl = new AutoML(
+        data = preparedGlassDF,
+        responseColumn = "indexedLabel",
+        maxTime = 30000,
+        useMetaDB = false,
+        initialPopulationSize = Some(3),
+        seedPopulation = Some(seedPopulation),
+        maxEvolutions = 5,
+        isBigSizeThreshold = 100,
+        initialSampleSize = 50)
+
+      val hallOfFame = autoMl.runEvolution
+
+      val best = hallOfFame.dequeue()
+      val secondButTheBest = hallOfFame.dequeue()
+      best.result.getCorrespondingMetric should be >= secondButTheBest.result.getCorrespondingMetric
+
+    }
+
+    "best model was selected with accordance with chosen metric ( logloss is theSmallerTheBetter metric) " in {
+
+      val metric = "logloss"
+
+      ConfigProvider.addOverride(
+        s"""
+          |evolution {
+          |  hyperParameterDimension {
+          |    enabled = false
+          |  }
+          |  evaluation {
+          |    multiclass.metric = "$metric"
+          |  }
+          |}
+        """)
+
+      implicit val system = ActorSystem("AutoML-system")
+
+      val individuals = Seq(
+//        LeafTemplate(LogisticRegressionModel()),
+        LeafTemplate(Bayesian()),
+        LeafTemplate(DecisionTree())
+      )
+
+      val seedPopulation = new TPopulation(individuals)
+
+      val seed = 1234
+      val preparedGlassDF = Datasets.getGlassDataFrame(seed)
+
+      //Note we are passing whole dataset and inside it is being splitted as train/test. Maybe it is a good idea to hold test split for a final examination.
+      val autoMl = new AutoML(
+        data = preparedGlassDF,
+        responseColumn = "indexedLabel",
+        maxTime = 30000,
+        useMetaDB = false,
+        initialPopulationSize = Some(3),
+        seedPopulation = Some(seedPopulation),
+        maxEvolutions = 5,
+        isBigSizeThreshold = 100,
+        initialSampleSize = 50)
+
+      val hallOfFame = autoMl.runEvolution
+
+      val best = hallOfFame.dequeue()
+      val secondButTheBest = hallOfFame.dequeue()
+      best.result.getCorrespondingMetric should be <= secondButTheBest.result.getCorrespondingMetric
     }
 
   }
