@@ -24,7 +24,7 @@ object PopulationHelper extends PaddedLogging{
   def renderEvaluatedIndividuals[T <: Evaluated[T]](individuals: Seq[T], prefix: String = ""): String = {
     val prefixToPrepend = if (prefix.nonEmpty) prefix + " : \n" else prefix
     prefixToPrepend  + individuals
-      .sortWith((a,b) => a.compare(b))
+      .sortWith((a,b) => a.compare(b) > 0)
       .map(evd => (evd.idShort, evd.result, evd.item, evd.params))
       .map {
         case (idShort, correspondingMetric, item:HyperParametersField, _) => f" - $item $correspondingMetric"

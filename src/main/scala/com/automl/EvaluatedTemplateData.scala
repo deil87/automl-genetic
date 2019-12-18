@@ -27,8 +27,15 @@ case class EvaluatedTemplateData(id: String,
   override def result: FitnessResult = fitness
   override def params: Option[HyperParametersField] = hyperParamsField
 
-
-  override def compare(other: EvaluatedTemplateData): Boolean = fitness.orderTo(other.fitness)
+  def betterThan(that:EvaluatedTemplateData): Boolean = {
+    if (theBiggerTheBetter(fitness.problemType))
+      compare(that) > 0
+    else compare(that) < 0
+  }
+  override def compare(that: EvaluatedTemplateData): Int = {
+    val comparisonResult = fitness.compareTo(that.fitness)
+    if (theBiggerTheBetter(fitness.problemType)) comparisonResult else -comparisonResult
+  }
 
   def withRank(value: Long): EvaluatedTemplateData = copy(rank = value)
   def withProbability(value: Double): EvaluatedTemplateData = copy(probability = value)
@@ -54,30 +61,15 @@ case class EvaluatedTemplateData(id: String,
 
 object EvaluatedTemplateData extends LazyLogging {
 
-  implicit val individualsOrdering = new Ordering[EvaluatedTemplateData] {
-    override def compare(x: EvaluatedTemplateData, y: EvaluatedTemplateData) = {
-      x.fitness.compareTo(y.fitness)
-    }
-  }
-
-  implicit def individualHelper(individuals: Seq[EvaluatedTemplateData]) = new {
-
-    // TODO No usage
-    def printSortedByFitness(): Unit = {
-      logger.debug(PopulationHelper.renderEvaluatedIndividuals(individuals))
-    }
-  }
+//  implicit def individualsOrdering(theBiggerTheBetter: Boolean) = new Ordering[EvaluatedTemplateData] {
+//    override def compare(x: EvaluatedTemplateData, y: EvaluatedTemplateData) = {
+//      x.fitness.compareTo(y.fitness)
+//    }
+//  }
 
   implicit def evaluatedHelper(individual: EvaluatedTemplateData) = new {
     def render(problemType: ProblemType): String = {
         s"${TemplateTreeHelper.renderAsString_v2(individual.template)} Score: ${individual.fitness.toString}"
-    }
-
-    def fitnessRetrieveFunction(problemType: ProblemType, fitnessResult: FitnessResult) = problemType match {
-      case MultiClassClassificationProblem | BinaryClassificationProblem =>
-        fitnessResult.metricsMap("f1")
-      case RegressionProblem =>
-        fitnessResult.metricsMap("rmse")
     }
   }
 }

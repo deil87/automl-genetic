@@ -14,6 +14,10 @@ object ConfigProvider {
     overrideConfigs += conf
   }
 
+  def addOverride(confString: String): mutable.Seq[Config] = {
+    overrideConfigs += ConfigFactory.parseString(confString.stripMargin)
+  }
+
   def clearOverride: this.type = {
     overrideConfigs.clear()
     this

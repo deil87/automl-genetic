@@ -1,15 +1,18 @@
 package com.automl.helper
 
+import com.automl.ConfigProvider
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
 import org.apache.spark.sql.DataFrame
 
-//TODO make it more generic as for now fitnessError is having only bad connotation but we are using it with metrics such as auc(and the higher the better)
-//TODO there is an ambiguity that we use metrics and problem type. We can deduce problem type from set of metrics.
 case class FitnessResult(metricsMap: Map[String, Double], problemType: ProblemType, dfWithPredictions: DataFrame) {
+
+  private val config = ConfigProvider.config.getConfig("evolution")
+  private lazy val multiclassMetric = config.getString("evaluation.multiclass.metric")
+
   def getCorrespondingMetric: Double = problemType match {
     case MultiClassClassificationProblem | BinaryClassificationProblem =>
-      metricsMap("f1")
+      if(multiclassMetric == "logloss") metricsMap("logloss") else metricsMap("f1")
     case RegressionProblem =>
       metricsMap("rmse")
   }
@@ -18,30 +21,26 @@ case class FitnessResult(metricsMap: Map[String, Double], problemType: ProblemTy
 
   def getMetricByName(name: String) = metricsMap.getOrElse(name, throw new IllegalArgumentException(s"Metric with name $name was not found"))
 
-  def orderTo(other: FitnessResult): Boolean = problemType match {
-    case MultiClassClassificationProblem | BinaryClassificationProblem =>
-      getCorrespondingMetric > other.getCorrespondingMetric
-    case RegressionProblem =>
-      getCorrespondingMetric < other.getCorrespondingMetric
-  }
-
-  def filterFun(other: FitnessResult): Boolean = ! orderTo(other)
-
-  def compareTo(other: FitnessResult): Int = problemType match {
-    case MultiClassClassificationProblem | BinaryClassificationProblem =>
-      if(getCorrespondingMetric > other.getCorrespondingMetric) 1
-      else if(getCorrespondingMetric < other.getCorrespondingMetric) -1
-      else 0
-    case RegressionProblem =>
-      if(getCorrespondingMetric < other.getCorrespondingMetric) 1
-      else if(getCorrespondingMetric > other.getCorrespondingMetric) -1
-      else 0
-  }
+  def compareTo(other: FitnessResult): Int =
+    if (getCorrespondingMetric > other.getCorrespondingMetric) 1
+    else if (getCorrespondingMetric < other.getCorrespondingMetric) -1
+    else 0
 
   override def toString: String = problemType match {
     case MultiClassClassificationProblem | BinaryClassificationProblem =>
-      "f1:" + metricsMap("f1")
+      if(multiclassMetric == "logloss") "logloss:" + metricsMap("logloss") else "f1:" + metricsMap("f1")
+
     case RegressionProblem =>
       "rmse:" + metricsMap("rmse")
   }
 }
+
+object FitnessResult {
+
+  implicit val fitnessResultOrdering = new Ordering[FitnessResult] {
+    override def compare(x: FitnessResult, y: FitnessResult) = {
+      x.compareTo(y)
+    }
+  }
+}
+

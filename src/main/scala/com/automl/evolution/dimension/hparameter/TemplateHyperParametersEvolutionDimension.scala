@@ -9,6 +9,7 @@ import com.automl.evolution.evaluation.{HyperParameterContemporaryPopulationEval
 import com.automl.evolution.mutation.{DepthDependentTemplateMutationStrategy, HPMutationStrategy}
 import com.automl.helper.PopulationHelper
 import com.automl.population.{GenericPopulationBuilder, HPPopulation}
+import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
 import com.automl.template.{TemplateMember, TemplateTree}
 import com.typesafe.scalalogging.LazyLogging
 
@@ -229,7 +230,7 @@ trait MutableHParameter[T, V <: MutableHParameter[T, V]] extends HParameter[T] {
   var isExplored: Boolean = false
 }
 
-case class EvaluatedHyperParametersField(field: HyperParametersField, score:Double) extends Evaluated[EvaluatedHyperParametersField] {
+case class EvaluatedHyperParametersField(field: HyperParametersField, score:Double, problemType: ProblemType) extends Evaluated[EvaluatedHyperParametersField] {
   override type ItemType = HyperParametersField
   override type FitnessType = Double
 
@@ -242,13 +243,17 @@ case class EvaluatedHyperParametersField(field: HyperParametersField, score:Doub
   override def item: HyperParametersField = field
   override def result: Double = score
 
-  override def compare(other: EvaluatedHyperParametersField): Boolean = score > other.score // TODO bigger the better
+  override def compare(other: EvaluatedHyperParametersField): Int = {
+    val comparisonResult = score.compare(other.score)
+    if(theBiggerTheBetter(problemType)) comparisonResult else (-1) * comparisonResult
+  }
 }
 
 object EvaluatedHyperParametersField {
+  //TODO unused
   implicit val individualsOrdering: Ordering[EvaluatedHyperParametersField] = new Ordering[EvaluatedHyperParametersField] {
     override def compare(x: EvaluatedHyperParametersField, y: EvaluatedHyperParametersField): Int = {
-      x.score.compareTo(y.score) // TODO swap y and x depending on what is needed in the Priority queue
+      x.score.compareTo(y.score) // TODO swap y and x depending on what is needed in the Priority queue - use reverse method
     }
   }
 }

@@ -1,6 +1,6 @@
 package com.automl
 
-trait Evaluated[T <: Evaluated[T]] {
+trait Evaluated[T <: Evaluated[T]] extends Ordered[T] with EvaluationContext {
   type ItemType
   type FitnessType
   type ParamsType
@@ -10,7 +10,5 @@ trait Evaluated[T <: Evaluated[T]] {
   def params: Option[ParamsType]
 
   def idShort: String
-
-  def compare(other: T): Boolean
 
 }

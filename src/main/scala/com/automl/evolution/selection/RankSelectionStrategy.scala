@@ -11,30 +11,41 @@ import scala.util.Random
 class RankSelectionStrategy()(implicit val logPaddingSize: Int = 0) extends PaddedLogging{
 
   def parentSelectionByShare(selectionShare: Double, individuals: Seq[EvaluatedTemplateData]): Seq[EvaluatedTemplateData] = {
-    val numberOfParents: Int = ratioToSIze(selectionShare, individuals)
+    val numberOfParents: Int = ratioToSize(selectionShare, individuals)
 
     parentSelectionBySize(numberOfParents, individuals)
   }
 
   def selectionBySizeWithLocalCompetitions(numberOfParentsToSelect: Int, individuals: Seq[EvaluatedTemplateData]): Seq[EvaluatedTemplateData] = {
 
-    debug(s"Selection ( task is to select $numberOfParentsToSelect out of ${individuals.length}):")
-    val localScores = individuals.map{ individual =>
-//      import collection.breakOut
-//      val value = individual.neighbours.groupBy(_.fitness).map(_._2.head)//(breakOut)
+    debug(s"Selection. Phase 1 - ordering based on local competitions:")
+    val orderedBasedOnFitnessAgainstNeighbours: Seq[EvaluatedTemplateData] = performLocalCompetitions(individuals)
+
+    debug(s"Selection. Phase 2 - task is to select without replacement $numberOfParentsToSelect out of ${individuals.length} based on assigned probabilities:")
+    val (selectedBySize, _) = selectNIndividualsFromSortedByRankCollectionWithoutReplacement(numberOfParentsToSelect, orderedBasedOnFitnessAgainstNeighbours)
+    selectedBySize
+  }
+
+  def performLocalCompetitions(individuals: Seq[EvaluatedTemplateData]) = {
+    val localCompetitionScores = individuals.map { individual =>
+      //      import collection.breakOut
+      //      val value = individual.neighbours.groupBy(_.fitness).map(_._2.head)//(breakOut)
       val value = individual.neighbours.filterNot(_.fitness == individual.fitness)
-      val countOFNeighboursThatAreWorse = value.count(_.fitness.filterFun(individual.fitness))
-      (individual, countOFNeighboursThatAreWorse)
+
+      val countOFNeighboursThatWereBeaten = value.count(!_.betterThan(individual))
+      (individual, countOFNeighboursThatWereBeaten)
     }
 
     // To display whole list in asc order
-    val sortedBasedOnLocalScores = localScores.sortWith(_._2 < _._2)
-    debug("Local competitions performances: " + sortedBasedOnLocalScores.map{case (template, score) => template.idShort + " has beaten -> " + score + " neighbours"}.mkString("\n\t\t\t\t\t", "\n\t\t\t\t\t", ""))
+    val sortedBasedOnLocalScores = localCompetitionScores.sortWith(_._2 < _._2)
+    debug("Local competitions performances: " + sortedBasedOnLocalScores
+      .map { case (template, score) =>
+        template.idShort + " with score " + template.result.getCorrespondingMetric + " has beaten -> " + score + " neighbours"
+      }
+      .mkString("\n\t\t\t\t\t", "\n\t\t\t\t\t", ""))
 
     val orderedBasedOnFitnessAgainstNeighbours: Seq[EvaluatedTemplateData] = sortedBasedOnLocalScores.map(_._1)
-
-    val (selectedBySize, _) = selectNIndividualsFromSortedByRankCollectionWithoutReplacement(numberOfParentsToSelect, orderedBasedOnFitnessAgainstNeighbours)
-    selectedBySize
+    orderedBasedOnFitnessAgainstNeighbours
   }
 
   def selectNIndividualsFromSortedByRankCollectionWithoutReplacement(numberOfParentsToSelect: Int, orderedBasedOnFitnessAgainstNeighbours: Seq[EvaluatedTemplateData]) = {
@@ -55,7 +66,7 @@ class RankSelectionStrategy()(implicit val logPaddingSize: Int = 0) extends Padd
 
   def parentSelectionByShareWithLocalCompetitions(selectionShare: Double, individuals: Seq[EvaluatedTemplateData]): Seq[EvaluatedTemplateData] = {
     require(individuals.forall(_.neighbours.nonEmpty) , "We should not call local competition version without having neighbours")
-    val numberOfParents = ratioToSIze(selectionShare, individuals)
+    val numberOfParents = ratioToSize(selectionShare, individuals)
 
     val res = selectionBySizeWithLocalCompetitions(numberOfParents, individuals)
     info("parentSelectionByShareWithLocalCompetitions is finished")
@@ -63,7 +74,7 @@ class RankSelectionStrategy()(implicit val logPaddingSize: Int = 0) extends Padd
   }
 
   def parentSelectionBySize(numberOfParentsToSelect: Int, individuals: Seq[EvaluatedTemplateData]): Seq[EvaluatedTemplateData] = {
-    val orderedByFitness = individuals.sortWith((l,r) => l.fitness.orderTo(r.fitness))
+    val orderedByFitness = individuals.sortWith((l,r) => l.betterThan(r))
 
     val numberOfCompetitors = individuals.length
     val linearRankingProbabilityStrategy = new LinearRankingProbabilityStrategy(numberOfCompetitors, parameter_S = 1.5) // TODO replace with RankBasedSelectionProbabilityAssigner and RouletteWheel
@@ -90,7 +101,7 @@ class RankSelectionStrategy()(implicit val logPaddingSize: Int = 0) extends Padd
     selectedParents // TODO choose optimal data structure. Implicit conversion here.
   }
 
-  private def ratioToSIze(selectionShare: Double, individuals: Seq[EvaluatedTemplateData]) = {
+  private def ratioToSize(selectionShare: Double, individuals: Seq[EvaluatedTemplateData]) = {
     require(selectionShare < 1 && selectionShare > 0, "Selection share parameter shoud be in range (0, 1)")
     val numberOfCompetitors = individuals.length
     val numberOfParents = (numberOfCompetitors * selectionShare).toInt

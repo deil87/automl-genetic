@@ -18,7 +18,6 @@ class HyperParameterContemporaryPopulationEvaluator(parentTemplateEvDimension: T
 
   override def evaluateIndividuals(population: HPPopulation, workingDF: DataFrame, problemType: ProblemType, seed: Long)
                                   (implicit cache: mutable.Map[( HyperParametersField, Long), Double]): Seq[EvaluatedHyperParametersField] = {
-    val numberOfBestTemplates = 3
     val hpdConfig = ConfigProvider.config.getConfig("evolution.hyperParameterDimension")
     val samplingRatio = hpdConfig.getDouble("evaluationSamplingRatio")
     val sampledWorkingDF = new StratifiedSampling().sampleExact(workingDF, samplingRatio, seed).cache() //TODO every time we will compute and therefore deal with different samples.
@@ -53,7 +52,7 @@ class HyperParameterContemporaryPopulationEvaluator(parentTemplateEvDimension: T
           totalSumMetric
 
         })
-        EvaluatedHyperParametersField(hpField, fitness)
+        EvaluatedHyperParametersField(hpField, fitness, problemType)
       }
   }
 }

@@ -5,7 +5,7 @@ import com.automl.helper.{FitnessResult, PopulationHelper}
 import com.automl.population.{GenericPopulationBuilder, TPopulation}
 import com.automl.problemtype.ProblemType.{MultiClassClassificationProblem, RegressionProblem}
 import com.automl.template.{LeafTemplate, TemplateMember, TemplateTree}
-import com.automl.{AutoML, EvaluatedTemplateData}
+import com.automl.{AutoML, ConfigProvider, EvaluatedTemplateData}
 import com.automl.template.simple.{DecisionTree, LinearRegressionModel, SimpleModelMember}
 import org.scalatest.{Matchers, WordSpec}
 
@@ -50,6 +50,14 @@ class RankSelectionStrategyTest extends WordSpec with Matchers{
     }
 
     "parentSelection with local competitions" in {
+      ConfigProvider.addOverride(
+        """
+          |evolution {
+          |  evaluation {
+          |    multiclass.metric = "f1"
+          |  }
+          |}
+        """)
       val individuals: Seq[LeafTemplate[SimpleModelMember]] = Seq(
         LeafTemplate(LinearRegressionModel()),
         LeafTemplate(LinearRegressionModel()),
@@ -75,10 +83,22 @@ class RankSelectionStrategyTest extends WordSpec with Matchers{
       PopulationHelper.print(new TPopulation(selectedParents.map(_.template)))
 
       selectedParents.length shouldBe (populationSize * selectionShare)
-      selectedParents.map(_.fitness.getCorrespondingMetric) should contain theSameElementsAs Seq(900, 800, 700, 600, 500)
+      // Any other individuals still have a chance to be selected
+      selectedParents.map(_.fitness.getCorrespondingMetric) should not contain Seq(0.0)
+
+      //TODO We can test selection of the rest of the individuals by repeating selection many times and by estimating average probabilities
     }
 
-    "parentSelection with local competitions with sampling is working" ignore { //TODO fix the test
+    "parentSelection with local competitions with sampling is working" in {
+      ConfigProvider.addOverride(
+        """
+          |evolution {
+          |  evaluation {
+          |    multiclass.metric = "f1"
+          |  }
+          |}
+        """)
+
       val individuals: Seq[LeafTemplate[SimpleModelMember]] = Seq(
         LeafTemplate(LinearRegressionModel()),
         LeafTemplate(LinearRegressionModel()),
@@ -98,22 +118,58 @@ class RankSelectionStrategyTest extends WordSpec with Matchers{
 
       val evaluatedTemplateDataWithNeighbours = evaluatedTemplateData.map(etd => etd.copy(neighbours = evaluatedTemplateData.diff(Seq(etd))))
 
-      val sizeOfSample = 1500
+      val sizeOfSample = 7
       val selectedParents = selectionStrategy.selectionBySizeWithLocalCompetitions(sizeOfSample, evaluatedTemplateDataWithNeighbours)
 
       PopulationHelper.print(new TPopulation(selectedParents.map(_.template)))
 
       selectedParents.length shouldBe sizeOfSample
+    }
 
-      //Check sampling ratio
-      val withAssignedProbs = new RankBasedSelectionProbabilityAssigner[EvaluatedTemplateData].assign(selectedParents.toList)
+    "performLocalCompetition is working" in {
+      ConfigProvider.addOverride(
+        """
+          |evolution {
+          |  evaluation {
+          |    multiclass.metric = "f1"
+          |  }
+          |}
+        """)
 
-      val assignedAndExpectedProbability = withAssignedProbs.count(_._1.fitness.getCorrespondingMetric == 900).toDouble / sizeOfSample
-      assignedAndExpectedProbability shouldBe assignedAndExpectedProbability +- 0.01
+      val individuals: Seq[LeafTemplate[SimpleModelMember]] = Seq(
+        LeafTemplate(LinearRegressionModel()),
+        LeafTemplate(LinearRegressionModel()),
+        LeafTemplate(DecisionTree())
+      )
 
+      val populationSize = 10
+
+      val individualsSpanned = GenericPopulationBuilder.fromSeedPopulation(new TPopulation(individuals)).withSize(populationSize).build.individuals
+
+      val selectionStrategy = new RankSelectionStrategy
+      val evaluatedTemplateData = individualsSpanned.zipWithIndex.map { case (individual, idx) =>
+        EvaluatedTemplateData(idx.toString, individual, null,
+          FitnessResult(Map("f1" -> idx * 100), MultiClassClassificationProblem, null)
+        )
+      }
+
+      val evaluatedTemplateDataWithNeighbours = evaluatedTemplateData.map(etd => etd.copy(neighbours = evaluatedTemplateData.diff(Seq(etd))))
+      val sortedBasedOnLocalCompetitions = selectionStrategy.performLocalCompetitions(evaluatedTemplateDataWithNeighbours)
+
+      PopulationHelper.print(new TPopulation(sortedBasedOnLocalCompetitions.map(_.template)))
+
+      sortedBasedOnLocalCompetitions.map(_.fitness.getCorrespondingMetric) should contain theSameElementsAs Seq(900, 800, 700, 600, 500, 400, 300, 200, 100, 0)
     }
 
     "when scores are equals we should not count them as winners over the same neighbours" in {
+      ConfigProvider.addOverride(
+        """
+          |evolution {
+          |  evaluation {
+          |    multiclass.metric = "f1"
+          |  }
+          |}
+        """)
       val individuals: Seq[LeafTemplate[SimpleModelMember]] = Seq(
         LeafTemplate(LinearRegressionModel()),
         LeafTemplate(LinearRegressionModel()),

@@ -34,7 +34,7 @@ class HyperParameterMixedEvaluator(parentTemplateEvDimension: TemplateEvolutionD
     // 4) ideally we need tu estimate parameters for all possible positions of the models in the ensembles.... this is for the future versions.
     // 5) mixture of 3) and 1)
 //    BenchmarkHelper.time("Hyper-parameter evaluatePopulation ") {
-      val threeBestTemplates = parentTemplateEvDimension.getEvaluatedPopulation.sortWith((a, b) => a.fitness.orderTo(b.fitness)).map(_.template).take(numberOfBestTemplates)
+      val threeBestTemplates = parentTemplateEvDimension.getEvaluatedPopulation.sortWith((a, b) => a.fitness.compareTo(b.fitness) > 0).map(_.template).take(numberOfBestTemplates)
 
     val currentLogPadding = logPaddingSize + 4
 
@@ -75,7 +75,7 @@ class HyperParameterMixedEvaluator(parentTemplateEvDimension: TemplateEvolutionD
           totalSumMetric
 
         })
-        EvaluatedHyperParametersField(hpField, fitness)
+        EvaluatedHyperParametersField(hpField, fitness, problemType)
       }
 //    }
   }
