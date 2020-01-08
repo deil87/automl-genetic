@@ -21,7 +21,7 @@ dependencies {
 
 
     compile rootProject // TODO maybe we need only akka
-    compile project (':benchmark')
+//    compile project (':benchmark')
     // Spray
 //    compile "io.spray:spray-can_${scalaMajorVersion}:${sprayVersion}"
 //    compile "io.spray:spray-client_${scalaMajorVersion}:${sprayVersion}"

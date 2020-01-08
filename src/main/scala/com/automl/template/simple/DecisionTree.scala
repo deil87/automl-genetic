@@ -79,7 +79,7 @@ case class DecisionTree(hpGroup: Option[DecisionTreeHPGroup] = None, seed: Long 
          if(performGridSearch) {
            debug(s"DecisionTree performs GridSearch over hps.")
            val paramGrid = new ParamGridBuilder()
-             .addGrid(dtr.maxDepth, Array(3, 5, 7, 10))
+             .addGrid(dtr.maxDepth, Array(3, 4, 5, 7))
 //             .addGrid(dtr.maxBins, Array(32, 48, 64))
              .build()
 
@@ -92,7 +92,7 @@ case class DecisionTree(hpGroup: Option[DecisionTreeHPGroup] = None, seed: Long 
            val modelGSCV= cv.fit(trainDF)
            val predictions = modelGSCV.transform(testDF)
 
-           predictions.showAll()
+//           predictions.showAll()
 
            val f1: Double = evaluator.setMetricName("f1").evaluate(predictions)
            val accuracy: Double = evaluator.setMetricName("accuracy").evaluate(predictions)

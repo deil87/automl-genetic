@@ -2,6 +2,7 @@ package com.automl.template.simple
 
 import com.automl.ConfigProvider
 import com.automl.dataset.Datasets
+import com.automl.evolution.dimension.hparameter.{DecisionTreeHPGroup, HyperParametersField, MaxDepth}
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.spark.SparkSessionProvider
@@ -14,7 +15,14 @@ import scala.util.Random
 
 class DecisionTreeTest extends FunSuite with SparkSessionProvider with Matchers{
 
-  test("grid search over hyperparameters helps") {
+
+  test("grid search over hyperparameters helps on average") {
+
+    val decisionTreeHPFieldOpt = Some(HyperParametersField(
+      Seq(
+        DecisionTreeHPGroup(Seq(MaxDepth(Some(3))))
+      )
+    ))
 
     def getFitnessForBaselineModel(seed: Long) = {
       val testOverride: Config = ConfigFactory.parseString(
@@ -24,9 +32,12 @@ class DecisionTreeTest extends FunSuite with SparkSessionProvider with Matchers{
           |  hyperParameterDimension {
           |     enabled = false
           |  }
+          |  evaluation {
+          |    multiclass.metric = "f1"
+          |  }
           |}
         """.stripMargin)
-      ConfigProvider.clearOverride.addOverride(testOverride)
+      ConfigProvider.addOverride(testOverride)
 
       val dt = DecisionTree(null)
 
@@ -35,7 +46,7 @@ class DecisionTreeTest extends FunSuite with SparkSessionProvider with Matchers{
 
       val Array(trainingSplit, testSplit) = preparedGlassDF.randomSplit(Array(0.67, 0.33), seed)
       println("Fitness baseline:")
-      val f1 = dt.fitnessError(trainingSplit, testSplit, ProblemType.MultiClassClassificationProblem)
+      val f1 = dt.fitnessError(trainingSplit, testSplit, ProblemType.MultiClassClassificationProblem, decisionTreeHPFieldOpt)
       f1
     }
 
@@ -45,9 +56,12 @@ class DecisionTreeTest extends FunSuite with SparkSessionProvider with Matchers{
         """
           |evolution {
           |  hpGridSearch = true
+          |  evaluation {
+          |    multiclass.metric = "f1"
+          |  }
           |}
         """.stripMargin)
-      ConfigProvider.clearOverride.addOverride(testOverride)
+      ConfigProvider.addOverride(testOverride)
 
       val dt = DecisionTree(null)
       val preparedGlassDF = Datasets.getGlassDataFrame(seed).sampleRand(50, seed)
@@ -55,14 +69,14 @@ class DecisionTreeTest extends FunSuite with SparkSessionProvider with Matchers{
 
       val Array(trainingSplit, testSplit) = preparedGlassDF.randomSplit(Array(0.67, 0.33), seed)
       println("Fitness with RGS:")
-      val f1 = dt.fitnessError(trainingSplit, testSplit, ProblemType.MultiClassClassificationProblem)
+      val f1 = dt.fitnessError(trainingSplit, testSplit, ProblemType.MultiClassClassificationProblem, decisionTreeHPFieldOpt)
       f1
     }
 
     var avgWithRGS = 0.0
     var avgBaseline = 0.0
 
-    val numberOfRestarts = 20
+    val numberOfRestarts = 15
     for(i <- 0 until numberOfRestarts) {
       val seed = new Random().nextLong()
 

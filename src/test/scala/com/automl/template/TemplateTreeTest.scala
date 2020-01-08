@@ -19,7 +19,9 @@ class TemplateTreeTest extends FunSuite with Matchers {
   }
 
   //TODO we can add option to mutate only on leaf level so that we can test with random template being transformed.
-  test("that two templates with essentially the same base models but in different order are equal") {
+
+  // TODO AG-203
+  ignore("that two templates with essentially the same base models but in different order are equal") {
 
     val individual: TemplateTree[TemplateMember] =
       NodeTemplate(SparkGenericBagging(),
@@ -55,7 +57,8 @@ class TemplateTreeTest extends FunSuite with Matchers {
     Set(1,2,3) diff Set(3,2,1) shouldBe Set()
   }
 
-  test("that two templates with essentially the same base models but in different order are equal (case 2)") {
+  // TODO AG-203
+  ignore("that two templates with essentially the same base models but in different order are equal (case 2)") {
 
     val individual: TemplateTree[TemplateMember] =
       NodeTemplate(SparkGenericBagging(),
@@ -128,7 +131,8 @@ class TemplateTreeTest extends FunSuite with Matchers {
     individual == individual2 shouldBe false
   }
 
-  test("that two templates should be considered equal") {
+  // TODO AG-203
+  ignore("that two templates should be considered equal") {
 
     val individual: TemplateTree[TemplateMember] =
       NodeTemplate(SparkGenericBagging(),
@@ -176,7 +180,7 @@ class TemplateTreeTest extends FunSuite with Matchers {
     individual == individual2 shouldBe true
   }
 
-  //TODO fix
+  //TODO AG-203
   ignore("evaluation does not cause error") {
 
     val individual: TemplateTree[TemplateMember] =

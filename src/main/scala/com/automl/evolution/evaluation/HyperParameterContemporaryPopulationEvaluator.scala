@@ -20,7 +20,7 @@ class HyperParameterContemporaryPopulationEvaluator(parentTemplateEvDimension: T
                                   (implicit cache: mutable.Map[( HyperParametersField, Long), Double]): Seq[EvaluatedHyperParametersField] = {
     val hpdConfig = ConfigProvider.config.getConfig("evolution.hyperParameterDimension")
     val samplingRatio = hpdConfig.getDouble("evaluationSamplingRatio")
-    val sampledWorkingDF = new StratifiedSampling().sampleExact(workingDF, samplingRatio, seed).cache() //TODO every time we will compute and therefore deal with different samples.
+    val sampledWorkingDF = new StratifiedSampling().sampleRatio(workingDF, samplingRatio, seed).cache() //TODO every time we will compute and therefore deal with different samples.
     val sampledWorkingDFCount = sampledWorkingDF.count()
     debug(s"Sampling of the workingDF for hyper parameter evaluations ( $sampledWorkingDFCount out of ${workingDF.count()} )")
 

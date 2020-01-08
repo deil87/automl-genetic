@@ -4,24 +4,26 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Dataset, Row}
 
 trait SamplingStrategy {
-  def sample(df: DataFrame, ratio: Double, seed: Long, byColumn: String = "indexedLabel"): DataFrame
-  def sampleExact(df: DataFrame, ratio: Double, seed: Long, byColumn: String = "indexedLabel"): DataFrame
+  def sampleRatio(df: DataFrame, ratio: Double, seed: Long, byColumn: String = "indexedLabel"): DataFrame
+  def sampleExactSize(df: DataFrame, ratio: Double, seed: Long, byColumn: String = "indexedLabel"): DataFrame
 }
 
 class RandomSampling extends SamplingStrategy {
-  override def sampleExact(df: DataFrame, ratio: Double, seed: Long, byColumn: String = "indexedLabel"): Dataset[Row] = {
+  override def sampleExactSize(df: DataFrame, sampleSize: Double, seed: Long, byColumn: String = "indexedLabel"): Dataset[Row] = {
     import org.apache.spark.sql.functions.rand
-    val sampleSize = df.count() * ratio
     df.orderBy(rand(seed)).limit(sampleSize.toInt) // TODO Do we need to shuffle one more time here?
   }
 
   // Behaves as `sampleExact`
-  override def sample(df: DataFrame, ratio: Double, seed: Long, byColumn: String): DataFrame = sampleExact(df, ratio, seed, byColumn)
+  override def sampleRatio(df: DataFrame, ratio: Double, seed: Long, byColumn: String): DataFrame = {
+    val sampleSize = df.count() * ratio
+    sampleExactSize(df, sampleSize, seed, byColumn)
+  }
 }
 
 class StratifiedSampling extends SamplingStrategy {
   import utils.SparkMLUtils._
-  override def sampleExact(df: DataFrame, ratio: Double, seed: Long, byColumn: String = "indexedLabel"): Dataset[Row] = {
+  override def sampleExactSize(df: DataFrame, ratio: Double, seed: Long, byColumn: String = "indexedLabel"): Dataset[Row] = {
     import df.sparkSession.implicits._
     import org.apache.spark.rdd.PairRDDFunctions
     import org.apache.spark.sql.functions._
@@ -41,7 +43,7 @@ class StratifiedSampling extends SamplingStrategy {
     df.sparkSession.createDataFrame(sampleData, df.schema)
   }
 
-  override def sample(df: DataFrame, ratio: Double, seed: Long, byColumn: String = "indexedLabel"): Dataset[Row] = {
+  override def sampleRatio(df: DataFrame, ratio: Double, seed: Long, byColumn: String = "indexedLabel"): Dataset[Row] = {
     import df.sparkSession.implicits._
     import org.apache.spark.rdd.PairRDDFunctions
     import org.apache.spark.sql.functions._

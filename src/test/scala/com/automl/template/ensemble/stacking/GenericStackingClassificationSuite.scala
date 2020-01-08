@@ -1,5 +1,6 @@
 package com.automl.template.ensemble.stacking
 
+import com.automl.ConfigProvider
 import com.automl.dataset.Datasets
 import com.automl.evolution.dimension.hparameter.HyperParametersField
 import com.automl.problemtype.ProblemType
@@ -52,7 +53,22 @@ class GenericStackingClassificationSuite extends FunSuite with Matchers with Bef
 
   }
 
-  test("be able to separate dataset classes( multiclass case) with GenericStacking over Bayesian model") {
+  // AG-201
+  ignore("be able to separate dataset classes( multiclass case) with GenericStacking over Bayesian model") {
+
+    val metric = "logloss"
+
+    ConfigProvider.addOverride(
+      s"""
+         |evolution {
+         |  hyperParameterDimension {
+         |    enabled = false
+         |  }
+         |  evaluation {
+         |    multiclass.metric = "$metric"
+         |  }
+         |}
+        """)
 
     val genericStacking = GenericStacking(unusedMetaLearner = new GBTRegressor())
 
@@ -73,7 +89,22 @@ class GenericStackingClassificationSuite extends FunSuite with Matchers with Bef
 
   }
 
-  test("be able to separate dataset classes( multiclass case) with GenericStacking over DecisionTree models") {
+  // AG-201
+  ignore("be able to separate dataset classes( multiclass case) with GenericStacking over DecisionTree models") {
+
+    val metric = "logloss"
+
+    ConfigProvider.addOverride(
+      s"""
+         |evolution {
+         |  hyperParameterDimension {
+         |    enabled = false
+         |  }
+         |  evaluation {
+         |    multiclass.metric = "$metric"
+         |  }
+         |}
+        """)
 
     val genericStacking = GenericStacking(unusedMetaLearner = new GBTRegressor())
 

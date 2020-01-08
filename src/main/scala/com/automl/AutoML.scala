@@ -118,7 +118,7 @@ class AutoML(data: DataFrame,
 
     var workingDataSet: DataFrame = if(isDataBig) {
       val initialSamplingRatio = initialSampleSize.toDouble / totalDataSize.toDouble
-      samplingStrategy.sampleExact(data, initialSamplingRatio, seed).cache()
+      samplingStrategy.sampleRatio(data, initialSamplingRatio, seed).cache()
     } else data
 
 

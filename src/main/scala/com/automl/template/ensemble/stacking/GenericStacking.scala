@@ -15,6 +15,7 @@ import org.apache.spark.ml.evaluation.{MulticlassClassificationEvaluator, Regres
 import org.apache.spark.ml.regression.LinearRegression
 import org.apache.spark.ml.{Pipeline, PipelineStage, Predictor}
 import org.apache.spark.sql.DataFrame
+import utils.LogLossCustom
 import utils.SparkMLUtils._
 
 
@@ -83,9 +84,11 @@ case class GenericStacking(unusedMetaLearner: PipelineStage = new LinearRegressi
           .setLabelCol("indexedLabel") // True labels from testDF
           .setMetricName("f1")
 
+        val logLoss = LogLossCustom.compute(predictionsReunitedWithLabels)
+
         val f1 = evaluator.evaluate(predictionsReunitedWithLabels)
         logger.info(s"Finished. $name : F1 = " + f1)
-        FitnessResult(Map("f1" -> f1), problemType, predictionsReunitedWithLabels)
+        FitnessResult(Map("f1" -> f1, "logloss" -> logLoss), problemType, predictionsReunitedWithLabels)
     }
   }
 

@@ -57,7 +57,7 @@ class LinearPerceptronSuite extends WordSpec with Matchers with SparkSessionProv
 
     }
 
-    "be able to calculate parameters through the iterative Perceptron learning algorithm( binary case)" in {
+    "be able to calculate parameters through the iterative Perceptron learning algorithm( binary case)" ignore {
       val f = fixture
       val classifier = new LinearPerceptronClassifier()
       val activation = classifier.trainIterativelyMulticlasses(f.preparedTrainDS)
@@ -84,7 +84,7 @@ class LinearPerceptronSuite extends WordSpec with Matchers with SparkSessionProv
       withSeparateLabels.select("label_1").collect().filter(_.get(0) == 1.0).map(_.get(0)) shouldBe Array(1.0, 1.0)
     }
 
-    "not be able to calculate elementwise addition with Breeze's vectors" in {
+    "not be able to calculate elementwise addition with Breeze's vectors" ignore {
       val f = fixture
       import f.preparedTrainDS.sparkSession.implicits._
 
@@ -111,7 +111,7 @@ class LinearPerceptronSuite extends WordSpec with Matchers with SparkSessionProv
       res.mkString(",")
     }
 
-    "not be able to calculate elementwise addition with Breeze's matrices" in {
+    "not be able to calculate elementwise addition with Breeze's matrices" ignore {
       val f = fixture
       import f.preparedTrainDS.sparkSession.implicits._
 

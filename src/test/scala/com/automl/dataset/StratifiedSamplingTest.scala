@@ -15,7 +15,7 @@ class StratifiedSamplingTest extends FunSuite with Matchers with SparkSessionPro
     val seed = new Random().nextLong()
 
     val glassDF = Datasets.getGlassDataFrame(1234)
-    val sampled = stratifier.sampleExact(glassDF, 0.5, seed)
+    val sampled = stratifier.sampleRatio(glassDF, 0.5, seed)
 
     val (startValues, counts) = glassDF.select("indexedLabel").rdd.map(value => value.getDouble(0)).histogram(6)
     val (startValuesS, countsS) = sampled.select("indexedLabel").rdd.map(value => value.getDouble(0)).histogram(6)
@@ -46,7 +46,7 @@ class StratifiedSamplingTest extends FunSuite with Matchers with SparkSessionPro
       )
     ).toDF("grades")
 
-    val sampled = stratifier.sampleExact(observations, 0.5, seed, "grades").cache()
+    val sampled = stratifier.sampleRatio(observations, 0.5, seed, "grades").cache()
 
 //    sampled.showAllAndContinue
 
@@ -65,7 +65,7 @@ class StratifiedSamplingTest extends FunSuite with Matchers with SparkSessionPro
     val samples = mutable.Buffer[DataFrame]()
     for(i <- 1 to 5) {
       val seed = new Random().nextLong()
-      val sampled = stratifier.sampleExact(irisDF, 0.8, seed).cache()
+      val sampled = stratifier.sampleRatio(irisDF, 0.8, seed).cache()
       println("Size of the sample is: " + sampled.count())
       require(samples.forall(previousSample => previousSample.except(sampled).count() != 0), "Samples should be different")
       samples.append(sampled)
@@ -83,7 +83,7 @@ class StratifiedSamplingTest extends FunSuite with Matchers with SparkSessionPro
     val samples = mutable.Buffer[DataFrame]()
     for(i <- 1 to 5) {
       val seed = new Random().nextLong()
-      val sampled = stratifier.sample(irisDF, 0.8, seed).cache()
+      val sampled = stratifier.sampleRatio(irisDF, 0.8, seed).cache()
       println("Size of the sample is: " + sampled.count())
       require(samples.forall(previousSample => previousSample.except(sampled).count() != 0), "Samples should be different")
       samples.append(sampled)
