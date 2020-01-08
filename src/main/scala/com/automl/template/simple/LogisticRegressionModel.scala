@@ -12,6 +12,7 @@ import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 import org.apache.spark.ml.feature.StandardScaler
 import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
 import org.apache.spark.sql._
+import utils.LogLossCustom
 
 case class LogisticRegressionModel(hpGroup: Option[LogisticRegressionHPGroup] = None)(implicit val logPaddingSize: Int = 0)
   extends LinearModelMember
@@ -102,7 +103,9 @@ case class LogisticRegressionModel(hpGroup: Option[LogisticRegressionHPGroup] = 
           //          val metrics = new MulticlassMetrics(predictions.select("prediction", "indexedLabel").rdd.map(r => (r.getDouble(0), r.getDouble(1))))
           printConfusionMatrix(predictions, testDF)
 
-          FitnessResult(Map("f1" -> f1CV, "accuracy" -> -1), problemType, predictions)
+          val logLoss = LogLossCustom.compute(predictions)
+
+          FitnessResult(Map("f1" -> f1CV, "accuracy" -> -1, "logloss" -> logLoss), problemType, predictions)
         } else {
           val lrWithHP = activeHPGroup.hpParameters.foldLeft(lrEstimator)((res, next) => next match {
             case p@RegParamLR(_) =>
@@ -122,8 +125,8 @@ case class LogisticRegressionModel(hpGroup: Option[LogisticRegressionHPGroup] = 
           FitnessResult(Map("f1" -> f1), problemType, prediction)
         }
 
-
-      case RegressionProblem => throw new UnsupportedOperationException("Regression is not supported by LogisticRegressionModel")
+      case RegressionProblem =>
+        throw new UnsupportedOperationException("Regression is not supported by LogisticRegressionModel")
     }
 
   }

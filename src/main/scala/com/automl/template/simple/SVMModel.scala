@@ -14,6 +14,7 @@ import org.apache.spark.mllib.classification.SVMWithSGD
 import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
+import utils.LogLossCustom
 
 import scala.util.Random
 
@@ -70,7 +71,6 @@ case class SVMModel(hpGroup: Option[SVMHPGroup] = None, seed: Long = Random.next
         trainDF.cache()
         testDF.cache()
 
-//        trainDF.showAllAndContinue
         val lsvc = new LinearSVC()
 //          .setMaxIter(10)
 //          .setRegParam(0.1)
@@ -80,9 +80,11 @@ case class SVMModel(hpGroup: Option[SVMHPGroup] = None, seed: Long = Random.next
           .setTol(1e-3) // TODO estimate?
           //.setThreshold()
 
-        val numIterations = 100
-        val trainingLabeledPoints = trainDF.toMLLibLabelPoint.rdd
-        val model = SVMWithSGD.train(trainingLabeledPoints, numIterations, 1.0, 0.01, 1.0)
+        trainDF.show(10, false)
+
+//        val numIterations = 100
+//        val trainingLabeledPoints = trainDF.toMLLibLabelPoint.rdd
+//        val model = SVMWithSGD.train(trainingLabeledPoints, numIterations, 1.0, 0.01, 1.0)
 
         val ovr = new OneVsRest()
           .setClassifier(lsvc)
@@ -111,7 +113,7 @@ case class SVMModel(hpGroup: Option[SVMHPGroup] = None, seed: Long = Random.next
               debug(s"SVM's max_depth_rf hyper-parameter was set to ${p.currentValue}")
               res.addGrid(lsvc.maxIter, Array(p.currentValue.toInt))
             case p@RegParamSVM(_) =>
-              debug(s"SVM's max_depth_rf hyper-parameter was set to ${p.currentValue}")
+              debug(s"SVM's regParam hyper-parameter was set to ${p.currentValue}")
               res.addGrid(lsvc.regParam, Array(p.currentValue))
           }).build()
           val cv = new CrossValidator()
@@ -132,7 +134,9 @@ case class SVMModel(hpGroup: Option[SVMHPGroup] = None, seed: Long = Random.next
           //Unused
           val f1 = evaluator.setMetricName("f1").evaluate(predictions)
 
-          FitnessResult(Map("f1" -> f1CV, "accuracy" -> -1), problemType, predictions)
+          val logLoss = LogLossCustom.compute(predictions)
+
+          FitnessResult(Map("f1" -> f1CV, "accuracy" -> -1, "logloss" -> logLoss), problemType, predictions)
         } else {
           throw new IllegalStateException("Only CV validation strategy for SVM is supported.")
         }

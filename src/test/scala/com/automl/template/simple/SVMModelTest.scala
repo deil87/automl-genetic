@@ -3,7 +3,9 @@ package com.automl.template.simple
 import com.automl.ConfigProvider
 import com.automl.dataset.Datasets
 import com.automl.evolution.dimension.hparameter._
+import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.MultiClassClassificationProblem
+import com.automl.template.LeafTemplate
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -61,6 +63,35 @@ class SVMModelTest extends FunSuite with Matchers{
     println(s"F1 computed for SVM model $svmF1")
 
     svmF1 shouldBe 0.9 +- 0.1
+  }
+
+
+  // AG-184
+  ignore("logloss metric is being computed successfully for SVMModel") {
+
+    val metric = "logloss"
+
+    ConfigProvider.addOverride(
+      s"""
+         |evolution {
+         |  hyperParameterDimension {
+         |    enabled = false
+         |  }
+         |  evaluation {
+         |    multiclass.metric = "$metric"
+         |  }
+         |}
+        """)
+
+    val template = LeafTemplate(SVMModel())
+
+    val seed = 1234
+    val preparedGlassDF = Datasets.getGlassDataFrame(seed)
+
+    val Array(trainDF, testDF) = preparedGlassDF.randomSplit(Array(0.8, 0.2))
+
+    val result = template.evaluateFitness(trainDF, testDF, ProblemType.MultiClassClassificationProblem, None, seed)
+    result.getCorrespondingMetric should be >= 0.0
   }
 
 }

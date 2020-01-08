@@ -1,6 +1,12 @@
 package com.automl.template.simple
 
+import akka.actor.ActorSystem
+import com.automl.{AutoML, ConfigProvider}
+import com.automl.dataset.Datasets
+import com.automl.population.TPopulation
+import com.automl.problemtype.ProblemType
 import com.automl.spark.SparkSessionProvider
+import com.automl.template.LeafTemplate
 import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 import org.apache.spark.ml.feature.{StandardScaler, VectorAssembler}
@@ -72,4 +78,33 @@ class LogisticRegressionModelTest extends FunSuite with Matchers with BeforeAndA
     f1 shouldBe 0.9 +- 0.1
 
   }
+
+  test("logloss metric is being computed successfully for LogisticRegressionModel") {
+
+    val metric = "logloss"
+
+    ConfigProvider.addOverride(
+      s"""
+         |evolution {
+         |  hyperParameterDimension {
+         |    enabled = false
+         |  }
+         |  evaluation {
+         |    multiclass.metric = "$metric"
+         |  }
+         |}
+        """)
+
+    val template = LeafTemplate(LogisticRegressionModel())
+
+    val seed = 1234
+    val preparedGlassDF = Datasets.getGlassDataFrame(seed)
+
+    val Array(trainDF, testDF) = preparedGlassDF.randomSplit(Array(0.8, 0.2))
+
+    val result = template.evaluateFitness(trainDF, testDF, ProblemType.MultiClassClassificationProblem, None, seed)
+    result.getCorrespondingMetric should be >= 0.0
+  }
+
+
 }

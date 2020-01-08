@@ -15,6 +15,7 @@ import org.apache.spark.ml.regression.RandomForestRegressor
 import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
 import org.apache.spark.mllib.evaluation.MulticlassMetrics
 import org.apache.spark.sql._
+import utils.LogLossCustom
 
 import scala.util.Random
 
@@ -110,10 +111,12 @@ case class RandomForest(hpGroup: Option[DecisionTreeHPGroup] = None, seed: Long 
 
           printConfusionMatrix(predictions, testDF)
 
+          val logLoss = LogLossCustom.compute(predictions)
+
           //Unused
           val f1 = evaluator.setMetricName("f1").evaluate(predictions)
 
-          FitnessResult(Map("f1" -> f1CV, "accuracy" -> -1), problemType, predictions)
+          FitnessResult(Map("f1" -> f1CV, "accuracy" -> -1, "logloss" -> logLoss), problemType, predictions)
         } else {
           throw new IllegalStateException("Only CV strategy for RandomForest is supported.")
         }

@@ -178,9 +178,11 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
       implicit val system = ActorSystem("AutoML-system")
 
       val individuals = Seq(
-//        LeafTemplate(LogisticRegressionModel()),
+        LeafTemplate(LogisticRegressionModel()),
         LeafTemplate(Bayesian()),
-        LeafTemplate(DecisionTree())
+        LeafTemplate(RandomForest()),
+        LeafTemplate(DecisionTree()),
+//        LeafTemplate(SVMModel()) // TODO AG-184
       )
 
       val seedPopulation = new TPopulation(individuals)
@@ -192,12 +194,12 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
       val autoMl = new AutoML(
         data = preparedGlassDF,
         responseColumn = "indexedLabel",
-        maxTime = 30000,
+        maxTime = 120000,
         useMetaDB = false,
         initialPopulationSize = Some(3),
         seedPopulation = Some(seedPopulation),
         maxEvolutions = 5,
-        isBigSizeThreshold = 100,
+        isBigSizeThreshold = 215,
         initialSampleSize = 50)
 
       val hallOfFame = autoMl.runEvolution
