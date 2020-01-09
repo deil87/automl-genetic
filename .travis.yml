@@ -1,4 +1,6 @@
 language: scala
+scala:
+  - 2.12.1
 
 #before_install:
 #  - git clone --recursive https://github.com/dmlc/xgboost
