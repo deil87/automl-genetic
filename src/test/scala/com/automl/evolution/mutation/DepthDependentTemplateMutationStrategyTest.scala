@@ -1,19 +1,58 @@
 package com.automl.evolution.mutation
 
-import com.automl.ConfigProvider
+import com.automl.{AutoML, ConfigProvider}
 import com.automl.classifier.ensemble.bagging.SparkGenericBagging
 import com.automl.evolution.diversity.DistinctDiversityStrategy
 import com.automl.helper.PopulationHelper
-import com.automl.population.TPopulation
+import com.automl.population.{GenericPopulationBuilder, TPopulation}
 import com.automl.problemtype.ProblemType
-import com.automl.problemtype.ProblemType.MultiClassClassificationProblem
+import com.automl.problemtype.ProblemType.{MultiClassClassificationProblem, RegressionProblem}
 import com.automl.template.ensemble.stacking.GenericStacking
-import com.automl.template.simple.{Bayesian, DecisionTree, RandomForest}
+import com.automl.template.simple._
 import com.automl.template.{LeafTemplate, NodeTemplate, TemplateMember, TemplateTree}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{FunSuite, Matchers}
 
 class DepthDependentTemplateMutationStrategyTest extends FunSuite with Matchers{
+
+  ignore("mutate templateTree from base model to complex algorithm") {
+
+    implicit val logPaddingSize: Int = 0
+    val seed: Seq[LeafTemplate[SimpleModelMember]] = Seq(
+      LeafTemplate(Bayesian()),
+      LeafTemplate(LinearRegressionModel()),
+      LeafTemplate(DecisionTree())
+    )
+
+    val seedPopulation = new TPopulation(seed)
+
+    val population = GenericPopulationBuilder.fromSeedPopulation(seedPopulation).withSize(10).build
+
+    val autoMl = new AutoML(null, maxTime = 50000, useMetaDB = false, initialPopulationSize = Some(10))
+
+    PopulationHelper.print(population)
+
+    val distinctStrategy = new DistinctDiversityStrategy()
+
+    val problemType = RegressionProblem
+
+    val mutationStrategy = new DepthDependentTemplateMutationStrategy(distinctStrategy, problemType)
+
+    val mutated = mutationStrategy.mutate(population)
+
+    PopulationHelper.print(mutated)
+
+    val mutated2 = mutationStrategy.mutate(mutated)
+    PopulationHelper.print(mutated2)
+
+    val mutated3 = mutationStrategy.mutate(mutated2)
+    PopulationHelper.print(mutated3)
+
+    //TODO make mutation happens every time
+    mutated shouldNot be(population)
+    mutated2 shouldNot be(mutated)
+    mutated3 shouldNot be(mutated2)
+  }
 
   test("test that we can get desired depth of the tree during mutation") {
 

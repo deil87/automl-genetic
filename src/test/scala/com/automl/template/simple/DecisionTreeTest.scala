@@ -25,7 +25,7 @@ class DecisionTreeTest extends FunSuite with SparkSessionProvider with Matchers{
     ))
 
     def getFitnessForBaselineModel(seed: Long) = {
-      val testOverride: Config = ConfigFactory.parseString(
+      ConfigProvider.clearOverride.addOverride(
         """
           |evolution {
           |  hpGridSearch = false
@@ -36,8 +36,7 @@ class DecisionTreeTest extends FunSuite with SparkSessionProvider with Matchers{
           |    multiclass.metric = "f1"
           |  }
           |}
-        """.stripMargin)
-      ConfigProvider.addOverride(testOverride)
+        """)
 
       val dt = DecisionTree(null)
 

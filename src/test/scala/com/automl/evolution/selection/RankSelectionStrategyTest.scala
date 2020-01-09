@@ -50,7 +50,7 @@ class RankSelectionStrategyTest extends WordSpec with Matchers{
     }
 
     "parentSelection with local competitions" in {
-      ConfigProvider.addOverride(
+      ConfigProvider.clearOverride.addOverride(
         """
           |evolution {
           |  evaluation {

@@ -1,6 +1,8 @@
 package com.automl.template
 
-object TemplateTreeComparator {
+import com.typesafe.scalalogging.LazyLogging
+
+object TemplateTreeComparator extends LazyLogging{
 
 
   def compare[A <: TemplateMember](left: TemplateTree[A], right: TemplateTree[A]): Boolean = {
@@ -8,6 +10,7 @@ object TemplateTreeComparator {
       case l: LeafTemplate[A] => {
         val hpFieldsAreDefined = l.internalHyperParamsMap.isDefined && right.internalHyperParamsMap.isDefined
         val hpFieldsAreEqual = l.internalHyperParamsMap.get == right.internalHyperParamsMap.get
+          if(!hpFieldsAreEqual) logger.debug("Hyperparameter fields of the LeafTemplates are not equal")
         val membersAreEqual = l.member == right.member
         membersAreEqual && hpFieldsAreDefined && hpFieldsAreEqual
       }

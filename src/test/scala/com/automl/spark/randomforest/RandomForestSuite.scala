@@ -85,7 +85,7 @@ class RandomForestSuite extends FunSuite with Matchers with SparkSessionProvider
     val evaluator = new RegressionEvaluator()
   }
 
-  test("Random forest should work with classification problems") {
+  ignore("Random forest should work with classification problems") {
 
     val shuffleSeed = 1234
     val data = Datasets.getBalanceDataFrame(shuffleSeed)

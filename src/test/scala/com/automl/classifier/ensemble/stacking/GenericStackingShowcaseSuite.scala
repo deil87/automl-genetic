@@ -13,7 +13,7 @@ class GenericStackingShowcaseSuite extends FunSuite with Matchers with SparkSess
   import ss.implicits._
   import utils.SparkMLUtils._
 
-  test("Should combine models for stacking") {
+  ignore("Should combine models for stacking") {
     val observations = ss.sparkContext.parallelize(
       Seq(
         (1, 1, 100.0),

@@ -23,7 +23,7 @@ class StratifiedSamplingTest extends FunSuite with Matchers with SparkSessionPro
     counts(0).toDouble / 2 shouldBe countsS(0).toDouble +- 5
   }
 
-  test("Stratified should preserve all levels") {
+  ignore("Stratified should preserve all levels") {
     val seed = new Random().nextLong()
 
     val stratifier = new StratifiedSampling

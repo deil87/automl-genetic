@@ -46,13 +46,14 @@ class DoubleHPRangeTest extends FunSuite with Matchers with LazyLogging{
 
   // But with random jump it always actually can. Need to relax requirement
   test("test that mutate() will not return the same value after mutation") {
-    val regParam = RegParamLR()
-    logger.debug("Max boundary:" + regParam.max)
-    logger.debug("Min boundary:" + regParam.min)
-    1 to 10000 foreach (idx => {
+    logger.debug("Max boundary:" + RegParamLR().max)
+    logger.debug("Min boundary:" + RegParamLR().min)
+    1 to 100 foreach (idx => {
+      val regParam = RegParamLR()
+
       val before = regParam.currentValue
       val next = regParam.mutate()
-      logger.debug("Iteration: " + idx + " -> " + next)
+//      logger.debug("Iteration: " + idx + " -> " + next)
 
       before != next.currentValue shouldBe true
     })

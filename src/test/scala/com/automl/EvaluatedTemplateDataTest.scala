@@ -32,7 +32,7 @@ class EvaluatedTemplateDataTest extends FunSuite with Matchers {
 
   test("order for FitnessResult with `f1` metric is descending ( the greater the better case)") {
 
-    ConfigProvider.addOverride(
+    ConfigProvider.clearOverride.addOverride(
       """
         |evolution {
         |  evaluation {

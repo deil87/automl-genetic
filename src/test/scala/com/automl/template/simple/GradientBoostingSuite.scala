@@ -10,7 +10,7 @@ class GradientBoostingSuite extends WordSpec with Matchers with SparkSessionProv
 
   "GradientBoodtingSuite" should {
 
-    "should calculate fitness value" in {
+    "should calculate fitness value" ignore {
       val estimator = GradientBoosting()
 
       val dataset: DataFrame = ss.sparkContext.parallelize(

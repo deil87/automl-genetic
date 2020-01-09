@@ -202,7 +202,7 @@ trait DoubleHPRange[V <: MutableHParameter[Double, V]] extends HPRange[Double] w
     var newValue = getNextClosestWithinTheRange(currentValue)
     if(!isExplored) { // when space is explored we are ok with any next value within range (from code line above)
       while (explored.contains(newValue) /*&& explored.size < numberOfEntries*/ ) {
-        logger.info(s"Cache hit: $newValue")
+        logger.debug(s"Cache hit: $newValue")
         newValue = getNextClosestWithinTheRange(newValue)
         validate(newValue)
       }

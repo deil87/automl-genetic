@@ -4,7 +4,7 @@ import com.automl.evolution.dimension.hparameter.{EvaluatedHyperParametersField,
 import com.automl.evolution.diversity.{DistinctDiversityStrategy, MisclassificationDistance}
 import com.automl.evolution.evaluation.{NeighboursFinder, TemplateNSLCEvaluator}
 import com.automl.{ConfigProvider, EvaluatedTemplateData, EvaluatedTemplateDataDTOJsonProtocol, EvolutionProgressDTO, PaddedLogging}
-import com.automl.evolution.mutation.{DepthDependentTemplateMutationStrategy, MutationProbabilities}
+import com.automl.evolution.mutation.{DepthDependentTemplateMutationStrategy}
 import com.automl.evolution.selection.RankSelectionStrategy
 import com.automl.helper.{FitnessResult, PopulationHelper}
 import com.automl.population.{GenericPopulationBuilder, TPopulation}

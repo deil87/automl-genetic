@@ -26,6 +26,19 @@ class BayesianTest extends FunSuite with SparkSessionProvider with Matchers with
   val problemType = ProblemType.MultiClassClassificationProblem
 
   test("Bayesian model can predict for wine dataset") {
+
+    ConfigProvider.clearOverride.addOverride(
+      s"""
+         |evolution {
+         |  hyperParameterDimension {
+         |    enabled = false
+         |  }
+         |  evaluation {
+         |    multiclass.metric = "f1"
+         |  }
+         |}
+        """)
+
     val shufflingSeed = 1256
 
     val Array(trainDF, testDF) = Datasets.getWineDataframe(shufflingSeed).randomSplit(Array(0.8, 0.2))
@@ -44,7 +57,21 @@ class BayesianTest extends FunSuite with SparkSessionProvider with Matchers with
     bayesianF1 shouldBe 0.9 +- 0.1
   }
 
+
   test("Bayesian model might predict same values depending on the Smoothing hyper parameter's value and data splits") {
+
+    ConfigProvider.clearOverride.addOverride(
+      s"""
+         |evolution {
+         |  hyperParameterDimension {
+         |    enabled = false
+         |  }
+         |  evaluation {
+         |    multiclass.metric = "f1"
+         |  }
+         |}
+        """)
+
     val seed = 1234
     val shufflingSeed = 1256
 
@@ -66,7 +93,7 @@ class BayesianTest extends FunSuite with SparkSessionProvider with Matchers with
 
     val bayesianHPFieldOp_3 = Some(HyperParametersField(
       Seq(
-        BayesianHPGroup(Seq(Smoothing(Some(5.0))))
+        BayesianHPGroup(Seq(Smoothing(Some(8.0))))
       )
     ))
 
@@ -76,13 +103,22 @@ class BayesianTest extends FunSuite with SparkSessionProvider with Matchers with
 
     println(s"F1 computed for Bayesian model with Smoothing = 2 : $bayesianF1_1")
     println(s"F1 computed for Bayesian model with Smoothing = 3 : $bayesianF1_2")
-    println(s"F1 computed for Bayesian model with Smoothing = 5 : $bayesianF1_3")
+    println(s"F1 computed for Bayesian model with Smoothing = 8 : $bayesianF1_3")
 
     bayesianF1_1 shouldBe bayesianF1_2
     bayesianF1_1 should not be bayesianF1_3
   }
 
   test("testFitnessError with Glass dataset") {
+    ConfigProvider.addOverride(
+      """
+        |evolution {
+        |  evaluation {
+        |    multiclass.metric = "f1"
+        |  }
+        |}
+      """)
+
     val seed = 1234
     val seedForShuffling = 3456
     // seed only makes sure the sizes of the splits are constant not the elements inside. seedForShuffling serves for tat purpose

@@ -32,7 +32,7 @@ class MisclassificationDistanceStrategyTest extends FunSuite with Matchers with 
     )
   ).toDF("uniqueIdColumn", "prediction", "indexedLabel")
 
-  test("testGetDistance should return almost 1 for identical columns") {
+  ignore("testGetDistance should return almost 1 for identical columns") {
     val misclassificationDistanceResult = new MisclassificationDistance().getDistance(df1, df2)
     misclassificationDistanceResult.distance should be(0.0 +- 0.001)
 

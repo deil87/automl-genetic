@@ -2,11 +2,7 @@ package com.automl
 
 import akka.actor.ActorSystem
 import com.automl.dataset.Datasets
-import com.automl.evolution.diversity.DistinctDiversityStrategy
-import com.automl.evolution.mutation.DepthDependentTemplateMutationStrategy
-import com.automl.helper.{FitnessResult, PopulationHelper}
 import com.automl.population.{GenericPopulationBuilder, TPopulation}
-import com.automl.problemtype.ProblemType.RegressionProblem
 import com.automl.spark.SparkSessionProvider
 import com.automl.template._
 import com.automl.template.simple._
@@ -24,45 +20,8 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
 
   "AutoML" should {
 
-    "mutate templateTree from base model to complex algorithm" ignore {
-
-      val seed: Seq[LeafTemplate[SimpleModelMember]] = Seq(
-        LeafTemplate(Bayesian()),
-        LeafTemplate(LinearRegressionModel()),
-        LeafTemplate(DecisionTree())
-      )
-
-      val seedPopulation = new TPopulation(seed)
-
-      val population = GenericPopulationBuilder.fromSeedPopulation(seedPopulation).withSize(10).build
-
-      val autoMl = new AutoML(null, maxTime = 50000, useMetaDB = false, initialPopulationSize = Some(10))
-
-      PopulationHelper.print(population)
-
-      val distinctStrategy = new DistinctDiversityStrategy()
-
-      val problemType = RegressionProblem
-
-      val mutationStrategy = new DepthDependentTemplateMutationStrategy(distinctStrategy, problemType)
-
-      val mutated = mutationStrategy.mutate(population)
-
-      PopulationHelper.print(mutated)
-
-      val mutated2 = mutationStrategy.mutate(mutated)
-      PopulationHelper.print(mutated2)
-
-      val mutated3 = mutationStrategy.mutate(mutated2)
-      PopulationHelper.print(mutated3)
-
-      //TODO make mutation happens every time
-      mutated shouldNot be(population)
-      mutated2 shouldNot be(mutated)
-      mutated3 shouldNot be(mutated2)
-    }
-
-    "find best template with most optimal fitness value" in {
+    // ignored as it is more like a Benchmark not a unit test
+    "find best template with most optimal fitness value" ignore {
 
       val seed: Seq[LeafTemplate[SimpleModelMember]] = Seq(
         LeafTemplate(LinearRegressionModel()),
@@ -112,9 +71,9 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
 
     }
 
-    "best model was selected with accordance with chosen metric ( f1 is theBiggerTheBetter metric) " in {
+    "best model was selected with accordance to chosen metric ( f1 is theBiggerTheBetter metric) " in {
 
-      ConfigProvider.addOverride(
+      ConfigProvider.clearOverride.addOverride(
         """
           |evolution {
           |  hyperParameterDimension {
@@ -159,11 +118,11 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
 
     }
 
-    "best model was selected with accordance with chosen metric ( logloss is theSmallerTheBetter metric) " in {
+    "best model was selected with accordance to chosen metric ( logloss is theSmallerTheBetter metric) " in {
 
       val metric = "logloss"
 
-      ConfigProvider.addOverride(
+      ConfigProvider.clearOverride.addOverride(
         s"""
           |evolution {
           |  hyperParameterDimension {
