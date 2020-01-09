@@ -15,4 +15,6 @@ script:
 cache:
   directories:
     - xgboost
-    - $HOME/.m2
+    - $HOME/.gradle/caches/
+    - $HOME/.gradle/wrapper/
+#    - $HOME/.m2
