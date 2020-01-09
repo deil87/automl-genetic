@@ -121,6 +121,16 @@ dependencies {
 }
 
 test {
+
+  println("Check that test is running")
+
+  if (project.hasProperty("isCI")) {
+    println("Performing actions in CI mode ( src/main/resources/logback-ci.xml is being used)")
+  } else {
+    println("Performing actions in DEV mode ( src/main/resources/logback.xml is being used)")
+//    throw new InvalidUserDataException("Cannot perform release outside of CI")
+  }
+
   forkEvery = 1
   maxParallelForks = 4
 }
