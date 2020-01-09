@@ -126,6 +126,7 @@ test {
 
   if (project.hasProperty("isCI")) {
     println("Performing actions in CI mode ( src/main/resources/logback-ci.xml is being used)")
+    systemProperty "logback.configurationFile", "src/main/resources/logback-ci.xml"
   } else {
     println("Performing actions in DEV mode ( src/main/resources/logback.xml is being used)")
 //    throw new InvalidUserDataException("Cannot perform release outside of CI")
