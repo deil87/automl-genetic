@@ -1,6 +1,6 @@
 package com.automl.template.simple
 
-import com.automl.{ConfigProvider, PaddedLogging}
+import com.automl.{ConfigProvider, LogLossCustom, PaddedLogging}
 import com.automl.evolution.dimension.hparameter._
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
@@ -12,7 +12,6 @@ import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 import org.apache.spark.ml.feature.StandardScaler
 import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
 import org.apache.spark.sql._
-import utils.LogLossCustom
 
 case class LogisticRegressionModel(hpGroup: Option[LogisticRegressionHPGroup] = None)(implicit val logPaddingSize: Int = 0)
   extends LinearModelMember

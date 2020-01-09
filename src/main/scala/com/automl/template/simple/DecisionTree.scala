@@ -1,6 +1,6 @@
 package com.automl.template.simple
 
-import com.automl.{ConfigProvider, PaddedLogging}
+import com.automl.{ConfigProvider, LogLossCustom, PaddedLogging}
 import com.automl.evolution.dimension.hparameter._
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
@@ -14,7 +14,7 @@ import org.apache.spark.ml.evaluation.{MulticlassClassificationEvaluator, Regres
 import org.apache.spark.ml.regression.DecisionTreeRegressor
 import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
 import org.apache.spark.sql._
-import utils.{LogLossCustom, SparkMLUtils}
+import utils.SparkMLUtils
 
 import scala.util.Random
 

@@ -1,6 +1,6 @@
 package com.automl.classifier.ensemble.bagging
 
-import com.automl.{ConsistencyChecker, PaddedLogging}
+import com.automl.{ConsistencyChecker, LogLossCustom, PaddedLogging}
 import com.automl.dataset.{RandomSampling, StratifiedSampling}
 import com.automl.evolution.dimension.hparameter.HyperParametersField
 import com.automl.helper.FitnessResult
@@ -12,7 +12,7 @@ import com.automl.template.{TemplateMember, TemplateTree, TreeContext}
 import org.apache.spark.ml.evaluation.{MulticlassClassificationEvaluator, RegressionEvaluator}
 import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.sql._
-import utils.{BenchmarkHelper, LogLossCustom, SparkMLUtils}
+import utils.{BenchmarkHelper, SparkMLUtils}
 import org.apache.spark.ml.linalg.{DenseVector, Vector => MLVector}
 
 import scala.collection.{immutable, mutable}

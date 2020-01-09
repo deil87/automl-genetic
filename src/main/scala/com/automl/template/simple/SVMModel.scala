@@ -6,7 +6,7 @@ import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
 import com.automl.template.EvaluationMagnet
 import com.automl.teststrategy.{TestStrategy, TrainingTestSplitStrategy}
-import com.automl.{ConfigProvider, PaddedLogging}
+import com.automl.{ConfigProvider, LogLossCustom, PaddedLogging}
 import org.apache.spark.ml.classification.{LinearSVC, OneVsRest}
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
@@ -14,7 +14,6 @@ import org.apache.spark.mllib.classification.SVMWithSGD
 import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import utils.LogLossCustom
 
 import scala.util.Random
 

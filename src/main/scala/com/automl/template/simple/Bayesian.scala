@@ -1,6 +1,6 @@
 package com.automl.template.simple
 
-import com.automl.{ConfigProvider, ConsistencyChecker, PaddedLogging}
+import com.automl.{ConfigProvider, ConsistencyChecker, LogLossCustom, PaddedLogging}
 import com.automl.evolution.dimension.hparameter.{BayesianHPGroup, HyperParametersField, Smoothing}
 import com.automl.exception.SuspiciousPerformanceException
 import com.automl.helper.FitnessResult
@@ -16,7 +16,7 @@ import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
 import org.apache.spark.mllib.evaluation.MulticlassMetrics
 import org.apache.spark.sql._
 import org.apache.spark.sql.types.{DoubleType, StringType}
-import utils.{LogLossCustom, SparkMLUtils}
+import utils.SparkMLUtils
 
 case class Bayesian(hpGroup: Option[BayesianHPGroup] = None)(implicit val logPaddingSize: Int = 0)
   extends SimpleModelMember

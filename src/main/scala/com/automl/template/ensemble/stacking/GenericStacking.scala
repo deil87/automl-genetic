@@ -1,6 +1,6 @@
 package com.automl.template.ensemble.stacking
 
-import com.automl.PaddedLogging
+import com.automl.{LogLossCustom, PaddedLogging}
 import com.automl.helper.FitnessResult
 import com.automl.regressor.EnsemblingRegressor
 import com.automl.template.{EvaluationMagnet, TemplateMember, TemplateTree, TreeContext}
@@ -15,7 +15,6 @@ import org.apache.spark.ml.evaluation.{MulticlassClassificationEvaluator, Regres
 import org.apache.spark.ml.regression.LinearRegression
 import org.apache.spark.ml.{Pipeline, PipelineStage, Predictor}
 import org.apache.spark.sql.DataFrame
-import utils.LogLossCustom
 import utils.SparkMLUtils._
 
 
