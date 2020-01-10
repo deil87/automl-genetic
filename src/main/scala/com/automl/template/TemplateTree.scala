@@ -103,6 +103,9 @@ case class LeafTemplate[+A <: TemplateMember](member: A) extends TemplateTree[A]
 case class NodeTemplate[+A <: TemplateMember](member: A, subMembers: Seq[TemplateTree[A]] = Nil) extends TemplateTree[A] {
   require(member.isInstanceOf[EnsemblingModelMember], "NodeTemplates's member shoud be of ensembling type")
 
+  // Constructor: assigning parents to submembers
+  subMembers.foreach(subMember => subMember.parent = Some(this))
+
   override def setLogPadding(size: Int): Unit = {
     member.setLogPadding(size)
     subMembers.foreach(_.setLogPadding(size + 4))

@@ -20,7 +20,9 @@ import scala.util.Random
   *           In case the template is a single base model we can mutate it to another base model or to ensemble node.
   *         2) Or we can mutate any node to anything.
   * @param diversityStrategy
+  * @deprecated use {@link DepthDependentTemplateMutationStrategy} instead
   */
+@Deprecated
 class PopulationWideProbabilityDrivenTMStrategy(diversityStrategy: DiversityStrategy) extends LazyLogging {
 
   /**

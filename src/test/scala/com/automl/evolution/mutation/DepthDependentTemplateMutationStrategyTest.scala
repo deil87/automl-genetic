@@ -1,21 +1,21 @@
 package com.automl.evolution.mutation
 
-import com.automl.{AutoML, ConfigProvider}
+import com.automl.ConfigProvider
 import com.automl.classifier.ensemble.bagging.SparkGenericBagging
 import com.automl.evolution.diversity.DistinctDiversityStrategy
 import com.automl.helper.PopulationHelper
 import com.automl.population.{GenericPopulationBuilder, TPopulation}
 import com.automl.problemtype.ProblemType
-import com.automl.problemtype.ProblemType.{MultiClassClassificationProblem, RegressionProblem}
+import com.automl.problemtype.ProblemType.MultiClassClassificationProblem
 import com.automl.template.ensemble.stacking.GenericStacking
 import com.automl.template.simple._
 import com.automl.template.{LeafTemplate, NodeTemplate, TemplateMember, TemplateTree}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{FunSuite, Matchers}
 
-class DepthDependentTemplateMutationStrategyTest extends FunSuite with Matchers{
+class DepthDependentTemplateMutationStrategyTest extends FunSuite with Matchers {
 
-  ignore("mutate templateTree from base model to complex algorithm") {
+  test("mutate templateTree from base model to complex algorithm") {
 
     implicit val logPaddingSize: Int = 0
     val seed: Seq[LeafTemplate[SimpleModelMember]] = Seq(
@@ -28,13 +28,11 @@ class DepthDependentTemplateMutationStrategyTest extends FunSuite with Matchers{
 
     val population = GenericPopulationBuilder.fromSeedPopulation(seedPopulation).withSize(10).build
 
-    val autoMl = new AutoML(null, maxTime = 50000, useMetaDB = false, initialPopulationSize = Some(10))
-
     PopulationHelper.print(population)
 
     val distinctStrategy = new DistinctDiversityStrategy()
 
-    val problemType = RegressionProblem
+    val problemType = MultiClassClassificationProblem
 
     val mutationStrategy = new DepthDependentTemplateMutationStrategy(distinctStrategy, problemType)
 
@@ -56,18 +54,16 @@ class DepthDependentTemplateMutationStrategyTest extends FunSuite with Matchers{
 
   test("test that we can get desired depth of the tree during mutation") {
 
-    val testOverride: Config = ConfigFactory.parseString(
+    ConfigProvider.clearOverride.addOverride(
       """
         |evolution {
         |  templateDimension {
         |    maxEnsembleDepth = 4
         |  }
         |}
-      """.stripMargin)
-    ConfigProvider.addOverride(testOverride)
+      """)
 
     val distinctStrategy = new DistinctDiversityStrategy()
-    val conf = ConfigProvider.config
     val mutationStrategy = new DepthDependentTemplateMutationStrategy(distinctStrategy, MultiClassClassificationProblem)(0)
 
     val individuals = Seq(
@@ -186,8 +182,7 @@ class DepthDependentTemplateMutationStrategyTest extends FunSuite with Matchers{
           )
         )
 
-      val copyOfIndividual = ??? //individual
-      val newIndividual = strategy.mutateIndividual(copyOfIndividual)
+      val newIndividual = strategy.mutateIndividual(individual)
 
       println(individual.render)
       println(newIndividual.render)
@@ -339,8 +334,6 @@ class DepthDependentTemplateMutationStrategyTest extends FunSuite with Matchers{
           //            LeafTemplate(RandomForest())
         )
       )
-    dt.parent = Some(individual)
-    bayesian.parent = Some(individual)
 
     var currentStateOfIndividual: TemplateTree[TemplateMember] = individual
     1 to 100 foreach { i =>

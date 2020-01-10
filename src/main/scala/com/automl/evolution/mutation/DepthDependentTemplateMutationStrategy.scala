@@ -103,7 +103,7 @@ class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrateg
       val nt = NodeTemplate(randomEnsemblingMember, Seq(lt) ++ (0 until numberOfNewChildren).map(_ => LeafTemplate(getRandomBaseMemberBasedOnProblemType)))
       //Setting new parent for all submembers including original leaf template
       nt.parent = lt.parent
-      nt.subMembers.foreach(_.parent = Some(nt))
+      nt.subMembers.foreach(_.parent = Some(nt)) // TODO could be probably removed as we do this in NodeTemplate's constructor. Check once all tests are fixed.
       nt
     }
 
