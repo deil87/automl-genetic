@@ -43,7 +43,7 @@ class DataSetSizeEvolutionStrategyTest extends WordSpec  with Matchers with Spar
       val seed = new Random().nextLong()
 
       val currentSubSet = testDF.sample(false, 0.1, seed)
-      currentSubSet.show(100, false)
+//      currentSubSet.show(100, false)
       val currentSize: Long = currentSubSet.count()
       val nextSize = total / 2
 
@@ -57,7 +57,7 @@ class DataSetSizeEvolutionStrategyTest extends WordSpec  with Matchers with Spar
       evolvedDF.count() should be(500)
 
       val intersection = evolvedDF.intersect(currentSubSet)
-      intersection.show(100, false)
+//      intersection.show(100, false)
 
       val numberOfRowsFromPreviousEvolution = intersection.count()
 

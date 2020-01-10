@@ -32,13 +32,12 @@ class LinearPerceptronClassifier extends LazyLogging{
     val  extractFun:  (Vector, Int) => Double = (x, i) => x.toArray(i)
     val extractDoubleUDF = udf(extractFun)
 
-    encoded.show()
+//    encoded.show()
 
     val withSeparateLabelColumns = (0 until getNumberOfClasses(df)).foldLeft(encoded) {
       case (dataFrame, classIndex) =>
         dataFrame.withColumn(s"label_$classIndex", extractDoubleUDF($"labelOH", lit(classIndex)))
     }.drop("labelOH")
-    withSeparateLabelColumns.show() // TODO remove
     withSeparateLabelColumns
   }
 

@@ -82,7 +82,7 @@ case class SparkGenericBagging()(implicit val logPaddingSize: Int = 0) extends B
         .reduce((a, b) => {
           a.join(b, "uniqueIdColumn")
         }).cache()
-        .showN_AndContinue(10, "After joining predictions, weights and probabilities")
+//        .showN_AndContinue(10, "After joining predictions, weights and probabilities")
 
     def generateMajorityVoteUDF = {
       import org.apache.spark.sql.functions.udf

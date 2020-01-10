@@ -16,9 +16,9 @@ class AnalysisOfAirlineDatasetSuite extends WordSpec with Matchers with BeforeAn
   val airlineDF_allColumns = SparkMLUtils.loadParquet("src/test/resources/airline_allcolumns_sampled_100k_parquet")
   val airlineDF = airlineDF_allColumns.select("UniqueCarrier", "Month", "DayOfWeek", "Distance", "DepTime", "CRSDepTime", "DepDelay")
 
-  airlineDF_allColumns.show(10)
+//  airlineDF_allColumns.show(10)
 
-  airlineDF_allColumns.select("DayOfWeek").groupBy($"DayOfWeek").agg(count("DayOfWeek")).show()
+//  airlineDF_allColumns.select("DayOfWeek").groupBy($"DayOfWeek").agg(count("DayOfWeek")).show()
 
   val features = Array("Distance")
   val oheFeatures = Array("UniqueCarrier_ohe","DayOfWeek_ohe", "Month_ohe", "CRSDepTime_bucket_ohe")

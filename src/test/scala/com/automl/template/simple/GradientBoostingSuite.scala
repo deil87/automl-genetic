@@ -22,14 +22,14 @@ class GradientBoostingSuite extends WordSpec with Matchers with SparkSessionProv
         )
       ).toDF("param1", "param2", "label")
 
-      dataset.show(10)
+//      dataset.show(10)
 
       val assembler = new VectorAssembler()
         .setInputCols(Array("param1", "param2"))
         .setOutputCol("features")
 
       val preparedTrainDS = assembler.transform(dataset)
-      preparedTrainDS.show(10)
+//      preparedTrainDS.show(10)
 
       val testDS: DataFrame = ss.sparkContext.parallelize(
         Array(
@@ -38,11 +38,11 @@ class GradientBoostingSuite extends WordSpec with Matchers with SparkSessionProv
       ).toDF("param1", "param2", "label")
 
       val preparedTestDS = assembler.transform(testDS)
-      preparedTestDS.show(10)
+//      preparedTestDS.show(10)
 
       val fitnessResult = estimator.fitnessError(preparedTrainDS, preparedTestDS)
 
-      fitnessResult.dfWithPredictions.show()
+//      fitnessResult.dfWithPredictions.show()
 
       fitnessResult.metricsMap shouldBe 0.0
     }

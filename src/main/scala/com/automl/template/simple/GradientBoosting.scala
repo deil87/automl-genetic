@@ -55,7 +55,7 @@ case class GradientBoosting()(implicit val logPaddingSize: Int = 0) extends Simp
         // Fit on whole dataset to include all labels in index.
         val wholeData = trainDF.union(testDF)
 
-        wholeData.show(10)
+//        wholeData.show(10)
         val labelIndexer = new StringIndexer()
           .setInputCol("label")
           .setOutputCol("indexedLabel")
@@ -91,7 +91,7 @@ case class GradientBoosting()(implicit val logPaddingSize: Int = 0) extends Simp
         // Make predictions.
         val predictions = model.transform(testDF)
 
-        predictions.select("predictedLabel", "label", "features").show(5)
+//        predictions.select("predictedLabel", "label", "features").show(5)
 
         // Select (prediction, true label) and compute test error.
         val evaluator = new MulticlassClassificationEvaluator()

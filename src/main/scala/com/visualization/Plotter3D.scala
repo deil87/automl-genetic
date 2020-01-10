@@ -23,7 +23,7 @@ class Plotter3D {
 
     val pcaProjection: DataFrame = projected.drop("features").withColumnRenamed("pcaFeatures", "features")
 
-    pcaProjection.show(20, false)
+//    pcaProjection.show(20, false)
     val coordinates = pcaProjection.as[LabeledVector].map(lv => {
       val toArray: Array[Double] = lv.features.toArray
       (toArray(0), toArray(1), lv.label)
