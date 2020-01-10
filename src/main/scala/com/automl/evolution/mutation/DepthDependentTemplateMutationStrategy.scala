@@ -25,9 +25,8 @@ import scala.collection.JavaConverters._
   *         1) We can mutate only ensembling node by adding  children to it (base model nodes or another ensembling nodes).
   *           In case the template is a single base model we can mutate it to another base model or to ensemble node.
   *         2) Or we can mutate any node to anything.
-  * @param diversityStrategy
   */
-class DepthDependentTemplateMutationStrategy(diversityStrategy: DiversityStrategy, problemType: ProblemType)(implicit val logPaddingSize: Int) extends PaddedLogging {
+class DepthDependentTemplateMutationStrategy(/*unused*/diversityStrategy: DiversityStrategy, problemType: ProblemType)(implicit val logPaddingSize: Int) extends PaddedLogging {
 
   val tdConfig = ConfigProvider.config.getConfig("evolution.templateDimension")
 

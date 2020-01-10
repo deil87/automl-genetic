@@ -7,6 +7,7 @@ trait DiversityStrategy {
   def apply(input: TPopulation, fun: TemplateTree[TemplateMember] => TemplateTree[TemplateMember]): TPopulation
 }
 
+@Deprecated
 class DistinctDiversityStrategy extends DiversityStrategy {
   def apply(input: TPopulation, fun: TemplateTree[TemplateMember] => TemplateTree[TemplateMember]): TPopulation = {
     val populationSize = input.individuals.length
