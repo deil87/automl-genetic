@@ -3,7 +3,7 @@ package com.automl.evolution.diversity
 import com.automl.helper.PopulationHelper
 import com.automl.population.{GenericPopulationBuilder, TPopulation}
 import com.automl.template.simple._
-import com.automl.template.{LeafTemplate, TemplateMember, TemplateTree}
+import com.automl.template.{LeafTemplate, TemplateMember, TemplateTree, TestGit}
 import org.scalatest.{Matchers, WordSpec}
 
 class DistinctDiversityStrategyTest extends WordSpec with Matchers{
@@ -35,7 +35,7 @@ class DistinctDiversityStrategyTest extends WordSpec with Matchers{
     }
 
     "TestGit should work" ignore {
-
+        new TestGit().receiveValue shouldBe 42
     }
 
   }
