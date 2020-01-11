@@ -34,5 +34,9 @@ class DistinctDiversityStrategyTest extends WordSpec with Matchers{
       diversePopulation.size shouldBe population.size
     }
 
+    "TestGit should work" ignore {
+
+    }
+
   }
 }
