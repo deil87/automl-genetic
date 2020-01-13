@@ -3,15 +3,16 @@ package com.automl.evolution.dimension
 import akka.actor.ActorSystem
 import com.automl.classifier.ensemble.bagging.SparkGenericBagging
 import com.automl.problemtype.ProblemType
-import com.automl.problemtype.ProblemType.RegressionProblem
-import com.automl.AutoML
+import com.automl.problemtype.ProblemType.MultiClassClassificationProblem
+import com.automl.{AutoML, ConfigProvider}
+import com.automl.dataset.Datasets
 import com.automl.population.TPopulation
 import com.automl.spark.SparkSessionProvider
 import com.automl.template.{LeafTemplate, NodeTemplate}
-import com.automl.template.simple.{Bayesian, DecisionTree, LinearRegressionModel, SimpleModelMember}
+import com.automl.template.simple._
 import org.apache.spark.ml.feature.VectorAssembler
 import org.scalatest.{Matchers, WordSpec}
-import utils.{LabeledVector, SparkMLUtils}
+import utils.SparkMLUtils
 
 class TemplateEvolutionDimensionSuite extends WordSpec with Matchers with SparkSessionProvider {
   import ss.implicits._
@@ -21,84 +22,70 @@ class TemplateEvolutionDimensionSuite extends WordSpec with Matchers with SparkS
 
     implicit val system = ActorSystem("AutoMLSuite-system")
     implicit val logPaddingSize = 0
-
-
-    val airlineDF = SparkMLUtils.loadParquet("src/test/resources/airline_allcolumns_sampled_100k_parquet")
-      .select("DayOfWeek", "Distance", "DepTime", "CRSDepTime", "DepDelay")
-
-    val features = Array("Distance", "DayOfWeek")
-    val oheFeatures = Array.empty
-
-    val combinedFeatures = features
-
-    val featuresColName: String = "features"
-
-    def featuresAssembler = {
-      new VectorAssembler()
-        .setInputCols(combinedFeatures)
-        .setOutputCol(featuresColName)
-    }
-    import org.apache.spark.sql.functions.monotonically_increasing_id
-
-    val preparedAirlineDF = airlineDF
-      .limit(5000)
-      .applyTransformation(featuresAssembler)
-      .withColumnRenamed("DepDelay", "label")
-      .toDouble("label")
-      .filterOutNull("label")
-      .withColumn("uniqueIdColumn", monotonically_increasing_id)
-//      .showN_AndContinue(10)
-      .cache()
-
-    val Array(trainingSplit, testSplit) = preparedAirlineDF.randomSplit(Array(0.8, 0.2))
-
-    trainingSplit.cache()
-
   }
 
   "TemplateEvolutionDimension" should {
 
     "use different cache values for same template but different dataframe" in new Fixture {
-      val seed: Seq[LeafTemplate[SimpleModelMember]] = Seq(
+      ConfigProvider.clearOverride.addOverride(
+        """
+          |evolution {
+          |  hyperParameterDimension {
+          |    enabled = false
+          |  }
+          |}
+        """)
+      val seedPopulation: Seq[LeafTemplate[SimpleModelMember]] = Seq(
         LeafTemplate(Bayesian()),
-        LeafTemplate(LinearRegressionModel()),
         LeafTemplate(DecisionTree())
       )
 
-      val population = new TPopulation(seed)
+      val population = new TPopulation(seedPopulation)
 
-      val ds2 = trainingSplit.limit(20)
-      val ds3 = trainingSplit.limit(300)
+      val iridData = Datasets.getIrisDataFrame(1234)
+      val ds20 = iridData.limit(20)
+      val ds300 = iridData.limit(300)
 
-      val problemType = RegressionProblem
-      val t = new TemplateEvolutionDimension(problemType= problemType)
+      val problemType = MultiClassClassificationProblem
+      val t = new TemplateEvolutionDimension(initialPopulation = Some(population), problemType = problemType)
 
-      t.evaluatePopulation(population, ds2)
-      t.evaluatePopulation(population, ds3)
+      t.evaluatePopulation(population, ds20)
+      t.evaluatePopulation(population, ds300)
 
-      t.individualsEvaluationCache.size should be (6)  // (numbers of templates in population) * (# of different sizes of training datasets)
+      t.individualsEvaluationCacheExtended.size should be (4)  // (numbers of templates in population) * (# of different sizes of training datasets)
     }
 
     "caching is working within ensemble nodes" in new Fixture{
+      ConfigProvider.clearOverride.addOverride(
+        """
+          |evolution {
+          |  hyperParameterDimension {
+          |    enabled = false
+          |  }
+          |}
+        """)
 
-      val template = Seq(
+      val template =
         NodeTemplate(SparkGenericBagging(), Seq(
-          LeafTemplate(LinearRegressionModel()),
+          LeafTemplate(LogisticRegressionModel()),
           NodeTemplate(SparkGenericBagging(), Seq(
-            LeafTemplate(LinearRegressionModel()),
-            LeafTemplate(LinearRegressionModel())
+            LeafTemplate(LogisticRegressionModel()),
+            LeafTemplate(DecisionTree())
           ))
-        )
-        )
-      )
-      val problemType = ProblemType.RegressionProblem
+        ))
+      val problemType = ProblemType.MultiClassClassificationProblem
 
       val t = new TemplateEvolutionDimension(problemType = problemType)
 
-      val testPopulation = new TPopulation(template)
+      val testPopulation = new TPopulation(Seq(template))
 
-      val ds2 = trainingSplit.limit(20)
+      val iridData = Datasets.getIrisDataFrame(1234)
+      val ds2 = iridData.limit(20)
+
       t.evaluatePopulation(testPopulation, ds2).nonEmpty shouldBe true
+
+      private val key = (template, template.internalHyperParamsMap, ds2.count())
+      t.individualsEvaluationCacheExtended.get(key).nonEmpty shouldBe true
     }
 
   }

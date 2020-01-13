@@ -5,7 +5,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.{ActorRef, ActorSelection, ActorSystem}
 import akka.util.Timeout
 import com.automl.evolution.dimension.TemplateEvolutionDimension
-import com.automl.evolution.dimension.hparameter.{HyperParametersField, TemplateHyperParametersEvolutionDimension}
+import com.automl.evolution.dimension.hparameter.{HyperParametersField, HyperParametersEvolutionDimension}
 import com.automl.evolution.diversity.{CosineSimilarityAssistant, DistanceMetric, DistanceStrategy, MultidimensionalDistanceMetric}
 import com.automl.helper.{FitnessResult, TemplateTreeHelper}
 import com.automl.population.TPopulation
@@ -50,7 +50,7 @@ object EvaluatedTemplateDataDTOJsonProtocol extends DefaultJsonProtocol {
 //TODO DistanceMetric type could be dependant/parametrized on ProblemType
 class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
                                                                            templateEvDimension: TemplateEvolutionDimension,
-                                                                           hyperParamsEvDimOpt: Option[TemplateHyperParametersEvolutionDimension])
+                                                                           hyperParamsEvDimOpt: Option[HyperParametersEvolutionDimension])
                                                                          (implicit as: ActorSystem, val logPaddingSize: Int)
   extends PopulationEvaluator[TPopulation, TemplateTree[TemplateMember], EvaluatedTemplateData] with ConsistencyChecker with PaddedLogging{
 

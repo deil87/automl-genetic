@@ -1,6 +1,6 @@
 package com.automl.evolution.mutation
 
-import com.automl.evolution.dimension.hparameter.{HPRangeWasExploredException, TemplateHyperParametersEvolutionDimension}
+import com.automl.evolution.dimension.hparameter.{HPRangeWasExploredException, HyperParametersEvolutionDimension}
 import com.automl.{ConfigProvider, PaddedLogging}
 import com.automl.evolution.diversity.DiversityStrategy
 import com.automl.evolution.selection.{RankBasedSelectionProbabilityAssigner, RouletteWheel}

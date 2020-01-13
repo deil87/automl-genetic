@@ -1,10 +1,10 @@
 package com.automl.evolution.dimension
 import akka.actor.{ActorRef, ActorSelection, ActorSystem}
-import com.automl.evolution.dimension.hparameter.{EvaluatedHyperParametersField, HyperParametersField, TemplateHyperParametersEvolutionDimension}
+import com.automl.evolution.dimension.hparameter.{EvaluatedHyperParametersField, HyperParametersField, HyperParametersEvolutionDimension}
 import com.automl.evolution.diversity.{DistinctDiversityStrategy, MisclassificationDistance}
 import com.automl.evolution.evaluation.{NeighboursFinder, TemplateNSLCEvaluator}
 import com.automl.{ConfigProvider, EvaluatedTemplateData, EvaluatedTemplateDataDTOJsonProtocol, EvolutionProgressDTO, PaddedLogging}
-import com.automl.evolution.mutation.{DepthDependentTemplateMutationStrategy}
+import com.automl.evolution.mutation.DepthDependentTemplateMutationStrategy
 import com.automl.evolution.selection.RankSelectionStrategy
 import com.automl.helper.{FitnessResult, PopulationHelper}
 import com.automl.population.{GenericPopulationBuilder, TPopulation}
@@ -49,20 +49,21 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
 
   // Dependencies on other dimensions. Hardcoded for now. Should come from AutoML.runEvolution method parameters.
   val hyperParamsEvDim = if( ConfigProvider.config.getBoolean("evolution.hyperParameterDimension.enabled"))
-    Some(new TemplateHyperParametersEvolutionDimension(this,problemType = problemType, seed = seed)(logPaddingSize + 8))
+    Some(new HyperParametersEvolutionDimension(this,problemType = problemType, seed = seed)(logPaddingSize + 8))
   else None
 
   override var _population: TPopulation = new TPopulation(Nil)
 
   val evaluator = if(problemType == MultiClassClassificationProblem) {
      new TemplateNSLCEvaluator(this, hyperParamsEvDim)(as, logPaddingSize + 4)
-  } else ???
+  } else throw new UnsupportedOperationException("Only MultiClassClassificationProblem is supported for now.")
 
   val neighboursFinder = new NeighboursFinder(new MisclassificationDistance)(as, logPaddingSize + 8)
 
    // TODO make it faster with reference to value
   override implicit val individualsEvaluationCache = mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]()
 
+  // TODO generalize and make dependent dimensions to be used in the key automatically. maybe just use string with tree respresentation inside
   implicit val individualsEvaluationCacheExtended = mutable.Map[(TemplateTree[TemplateMember], Option[HyperParametersField], Long), FitnessResult]()
 
   override val hallOfFame: mutable.PriorityQueue[EvaluatedTemplateData] = collection.mutable.PriorityQueue[EvaluatedTemplateData]()

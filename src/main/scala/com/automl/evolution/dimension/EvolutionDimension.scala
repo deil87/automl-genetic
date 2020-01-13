@@ -1,7 +1,9 @@
 package com.automl.evolution.dimension
 
-import com.automl.helper.PopulationHelper
+import com.automl.evolution.dimension.hparameter.HyperParametersField
+import com.automl.helper.{FitnessResult, PopulationHelper}
 import com.automl.population.{Population, TPopulation}
+import com.automl.template.{TemplateMember, TemplateTree}
 import com.automl.{Evaluated, EvaluatedTemplateData, PaddedLogging}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.DataFrame
@@ -39,6 +41,9 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
   def evolutionDimensionLabel: String
 
   implicit val individualsEvaluationCache:mutable.Map[(T, Long), EvaluatedResult#FitnessType] //cache store anyone regardless of performance and could be/should be capped to prevent OOM
+
+  //Depends on HyperParametersField which should be generic type as well
+//  implicit val individualsEvaluationCacheExtended: mutable.Map[(T, Option[HyperParametersField], Long), EvaluatedResult#FitnessType]
 
   val hallOfFame: mutable.PriorityQueue[EvaluatedResult]
 

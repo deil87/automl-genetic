@@ -73,7 +73,7 @@ case class Bayesian(hpGroup: Option[BayesianHPGroup] = None)(implicit val logPad
         val classes = trainDF.select("indexedLabel").distinct().collect().map(_.getDouble(0))
 
         consistencyCheck {
-          require(classes contains (0.0), s"Bayesian labels should have all indexes ans zero-based but instead: ${classes.mkString(",")}")
+          require(classes contains (0.0), s"Bayesian labels should have all indexes and be zero-based but instead: ${classes.mkString(",")}")
           //require(classes.length == 6, s"For glass dataset there should be 5 classes but instead: ${classes.mkString(",")}")
         }
 

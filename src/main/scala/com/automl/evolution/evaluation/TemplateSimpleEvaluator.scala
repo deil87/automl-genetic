@@ -19,6 +19,7 @@ import scala.collection.mutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
+@Deprecated
 class TemplateSimpleEvaluator(implicit as: ActorSystem, val logPaddingSize: Int) extends PopulationEvaluator[TPopulation, TemplateTree[TemplateMember], EvaluatedTemplateData] with PaddedLogging{
 
   private val cacheHitsCounterKamon = Kamon.counter("kamon.automl.cache_hits")
