@@ -25,8 +25,9 @@ object LogLossCustom {
     val epsilon: Double = 1e-15
     def minMax(confidence: Double) = Math.max(Math.min(confidence, 1.0 - epsilon), epsilon)
 
-    udf { (preds: MLVector, labelIndex: Int) =>
-      val smoothedConfidence = minMax( preds.apply(labelIndex))
+    udf { (perClassLabelProbabilities: MLVector, labelIndex: Int) =>
+      assert(perClassLabelProbabilities.size + 1 > labelIndex, "LogLossCustom failed to compute metric as some class labels are missing from the dataset")
+      val smoothedConfidence = minMax( perClassLabelProbabilities.apply(labelIndex))
       -Math.log(smoothedConfidence)
     }
   }

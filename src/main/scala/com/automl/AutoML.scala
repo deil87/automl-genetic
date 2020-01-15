@@ -16,6 +16,7 @@ import com.typesafe.scalalogging.LazyLogging
 import kamon.Kamon
 import org.apache.spark.sql.DataFrame
 import spray.json.DefaultJsonProtocol
+import utils.FutureCancellable
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -128,7 +129,7 @@ class AutoML(data: DataFrame,
     //The fitness of each template is updated during evolutions and when the optimization terminates,
     // winning templates are saved as a new record into the metadatabase or corresponding records are
     // updated with the new templates.
-    var evolutionNumber = 0
+    var evolutionNumber = 1
     evolutionNumberKamon.set(0)
 
     val startTime = System.currentTimeMillis()
@@ -145,13 +146,14 @@ class AutoML(data: DataFrame,
       def restOfTheTimeBox = Math.max(timeBox.upperBoundary - (System.currentTimeMillis() - startTime), 1000)
 
       if(totalTimeLeft < 10) {
+        // TODO be smarter and add this time to previous timeBox. Or just split better from the beginning
         logger.info(s"$timeBox is skipped as it is less than 10 secs left.")
       } else {
 
         val (_, counts) = workingDataSet.select("indexedLabel").rdd.map(value => value.getDouble(0)).histogram(2)
         logger.debug(s"Distribution of classes for classification after sampling: ${counts.mkString(" , ")} ")
 
-        val timeBoxCalculations = Future {
+        val (timeBoxCalculationsCancellationFun, timeBoxCalculations) = FutureCancellable {
           logger.info(s"$timeBox launched:")
           currentDataSize = workingDataSet.count()
           logger.info(s"Evolution number $evolutionNumber is launched with datasize = $currentDataSize (rows) out of $totalDataSize (rows) ...")
@@ -176,25 +178,24 @@ class AutoML(data: DataFrame,
             generationNumber += 1
             generationNumberKamon.increment(1)
           }
-        }
+        } { logger.debug(s"Future { $timeBox } was cancelled !!!!")}
 
         try {
           Await.result(timeBoxCalculations, restOfTheTimeBox.milliseconds)
         } catch {
           case ex: TimeoutException =>
+            timeBoxCalculationsCancellationFun()
             val infoMessage = s"Timeout for $timeBox has happened."
-            logger.info(infoMessage)
-            logger.debug(infoMessage + ex.getMessage)
-            if (evolutionNumber == maxEvolutions - 1) {
-              logger.info("Increasing workingDataSet. For the last evolution all data will be used.")
-              workingDataSet = data
-            } else {
+            logger.info(infoMessage + ex.getMessage)
+            if (workingDataSet.count() < data.count()) {
               val newDataSize = currentDataSize + evolutionDataSizeIncrement
               logger.info(s"Increasing workingDataSet size for the evolution #${evolutionNumber + 1} to  ${newDataSize}.")
 
               //TODO Default is new RandomDataSetSizeEvolutionStrategy() it means that on every iteration we will have quite a new distribution of points
               workingDataSet = dataSetSizeEvolutionStrategy.evolve(workingDataSet, newSize = newDataSize, maxEvolutions, data, seed)
 
+            } else {
+              logger.info(s"Whole dataset is being used on ${evolutionNumber}th evolution out of maximum $maxEvolutions evolutions")
             }
             // We increasing evolution number whenever we have interrupted current TimeBox
             evolutionNumber += 1

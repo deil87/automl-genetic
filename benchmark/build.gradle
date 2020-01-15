@@ -1,12 +1,32 @@
 plugins {
     id 'java'
     id 'scala'
+    id 'idea'
+    id "com.github.maiflai.scalatest" version "0.25"
 }
 
 group = 'ai.automl-genetic'
 version = '0.1.0-SNAPSHOT'
 
 sourceCompatibility = 1.8
+
+ext {
+    scalaMajorVersion = '2.12'
+    scalaMinorVersion = '1'
+    scalaVersion = "${scalaMajorVersion}.${scalaMinorVersion}"
+}
+
+buildscript {
+    apply plugin: 'idea'
+    apply plugin: 'scala'
+
+    dependencies {
+
+        compile "org.scala-lang:scala-library:${scalaVersion}"
+        compile "org.scala-lang:scala-reflect:${scalaVersion}"
+        testCompile "org.scalatest:scalatest_${scalaMajorVersion}:3.0.1"
+    }
+}
 
 dependencies {
 

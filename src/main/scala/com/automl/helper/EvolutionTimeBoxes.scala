@@ -22,7 +22,9 @@ case class EvolutionTimeBoxes(timeBoxes: Seq[TimeBox])
 
 //Consider renaming. It is actually a time limit for the corresponding evolution since the beginning of the automl. EvolutionTimeLimit?
 case class TimeBox(index: Int, lowerBoundary: Long, upperBoundary: Long, maxTime: Long) {
-  override def toString: String = s"$index-th TimeBox( ${lowerBoundary / 1000} sec -- ${upperBoundary / 1000} sec )"
+
+  // Note: shifted to one-based indexing
+  override def toString: String = s"${index + 1 }-th TimeBox( ${lowerBoundary / 1000} sec -- ${upperBoundary / 1000} sec )"
 }
 
 trait TimeBoxesStrategy {

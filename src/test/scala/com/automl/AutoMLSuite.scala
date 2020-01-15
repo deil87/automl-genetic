@@ -102,7 +102,7 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
       val autoMl = new AutoML(
         data = preparedGlassDF,
         responseColumn = "indexedLabel",
-        maxTime = 30000,
+        maxTime = 15000,
         useMetaDB = false,
         initialPopulationSize = Some(3),
         seedPopulation = Some(seedPopulation),
