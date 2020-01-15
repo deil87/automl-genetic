@@ -20,57 +20,43 @@ import scala.util.Random
 class SparkGenericBaggingSuite extends FunSuite with Matchers with SparkSessionProvider{
 
   import utils.SparkMLUtils._
-
-  lazy val airlineDF = SparkMLUtils.loadParquet("src/test/resources/airline_allcolumns_sampled_100k_parquet")
-    .select("DayOfWeek", "Distance", "DepTime", "CRSDepTime", "DepDelay")
-  //TODO FlightNum+year_date_day for unique identifier of test examples
-
-  val features = Array("Distance", "DayOfWeek")
-  val oheFeatures = Array.empty
-
-  val combinedFeatures = features
-
-  val featuresColName: String = "features"
-
-  def featuresAssembler = {
-    new VectorAssembler()
-      .setInputCols(combinedFeatures)
-      .setOutputCol(featuresColName)
-  }
   import org.apache.spark.sql.functions.monotonically_increasing_id
 
-  lazy val prepairedAirlineDF = airlineDF
-    .limit(3000)
-    .applyTransformation(featuresAssembler)
-    .withColumnRenamed("DepDelay", "label")
-    .toDouble("label")
-    .filterOutNull("label")
-    .withColumn("uniqueIdColumn", monotonically_increasing_id)
-//    .showN_AndContinue(100)
-    .cache()
-
-
-  ignore("Spark Bagging should calculate over complex tree algorithm") {
-
+  test("Spark Bagging should calculate over complex tree algorithm") {
+    val metric = "logloss"
+    ConfigProvider.clearOverride.addOverride(
+      s"""
+         |evolution {
+         |  hyperParameterDimension {
+         |    enabled = false
+         |  }
+         |  evaluation {
+         |    multiclass.metric = "$metric"
+         |  }
+         |}
+      """)
     val models = Seq(
-      LeafTemplate(new LinearRegressionModel()),
+      LeafTemplate(LogisticRegressionModel()),
       LeafTemplate(DecisionTree()),
       LeafTemplate(RandomForest()),
       LeafTemplate(Bayesian()),
       NodeTemplate(SparkGenericBagging(), Seq(
-        LeafTemplate(new LinearRegressionModel()),
-        LeafTemplate(GradientBoosting()),
+        LeafTemplate(LogisticRegressionModel()()),
+//        LeafTemplate(GradientBoosting()), //TODO
         LeafTemplate(DecisionTree())
       ))
     )
 
     val ensemb = NodeTemplate(SparkGenericBagging(), models)
 
+    val data = Datasets.getIrisDataFrame(1234)
+
     println(TemplateTreeHelper.renderAsString_v2(ensemb))
 
-    val Array(trainingSplit, testSplit) = prepairedAirlineDF.randomSplit(Array(0.8, 0.2))
+    val Array(trainingSplit, testSplit) = data.randomSplit(Array(0.8, 0.2))
 
-    ensemb.evaluateFitness(trainingSplit, testSplit, ProblemType.RegressionProblem, hyperParamsField = Some(HyperParametersField.default))
+    val result = ensemb.evaluateFitness(trainingSplit, testSplit, ProblemType.MultiClassClassificationProblem, hyperParamsField = Some(HyperParametersField.default))
+    println("Logloss: " + result.getCorrespondingMetric)
   }
 
   //TODO fix the test

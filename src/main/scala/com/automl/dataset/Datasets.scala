@@ -189,4 +189,39 @@ object Datasets extends SparkSessionProvider {
       .cache()
     preparedCarDF
   }
+
+
+  // REGRESSION // TODO test this DF
+  def getAirlinesDataFrameRegression(shufflingSeed: Long): DataFrame = {
+    import utils.SparkMLUtils._
+
+    lazy val airlineDF = SparkMLUtils.loadParquet("src/test/resources/airline_allcolumns_sampled_100k_parquet")
+      .select("DayOfWeek", "Distance", "DepTime", "CRSDepTime", "DepDelay")
+    //TODO FlightNum+year_date_day for unique identifier of test examples
+
+    val features = Array("Distance", "DayOfWeek")
+    val oheFeatures = Array.empty
+
+    val combinedFeatures = features
+
+    val featuresColName: String = "features"
+
+    def featuresAssembler = {
+      new VectorAssembler()
+        .setInputCols(combinedFeatures)
+        .setOutputCol(featuresColName)
+    }
+    import org.apache.spark.sql.functions.monotonically_increasing_id
+
+    lazy val prepairedAirlineDF = airlineDF
+      .limit(3000)
+      .applyTransformation(featuresAssembler)
+      .withColumnRenamed("DepDelay", "label")
+      .toDouble("label")
+      .filterOutNull("label")
+      .withColumn("uniqueIdColumn", monotonically_increasing_id)
+      //    .showN_AndContinue(100)
+      .cache()
+    prepairedAirlineDF
+  }
 }

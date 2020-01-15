@@ -1,10 +1,12 @@
 package com.automl.benchmark
 
 import akka.actor.ActorSystem
+import com.automl.classifier.ensemble.bagging.SparkGenericBagging
 import com.automl.dataset.Datasets
+import com.automl.evolution.dimension.hparameter._
 import com.automl.population.TPopulation
 import com.automl.spark.SparkSessionProvider
-import com.automl.template.LeafTemplate
+import com.automl.template.{LeafTemplate, NodeTemplate}
 import com.automl.template.simple._
 import com.automl.{AutoML, ConfigProvider}
 import com.typesafe.config.{Config, ConfigFactory, ConfigRenderOptions}
@@ -37,6 +39,39 @@ class CarDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvider
       LeafTemplate(LogisticRegressionModel()),
       LeafTemplate(Bayesian()),
       LeafTemplate(RandomForest()),
+//      NodeTemplate(SparkGenericBagging(), Seq(
+//        LeafTemplate(LogisticRegressionModel()),
+//        LeafTemplate(Bayesian()),
+//        LeafTemplate(RandomForest())
+//      )),
+      NodeTemplate(SparkGenericBagging(), Seq(
+        LeafTemplate(LogisticRegressionModel(Some(LogisticRegressionHPGroup(Seq(RegParamLR(Some(0.2)), ElasticNet(Some(0.2))))))),
+        LeafTemplate(Bayesian(Some(BayesianHPGroup(Seq(Smoothing(Some(7))))))),
+        LeafTemplate(RandomForest(Some(RandomForestHPGroup(Seq(MaxDepthRF(Some(3.0))))))),
+        LeafTemplate(LogisticRegressionModel(Some(LogisticRegressionHPGroup(Seq(RegParamLR(Some(0.2)), ElasticNet(Some(0.2))))))),
+        LeafTemplate(Bayesian(Some(BayesianHPGroup(Seq(Smoothing(Some(7))))))),
+        LeafTemplate(RandomForest(Some(RandomForestHPGroup(Seq(MaxDepthRF(Some(3.0))))))),
+        LeafTemplate(LogisticRegressionModel(Some(LogisticRegressionHPGroup(Seq(RegParamLR(Some(0.2)), ElasticNet(Some(0.2))))))),
+        LeafTemplate(Bayesian(Some(BayesianHPGroup(Seq(Smoothing(Some(7))))))),
+        LeafTemplate(RandomForest(Some(RandomForestHPGroup(Seq(MaxDepthRF(Some(3.0))))))),
+        LeafTemplate(LogisticRegressionModel(Some(LogisticRegressionHPGroup(Seq(RegParamLR(Some(0.2)), ElasticNet(Some(0.2))))))),
+        LeafTemplate(Bayesian(Some(BayesianHPGroup(Seq(Smoothing(Some(7))))))),
+        LeafTemplate(RandomForest(Some(RandomForestHPGroup(Seq(MaxDepthRF(Some(3.0))))))),
+        NodeTemplate(SparkGenericBagging(), Seq(
+          LeafTemplate(LogisticRegressionModel(Some(LogisticRegressionHPGroup(Seq(RegParamLR(Some(0.2)), ElasticNet(Some(0.2))))))),
+          LeafTemplate(Bayesian(Some(BayesianHPGroup(Seq(Smoothing(Some(7))))))),
+          LeafTemplate(RandomForest(Some(RandomForestHPGroup(Seq(MaxDepthRF(Some(3.0))))))),
+          LeafTemplate(LogisticRegressionModel(Some(LogisticRegressionHPGroup(Seq(RegParamLR(Some(0.2)), ElasticNet(Some(0.2))))))),
+          LeafTemplate(Bayesian(Some(BayesianHPGroup(Seq(Smoothing(Some(7))))))),
+          LeafTemplate(RandomForest(Some(RandomForestHPGroup(Seq(MaxDepthRF(Some(3.0))))))),
+          LeafTemplate(LogisticRegressionModel(Some(LogisticRegressionHPGroup(Seq(RegParamLR(Some(0.2)), ElasticNet(Some(0.2))))))),
+          LeafTemplate(Bayesian(Some(BayesianHPGroup(Seq(Smoothing(Some(7))))))),
+          LeafTemplate(RandomForest(Some(RandomForestHPGroup(Seq(MaxDepthRF(Some(3.0))))))),
+          LeafTemplate(LogisticRegressionModel(Some(LogisticRegressionHPGroup(Seq(RegParamLR(Some(0.2)), ElasticNet(Some(0.2))))))),
+          LeafTemplate(Bayesian(Some(BayesianHPGroup(Seq(Smoothing(Some(7))))))),
+          LeafTemplate(RandomForest(Some(RandomForestHPGroup(Seq(MaxDepthRF(Some(3.0)))))))
+        ))
+      )),
 //      NodeTemplate(SparkGenericBagging(),
 //        Seq(
 //          LeafTemplate(Bayesian()),
@@ -59,7 +94,7 @@ class CarDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvider
 
     val seed = 1234
     val preparedCarDF = Datasets.getCarDataFrame(seed)
-    preparedCarDF.show(20, false)
+//    preparedCarDF.show(20, false)
 
     //Note we are passing whole dataset and inside it is being splitted as train/test. Maybe it is a good idea to hold test split for a final examination.
     val autoMl = new AutoML(

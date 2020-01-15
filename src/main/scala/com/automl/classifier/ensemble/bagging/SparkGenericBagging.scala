@@ -40,8 +40,7 @@ case class SparkGenericBagging()(implicit val logPaddingSize: Int = 0) extends B
     import trainDF.sparkSession.implicits._
     import org.apache.spark.sql.functions._
 
-    // Logloss is the less the better and f1 score is the greater (up to 1) the better
-    val THE_LESS_THE_BETTER = if(/*logloss*/ true) true else false
+    val THE_LESS_THE_BETTER = ! theBiggerTheBetter(problemType)
 
     debug(s"Evaluating $name")
     debug(s"Sampling(stratified/random) without replacement for submembers of $name")
@@ -146,26 +145,37 @@ case class SparkGenericBagging()(implicit val logPaddingSize: Int = 0) extends B
         val numberOfClassesAsDouble = baseProbabilities.size.toDouble / numberOfPredictors
         val numberOfClasses = numberOfClassesAsDouble.toInt
         require(numberOfClasses == numberOfClassesAsDouble, "Loosing data when casting double to int")
+
+        /**
+          * Example: Map( class 1.0 -> Array( (again class, index of base predictor)),... )
+          * As some of the classes may end up without votes for them,  we will get sparse `groupedPredictedClasses` map
+          */
         val groupedPredictedClasses: Map[Double, Array[(Double, Int)]] = predsAsArray
           .zipWithIndex.groupBy(_._1)
 
-        val anyNumber: Double = 42.0
         val paddedWithAllClasses = 0 until numberOfClasses map(classIdx => (classIdx, groupedPredictedClasses.getOrElse(classIdx, Array.empty[(Double, Int)])))
-        val aggregatedSums: immutable.Seq[(Double, Double)] = paddedWithAllClasses
+        val aggregatedSums: immutable.Seq[Double] = paddedWithAllClasses
           .map{ case (predictedClass, predictedClassToPredictorIndexArr) =>
+
             predictedClassToPredictorIndexArr.map{case (_, predictorIndex) =>
-              // OPTIMIZE: so we actually need base probabilities for predicted classes only
+              // TODO OPTIMIZE: so we actually need base probabilities for predicted classes only
               val indexForBaseProbabilityForPredictedClass = predictorIndex * numberOfClasses + predictedClass.toInt
 
               val baseProbabilityForPredictor = baseProbabilities.apply(indexForBaseProbabilityForPredictedClass)
 
-              val weightForPredictor = if(THE_LESS_THE_BETTER) 1.0 / weights.apply(predictorIndex) else weights.apply(predictorIndex)
-              (baseProbabilityForPredictor * weightForPredictor, weightForPredictor)
-            }.reduceOption((item1, item2) => (item1._1 + item2._1, item1._2 + item2._2)).getOrElse((0.0,anyNumber))
+              // Weight is a fitness of base predictor
+              val exaggerationCoef = 100
+              val wightOfCorrespondingPredictor =  weights.apply(predictorIndex) * exaggerationCoef
+              val weightForPredictor = if(THE_LESS_THE_BETTER) 1.0 / wightOfCorrespondingPredictor else wightOfCorrespondingPredictor
+              baseProbabilityForPredictor * weightForPredictor
+            }
+            .reduceOption((item1, item2) => item1 + item2)
+            // For the cases when base predictors did not vote for some classes at all ( sparsity) we will use (0.0, 42.0) so that 0.0 / 42.0 become 0.0
+            .getOrElse(0.0)
 
           }
-        val weightedRawProbabilityForPredictedClass: Array[Double] =  aggregatedSums
-          .map(sumTermsPerPredictedClass => sumTermsPerPredictedClass._1 / sumTermsPerPredictedClass._2 ).toArray
+        val weightedRawProbabilityForPredictedClass: Array[Double] =  aggregatedSums.toArray
+//          .map(sumTermsPerPredictedClass => sumTermsPerPredictedClass._1 / sumTermsPerPredictedClass._2 ).toArray
 
         val sumOfRawProbabilities = weightedRawProbabilityForPredictedClass.sum
         val calibratedProbabilities = weightedRawProbabilityForPredictedClass.map(prob => prob * (1.0 / sumOfRawProbabilities))
@@ -214,6 +224,7 @@ case class SparkGenericBagging()(implicit val logPaddingSize: Int = 0) extends B
 
         val probabilitiesColumns: Array[Column] = dfWithPredictionsFromBaseModels.indices.toArray.map{ idx => col(s"probability$idx")}
 
+        // Combined probabilities from all base predictors. e.g.   [ prob_classA_pred1, prob_classB_pred1, prob_classA_pred2, prob_classB_pred2]
         val baseModelsProbabilities = "base_models_probabilities"
         def probabilitiesAssembler = new VectorAssembler()
           .setInputCols(probabilitiesColumns.map(_.toString))
@@ -231,7 +242,7 @@ case class SparkGenericBagging()(implicit val logPaddingSize: Int = 0) extends B
               .withColumn("isDisputable", markDisputableInstanceUDF($"$baseModelsPredictionsColName")) // TODO this is for debug purposes
               .join(dfWithPredictionsFromBaseModels.head.select("uniqueIdColumn", "indexedLabel"), Seq("uniqueIdColumn"), joinType = "left_outer")
               .withColumn("misclassified", $"prediction" =!= $"indexedLabel") // TODO this is for debug purposes
-//              .showN_AndContinue(1000, "With majority prediction")
+              .showN_AndContinue(1800, "With weighted raw probabilities (and unused majority predictions)")
               .cache()
 
 //        mergedAndRegressedDF.show(21, false)

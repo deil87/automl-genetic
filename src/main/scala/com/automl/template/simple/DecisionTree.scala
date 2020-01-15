@@ -157,8 +157,9 @@ case class DecisionTree(hpGroup: Option[DecisionTreeHPGroup] = None, seed: Long 
              //         val treeModel = model.stages(indexOfStageForModelInPipeline).asInstanceOf[DecisionTreeClassificationModel]
              //         debug("Learned classification tree model:\n" + treeModel.toDebugString)
 
-             info(s"Finished. $name : F1 metric = " + f1 + s". Number of rows = ${trainDF.count()} / ${testDF.count()}")
-             FitnessResult(Map("f1" -> f1, "accuracy" -> accuracy), problemType, predictions)
+             val mapOfMetrics = Map("f1" -> f1, "accuracy" -> accuracy)
+             info(s"Finished. $name : ${mapOfMetrics.map{nameToValue => nameToValue._1 + " = " + nameToValue._2}.mkString("",",", "")}. Number of rows = ${trainDF.count()} / ${testDF.count()}")
+             FitnessResult(mapOfMetrics, problemType, predictions)
            }
          }
 

@@ -113,7 +113,9 @@ case class Bayesian(hpGroup: Option[BayesianHPGroup] = None)(implicit val logPad
 
           printConfusionMatrix(predictions, testDF)
 
-          FitnessResult(Map("f1" -> f1CV, "accuracy" -> -1, "logloss" -> logLoss), problemType, predictions)
+          val mapOfMetrics = Map("f1" -> f1CV, "accuracy" -> -1.0, "logloss" -> logLoss)
+          info(s"Finished. $name : ${mapOfMetrics.map{nameToValue => nameToValue._1 + " = " + nameToValue._2}.mkString("",",", "")}. Number of rows = ${trainDF.count()} / ${testDF.count()}")
+          FitnessResult(mapOfMetrics, problemType, predictions)
         } else {
 
           val naiveBayesWithHP = activeHPGroup.hpParameters.foldLeft(nb)((res, next) => next match {

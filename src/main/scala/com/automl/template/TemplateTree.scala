@@ -2,7 +2,7 @@ package com.automl.template
 
 import java.util.UUID
 
-import com.automl.PaddedLogging
+import com.automl.{EvaluationRules, PaddedLogging}
 import com.automl.evolution.dimension.hparameter._
 import com.automl.template.ensemble.EnsemblingModelMember
 import com.automl.template.simple.{DecisionTree, SimpleModelMember}
@@ -160,7 +160,7 @@ object TemplateTree extends PaddedLogging {
 
 case class TreeContext(level: Option[Int] = None)
 
-trait TemplateMember { self: PaddedLogging =>
+trait TemplateMember extends EvaluationRules { self: PaddedLogging =>
   def name: String
 
   @Deprecated() //"Consider to remove if there is no way to improve flexibility of evaluation API"

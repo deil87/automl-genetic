@@ -1,7 +1,7 @@
 package com.automl.template.simple
 
 import com.automl.{ConfigProvider, LogLossCustom, PaddedLogging}
-import com.automl.evolution.dimension.hparameter.{DecisionTreeHPGroup, HyperParametersField, MaxDepth, MaxDepthRF}
+import com.automl.evolution.dimension.hparameter._
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
@@ -18,7 +18,7 @@ import org.apache.spark.sql._
 
 import scala.util.Random
 
-case class RandomForest(hpGroup: Option[DecisionTreeHPGroup] = None, seed: Long = Random.nextLong())(implicit val logPaddingSize: Int = 0)
+case class RandomForest(hpGroup: Option[RandomForestHPGroup] = None, seed: Long = Random.nextLong())(implicit val logPaddingSize: Int = 0)
   extends SimpleModelMember
     with ClassificationMetricsHelper
     with SparkSessionProvider

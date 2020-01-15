@@ -12,7 +12,7 @@ class CarAutoMLSuite extends WordSpec with Matchers with BeforeAndAfterAll with 
 
   "AutoML benchmark on car dataset" should {
 
-    "find best template with most optimal fitness value" ignore {
+    "find best template with most optimal fitness value" in {
 
       val benchmark = new CarDataSetBenchmark().run()
     }
