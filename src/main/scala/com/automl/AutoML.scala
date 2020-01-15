@@ -1,6 +1,5 @@
 package com.automl
 
-import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorSelection, ActorSystem}
 import akka.util.Timeout
@@ -17,7 +16,6 @@ import com.typesafe.scalalogging.LazyLogging
 import kamon.Kamon
 import org.apache.spark.sql.DataFrame
 import spray.json.DefaultJsonProtocol
-import utils.FutureCancellable
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
