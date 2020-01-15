@@ -185,7 +185,7 @@ object Datasets extends SparkSessionProvider {
 //      .withColumnRenamed("scaledFeatures", "features")
       .withColumn("uniqueIdColumn", monotonically_increasing_id)
       .applyIndexer(labelIndexer)
-      .showAllAndContinue
+//      .showAllAndContinue
       .cache()
     preparedCarDF
   }

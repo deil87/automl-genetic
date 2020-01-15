@@ -204,17 +204,21 @@ class DepthDependentTemplateMutationStrategy(/*unused*/diversityStrategy: Divers
     res
   }
 
+  // TODO we should take into account complexity of template. If it is Leaf that is a stump, we probably want to mutate only its hyperparameters, otherwise we will just loose good template
   private def mutateLeafToLeaf(lt: LeafTemplate[TemplateMember]): LeafTemplate[TemplateMember] = {
-    val randomBaseMemberBasedOnProblemType = getRandomBaseMemberWithExclusion(Seq(lt.member.asInstanceOf[SimpleModelMember])).asInstanceOf[Option[SimpleModelMember]]
+    // TODO with exclusion we will have situation when we get read of good LeafTemplate
+//    val randomBaseMemberBasedOnProblemType = getRandomBaseMemberWithExclusion(Seq(lt.member.asInstanceOf[SimpleModelMember])).asInstanceOf[Option[SimpleModelMember]]
+    val randomBaseMemberBasedOnProblemType = Option(getRandomBaseMemberBasedOnProblemType)
     // TODO rewrite so that we don't need to cast member to SimpleModelMember
     randomBaseMemberBasedOnProblemType match {
       case Some(randomBaseMember) =>
-        info(s"\t\t Mutation happened from leaf node $lt to another leaf node $randomBaseMemberBasedOnProblemType")
         val newLeafTemplate = LeafTemplate(randomBaseMember)
         newLeafTemplate.parent = lt.parent
+        info(s"\t\t Mutation happened from leaf node ${lt.render} to another leaf node ${newLeafTemplate.render}")
         //newLeafTemplate.internalHyperParamsMap //TODO ? should we copy something here or take some knowledge from others ??
         newLeafTemplate
-      case None => ???
+      case None =>
+        ???
 //        if (currentLevel < maxEnsembleDepth - 1) {
 //          info(s"\t\t Mutation happened from leaf node $lt to ensembling node due to randomBaseMemberBasedOnProblemType method returned NONE")
 //          mutateLeafToNode(lt.asInstanceOf[LeafTemplate[SimpleModelMember]])
