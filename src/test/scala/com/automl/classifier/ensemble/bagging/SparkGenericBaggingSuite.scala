@@ -1,5 +1,6 @@
 package com.automl.classifier.ensemble.bagging
 
+import com.automl.ConfigProvider
 import com.automl.dataset.Datasets
 import com.automl.evolution.dimension.hparameter.HyperParametersField
 import com.automl.helper.TemplateTreeHelper
@@ -136,6 +137,18 @@ class SparkGenericBaggingSuite extends FunSuite with Matchers with SparkSessionP
   }
 
   test("Spark Bagging should calculate over complex tree algorithm( Classification problem )") {
+    val metric = "f1"
+    ConfigProvider.clearOverride.addOverride(
+      s"""
+        |evolution {
+        |  hyperParameterDimension {
+        |    enabled = false
+        |  }
+        |  evaluation {
+        |    multiclass.metric = "$metric"
+        |  }
+        |}
+      """)
 
     val models = Seq(
       LeafTemplate(DecisionTree()), //TODO We need n-classes +2 base models to be able to find majority
@@ -182,12 +195,12 @@ class SparkGenericBaggingSuite extends FunSuite with Matchers with SparkSessionP
 
     val baggingF1 = ensemb.evaluateFitness(trainingSplit, testSplit, problemType, hyperParamsField = Some(HyperParametersField.default)).getCorrespondingMetric
 
-    val dtF1 = DecisionTree().fitnessError(trainingSplit, testSplit, problemType).getMetricByName("f1")
+    val dtF1 = DecisionTree().fitnessError(trainingSplit, testSplit, problemType, hyperParametersField = None).getMetricByName("f1")
 
     println("Bagging's F1:" + baggingF1)
     println("DT's F1:" + dtF1)
 
-    baggingF1 should be(dtF1 +- 0.2) // This might not be the true all the time
+    baggingF1 should be(dtF1 +- 0.4) // This might not be the true all the time
   }
 
   test("probabilities are generated properly based on rawPredictions from base models") {

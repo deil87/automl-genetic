@@ -23,7 +23,7 @@ class AlgorithmTreeSuite extends FunSuite with Matchers{
     )
 
 
-  test("TemplateMemberHelper should materialize to algorithm tree") {
+  ignore("TemplateMemberHelper should materialize to algorithm tree") {
 
     val materializedAlgorithm = TemplateTreeHelper.materialize(template)
 

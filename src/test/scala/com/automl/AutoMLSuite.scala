@@ -112,6 +112,7 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
 
       val hallOfFame = autoMl.runEvolution
 
+      assume(hallOfFame.size >= 2)
       val best = hallOfFame.dequeue()
       val secondButTheBest = hallOfFame.dequeue()
       best.result.getCorrespondingMetric should be >= secondButTheBest.result.getCorrespondingMetric
@@ -162,6 +163,8 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
         initialSampleSize = 50)
 
       val hallOfFame = autoMl.runEvolution
+
+      assume(hallOfFame.size >= 2)
 
       val best = hallOfFame.dequeue()
       val secondButTheBest = hallOfFame.dequeue()
