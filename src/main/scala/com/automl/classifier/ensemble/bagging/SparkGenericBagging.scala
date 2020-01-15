@@ -163,8 +163,8 @@ case class SparkGenericBagging()(implicit val logPaddingSize: Int = 0) extends B
 
               val baseProbabilityForPredictor = baseProbabilities.apply(indexForBaseProbabilityForPredictedClass)
 
+              val exaggerationCoef = 1 // TODO Consider to make it a bagging's HP, or metalearner property
               // Weight is a fitness of base predictor
-              val exaggerationCoef = 100
               val wightOfCorrespondingPredictor =  weights.apply(predictorIndex) * exaggerationCoef
               val weightForPredictor = if(THE_LESS_THE_BETTER) 1.0 / wightOfCorrespondingPredictor else wightOfCorrespondingPredictor
               baseProbabilityForPredictor * weightForPredictor

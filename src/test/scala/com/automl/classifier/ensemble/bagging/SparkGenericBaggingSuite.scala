@@ -59,6 +59,45 @@ class SparkGenericBaggingSuite extends FunSuite with Matchers with SparkSessionP
     println("Logloss: " + result.getCorrespondingMetric)
   }
 
+
+  test("Spark Bagging computations should be seed-reproducible") {
+    val metric = "logloss"
+    ConfigProvider.clearOverride.addOverride(
+      s"""
+         |evolution {
+         |  hyperParameterDimension {
+         |    enabled = false
+         |  }
+         |  evaluation {
+         |    multiclass.metric = "$metric"
+         |  }
+         |}
+      """)
+
+    val ensemb = NodeTemplate(SparkGenericBagging(), Seq(
+      LeafTemplate(LogisticRegressionModel()),
+      LeafTemplate(DecisionTree())
+    ))
+
+    val seedForEverything = 1234
+    val data = Datasets.getIrisDataFrame(seedForEverything)
+
+    println(TemplateTreeHelper.renderAsString_v2(ensemb))
+
+    val Array(trainingSplit, testSplit) = data.randomSplit(Array(0.8, 0.2), seedForEverything)
+
+    val result = ensemb.evaluateFitness(trainingSplit, testSplit, ProblemType.MultiClassClassificationProblem, hyperParamsField = Some(HyperParametersField.default), seed = seedForEverything)
+
+    // ^^^ Should be equal to result2 from same actions below:
+    val data2 = Datasets.getIrisDataFrame(seedForEverything)
+
+    val Array(trainingSplit2, testSplit2) = data2.randomSplit(Array(0.8, 0.2), seedForEverything)
+
+    val result2 = ensemb.evaluateFitness(trainingSplit2, testSplit2, ProblemType.MultiClassClassificationProblem, hyperParamsField = Some(HyperParametersField.default), seed = seedForEverything)
+
+    result.getCorrespondingMetric shouldBe result2.getCorrespondingMetric
+  }
+
   //TODO fix the test
   ignore("Spark Bagging should sample training dataset for submembers in appropriate way )") {
     import ss.implicits._

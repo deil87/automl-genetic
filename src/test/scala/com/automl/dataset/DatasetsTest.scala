@@ -24,4 +24,12 @@ class DatasetsTest extends FunSuite with Matchers{
 //    value.showAll()
     diff.count() shouldBe 0
   }
+
+  test("dataset is shuffled with seed") {
+    val data = Datasets.getIrisDataFrame(1234)
+    val data2 = Datasets.getIrisDataFrame(1234)
+    data.showAllAndContinue
+    data2.showAllAndContinue
+    data.except(data2).count() shouldBe 0
+  }
 }
