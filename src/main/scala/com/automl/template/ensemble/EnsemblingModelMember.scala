@@ -39,8 +39,8 @@ object EnsemblingModelMember {
   lazy val poolOfEnsemblingModelsNames: Seq[String] = tdConfig.getStringList("poolOfEnsemblingModels").asScala
 
   def poolOfEnsemblingModelsByNames(names: Seq[String]): Seq[EnsemblingModelMember] = names.flatMap {
-    case "stacking" => BaggingMember.poolOfBaggingModels
-    case "bagging" => Set[EnsemblingModelMember](StackingMember.MyStackingImpl)
+    case "bagging" => BaggingMember.poolOfBaggingModels
+    case "stacking" => Set[EnsemblingModelMember](StackingMember.MyStackingImpl)
   }
 
   def randomMember: EnsemblingModelMember = poolOfEnsemblingModelsByNames(poolOfEnsemblingModelsNames).randElement

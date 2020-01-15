@@ -1,19 +1,17 @@
 package com.automl.dataset
 
-import com.automl.population.TPopulation
 import com.automl.spark.SparkSessionProvider
-import com.automl.template.LeafTemplate
-import com.automl.template.simple.{Bayesian, DecisionTree, LogisticRegressionModel}
 import org.apache.spark.ml.feature.{StandardScaler, StringIndexer, VectorAssembler}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.functions.{monotonically_increasing_id, rand}
-import org.apache.spark.sql.types.{IntegerType, StringType}
 import utils.SparkMLUtils
 
 object Datasets extends SparkSessionProvider {
 
   import SparkMLUtils._
   import ss.implicits._
+
+  import org.apache.spark.sql.functions.udf
 
   /**
     *
@@ -143,5 +141,52 @@ object Datasets extends SparkSessionProvider {
     preparedData
 //    preparedData.showAllAndContinue
 
+  }
+
+  def getCarDataFrame(shufflingSeed: Long): DataFrame = {
+    val carDF = SparkMLUtils.loadResourceDF("/dataset/car/car.csv")
+
+    val features = Array(/*"buying", "maint", "doors", */"personsEncoded", "doorsEncoded", "buyingEncoded", "maintEncoded", "lugBootEncoded"  /*"lug_boot"*/)
+
+    val featuresColName: String = "features"
+
+    def featuresAssembler = {
+      new VectorAssembler()
+        .setInputCols(features)
+        .setOutputCol(featuresColName)
+    }
+
+    val scaler = new StandardScaler()
+      .setInputCol("features")
+      .setOutputCol("scaledFeatures")
+      .setWithStd(true)
+      .setWithMean(false)
+
+    val labelIndexer = new StringIndexer()
+      .setInputCol("safety")
+      .setOutputCol("indexedLabel")
+      .setStringOrderType("alphabetAsc")
+
+    val ordinalPersonsMapping = Map("2" -> 1, "4" -> 2, "more" -> 3 )
+    val ordinalDoorsMapping = Map("2" -> 1, "3" -> 2, "4" -> 3, "5more" -> 4)
+    val ordinalBuyingOrMaintMapping = Map("low" -> 1, "med" -> 2, "high" -> 3, "vhigh" -> 4)
+    val ordinalLuggageBootMapping = Map("small" -> 1, "med" -> 2, "big" -> 3)
+
+    val preparedCarDF = carDF
+      .orderBy(rand(shufflingSeed))  // Shuffling
+      .withColumn("buyingEncoded", udf { buyingAsStr => ordinalBuyingOrMaintMapping.get(buyingAsStr)}.apply($"buying"))
+      .withColumn("maintEncoded", udf { maintAsStr => ordinalBuyingOrMaintMapping.get(maintAsStr)}.apply($"maint"))
+      .withColumn("personsEncoded", udf { personsAsStr => ordinalPersonsMapping.get(personsAsStr)}.apply($"persons"))
+      .withColumn("doorsEncoded", udf { doorsAsStr => ordinalDoorsMapping.get(doorsAsStr)}.apply($"doors"))
+      .withColumn("lugBootEncoded", udf { lugBootAsStr => ordinalLuggageBootMapping.get(lugBootAsStr)}.apply($"lug_boot"))
+
+      .applyTransformation(featuresAssembler)
+      //      .applyTransformation(scaler)
+//      .withColumnRenamed("scaledFeatures", "features")
+      .withColumn("uniqueIdColumn", monotonically_increasing_id)
+      .applyIndexer(labelIndexer)
+      .showAllAndContinue
+      .cache()
+    preparedCarDF
   }
 }
