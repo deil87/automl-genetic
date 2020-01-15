@@ -1,6 +1,7 @@
 package com.automl.helper
 
 import com.automl.ConfigProvider
+import com.automl.evolution.evaluation.EvaluationContextInfo
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
 import org.apache.spark.sql.DataFrame

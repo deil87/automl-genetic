@@ -1,8 +1,8 @@
 package com.automl.evolution.dimension
 import akka.actor.{ActorRef, ActorSelection, ActorSystem}
-import com.automl.evolution.dimension.hparameter.{EvaluatedHyperParametersField, HyperParametersField, HyperParametersEvolutionDimension}
+import com.automl.evolution.dimension.hparameter.{EvaluatedHyperParametersField, HyperParametersEvolutionDimension, HyperParametersField}
 import com.automl.evolution.diversity.{DistinctDiversityStrategy, MisclassificationDistance}
-import com.automl.evolution.evaluation.{NeighboursFinder, TemplateNSLCEvaluator}
+import com.automl.evolution.evaluation.{EvaluationContextInfo, NeighboursFinder, TemplateNSLCEvaluator}
 import com.automl.{ConfigProvider, EvaluatedTemplateData, EvaluatedTemplateDataDTOJsonProtocol, EvolutionProgressDTO, PaddedLogging}
 import com.automl.evolution.mutation.DepthDependentTemplateMutationStrategy
 import com.automl.evolution.selection.RankSelectionStrategy
@@ -91,7 +91,7 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
 
   var skipEvolutionCountDown: Int = evolveEveryNGenerations - 1
 
-  override def evolve(population: TPopulation, workingDF: DataFrame): TPopulation = {
+  override def evolve(population: TPopulation, workingDF: DataFrame, evaluationContextInfo: EvaluationContextInfo): TPopulation = {
 
     //TODO Control should be outside of Dimension concept
     //Maybe it is better to set up flag for corner case like 'always execute'
@@ -104,7 +104,7 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
 
     showCurrentPopulation()
 
-    val evaluatedPopulation = getLastEvaluatedPopulation(workingDF)
+    val evaluatedPopulation = getLastEvaluatedPopulation(workingDF, evaluationContextInfo)
 
     import PopulationDTOJsonProtocol._
     val populationDTO = PopulationDTO(evaluatedPopulation.map(_.id)).toJson
@@ -124,7 +124,7 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
     val offspring = mutateParentPopulation(populationForUpcomingMutation, new TPopulation(hallOfFame.map(_.template).toSeq))
 
     debug("Evaluating offspring:")
-    val evaluatedOffspring = evaluatePopulation(offspring, workingDF)
+    val evaluatedOffspring = evaluatePopulation(offspring, workingDF, evaluationContextInfo)
 
     debug("Updating hallOfFame:") // TODO maybe we don't need to update it here as we did it during evaluations in Evaluator
     updateHallOfFame(evaluatedOffspring)
@@ -142,7 +142,7 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
 
     // Do backpropagation of fitness. Evolve other dimensions by using new evaluations/best templates
     debug(s"Evolving dependent coevolution hyperParamsEvDim: enabled = ${hyperParamsEvDim.isDefined}")
-    hyperParamsEvDim.foreach(_.evolveFromLastPopulation(workingDF))
+    hyperParamsEvDim.foreach(_.evolveFromLastPopulation(workingDF, evaluationContextInfo))
 
     _population = evolvedPopulation
     evolvedPopulation
@@ -173,28 +173,13 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
     offspring
   }
 
-  override def evaluatePopulation(population: TPopulation, workingDF: DataFrame): Seq[EvaluatedTemplateData] = {
+  override def evaluatePopulation(population: TPopulation, workingDF: DataFrame, evaluationContextInfo: EvaluationContextInfo): Seq[EvaluatedTemplateData] = {
 
     if(problemType == MultiClassClassificationProblem) {
-      evaluator.evaluateIndividuals(population, workingDF, problemType, seed)
+      evaluator.evaluateIndividuals(population, workingDF, problemType, evaluationContextInfo, seed)
     }
     else {
       ???
     }
   }
-
-  override def getBestFromPopulation(workingDF: DataFrame): EvaluatedTemplateData = {
-    problemType match {
-      case MultiClassClassificationProblem | BinaryClassificationProblem =>
-        val defaultRegressionMetric = "f1"
-        //TODO we might want to take evaluated population from dimension, Althoug it should be in the cache.
-        getEvaluatedPopulation.sortWith(_.fitness.metricsMap(defaultRegressionMetric) > _.fitness.metricsMap(defaultRegressionMetric)).head
-      case RegressionProblem =>
-        // TODO maybe keep them in sorted heap?
-        val defaultRegressionMetric = "rmse"
-        getEvaluatedPopulation.sortWith(_.fitness.metricsMap(defaultRegressionMetric) < _.fitness.metricsMap(defaultRegressionMetric)).head
-    }
-
-  }
-
 }

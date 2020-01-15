@@ -67,6 +67,7 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
   override def evaluateIndividuals(population: TPopulation,
                                    workingDF: DataFrame,
                                    problemType: ProblemType, // TODO could be removed as we can use templateEvDimension.problemType
+                                   evaluationContextInfo: EvaluationContextInfo,
                                    seed: Long)
                                   (implicit cache: mutable.Map[(TemplateTree[TemplateMember], Option[HyperParametersField], Long), FitnessResult]): Seq[EvaluatedTemplateData] = {
     debug("TemplateNSLCEvaluator. Evaluation of templates have started.")
@@ -78,7 +79,7 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
       debug("Before evaluation of Template population we want to get best individuals from coevolutions we depend on. Checking HP coevolution...")
       if (hyperParamsEvDim.hallOfFame.isEmpty || hyperParamsEvDim.currentWorkingDFSize != workingDF.count()) {
         debug("HP coevolution is either was not yet evaluated before or need update due to increased size of workingDF")
-        hyperParamsEvDim.evolveFromLastPopulation(workingDF) // TODO consider stratified sample for first iteration or maybe for all iterations
+        hyperParamsEvDim.evolveFromLastPopulation(workingDF, ???) // TODO consider stratified sample for first iteration or maybe for all iterations
       }
       val bestHPField = hyperParamsEvDim.getBestFromHallOfFame
       debug(s"Evaluation of hyper parameter coevolution completed. \nBest: ${bestHPField.toString} \nProceeding to templates evaluations...")
@@ -116,8 +117,9 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
         val usedHPField = bestHPField.orElse(individualTemplate.internalHyperParamsMap)
         val result = EvaluatedTemplateData(idx.toString + ":" + individualTemplate.id, individualTemplate,
           materializedTemplate, fitness, hyperParamsField = usedHPField)
-        templateEvDimension.hallOfFame += result
+        result.setEvaluationContextInfo(evaluationContextInfo)
 
+        templateEvDimension.hallOfFame += result
 
         import EvaluatedTemplateDataDTOJsonProtocol._
         import spray.json._

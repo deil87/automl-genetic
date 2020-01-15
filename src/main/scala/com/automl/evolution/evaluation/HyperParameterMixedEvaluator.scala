@@ -19,7 +19,11 @@ class HyperParameterMixedEvaluator(parentTemplateEvDimension: TemplateEvolutionD
 
   override type CacheKeyType = ( HyperParametersField, Long)
 
-  override def evaluateIndividuals(population: HPPopulation, workingDF: DataFrame, problemType: ProblemType, seed: Long)
+  override def evaluateIndividuals(population: HPPopulation,
+                                   workingDF: DataFrame,
+                                   problemType: ProblemType,
+                                   evaluationContextInfo: EvaluationContextInfo,
+                                   seed: Long)
                                   (implicit cache: mutable.Map[( HyperParametersField, Long), Double]): Seq[EvaluatedHyperParametersField] = {
     val numberOfBestTemplates = 3
     val hpdConfig = ConfigProvider.config.getConfig("evolution.hyperParameterDimension")

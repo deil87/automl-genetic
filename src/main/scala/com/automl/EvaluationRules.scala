@@ -3,7 +3,7 @@ package com.automl
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
 
-trait EvaluationContext {
+trait EvaluationRules {
   def theBiggerTheBetter(problemType: ProblemType): Boolean = {
     problemType match {
       case MultiClassClassificationProblem | BinaryClassificationProblem =>

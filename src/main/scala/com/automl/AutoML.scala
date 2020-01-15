@@ -6,6 +6,7 @@ import akka.actor.{ActorSelection, ActorSystem}
 import akka.util.Timeout
 import com.automl.dataset._
 import com.automl.evolution.dimension.TemplateEvolutionDimension
+import com.automl.evolution.evaluation.EvaluationContextInfo
 import com.automl.helper._
 import com.automl.population.TPopulation
 import com.automl.problemtype.ProblemType.BinaryClassificationProblem
@@ -165,7 +166,7 @@ class AutoML(data: DataFrame,
 
           while (condition) {
 
-            logger.info(s"Time left: ${totalTimeLeft}")
+            logger.info(s"Time left: $totalTimeLeft")
             logger.info(s"Evolution number still $evolutionNumber - next generation number $generationNumber is launched.")
 
             import EvaluatedTemplateDataDTOJsonProtocol._
@@ -173,7 +174,8 @@ class AutoML(data: DataFrame,
             val evolutionProgressDTO = EvolutionProgressDTO(evolutionNumber, generationNumber, timeBox.toString, "startingEvaluation").toJson
             webClientNotifier ! UpdateWebWithJson(evolutionProgressDTO.prettyPrint)
 
-            templateEvDim.evolveFromLastPopulation(workingDataSet)
+            val evalContext = EvaluationContextInfo(workingDataSet.count(), evolutionNumber, generationNumber)
+            templateEvDim.evolveFromLastPopulation(workingDataSet, evalContext)
             logger.info(s"Finished generation number $generationNumber")
             generationNumber += 1
             generationNumberKamon.increment(1)

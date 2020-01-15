@@ -16,7 +16,11 @@ class HyperParameterContemporaryPopulationEvaluator(parentTemplateEvDimension: T
 
   override type CacheKeyType = ( HyperParametersField, Long)
 
-  override def evaluateIndividuals(population: HPPopulation, workingDF: DataFrame, problemType: ProblemType, seed: Long)
+  override def evaluateIndividuals(population: HPPopulation,
+                                   workingDF: DataFrame,
+                                   problemType: ProblemType,
+                                   evaluationContextInfo: EvaluationContextInfo,
+                                   seed: Long)
                                   (implicit cache: mutable.Map[( HyperParametersField, Long), Double]): Seq[EvaluatedHyperParametersField] = {
     val hpdConfig = ConfigProvider.config.getConfig("evolution.hyperParameterDimension")
     val samplingRatio = hpdConfig.getDouble("evaluationSamplingRatio")

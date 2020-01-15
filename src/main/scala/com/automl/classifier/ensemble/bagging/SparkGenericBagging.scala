@@ -3,6 +3,7 @@ package com.automl.classifier.ensemble.bagging
 import com.automl.{ConsistencyChecker, LogLossCustom, PaddedLogging}
 import com.automl.dataset.{RandomSampling, StratifiedSampling}
 import com.automl.evolution.dimension.hparameter.HyperParametersField
+import com.automl.evolution.evaluation.EvaluationContextInfo
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}

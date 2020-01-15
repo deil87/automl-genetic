@@ -1,17 +1,19 @@
 package com.automl
 
 import com.automl.evolution.dimension.hparameter.HyperParametersField
+import com.automl.evolution.evaluation.EvaluationContextInfo
 import com.automl.helper.{FitnessResult, PopulationHelper, TemplateTreeHelper}
 import com.automl.problemtype.ProblemType
-import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
 import com.automl.template.{TemplateMember, TemplateTree}
 import com.typesafe.scalalogging.LazyLogging
 import kamon.Kamon
 
+import scala.concurrent.{Await, Promise}
+
 case class EvaluatedTemplateData(id: String,
                                  template: TemplateTree[TemplateMember],
                                  algorithm: TemplateTree[TemplateMember],
-                                 fitness: FitnessResult,
+                                 fitness: FitnessResult, // TODO looks like both EvaluatedTemplateData and FitnessResult contain evaluation context. Find a better separation of concerns.
                                  rank: Long = -1,
                                  probability: Double = -1,
                                  neighbours: Seq[EvaluatedTemplateData] = Nil,
@@ -61,15 +63,11 @@ case class EvaluatedTemplateData(id: String,
 
 object EvaluatedTemplateData extends LazyLogging {
 
-//  implicit def individualsOrdering(theBiggerTheBetter: Boolean) = new Ordering[EvaluatedTemplateData] {
-//    override def compare(x: EvaluatedTemplateData, y: EvaluatedTemplateData) = {
-//      x.fitness.compareTo(y.fitness)
-//    }
-//  }
-
   implicit def evaluatedHelper(individual: EvaluatedTemplateData) = new {
     def render(problemType: ProblemType): String = {
-        s"${TemplateTreeHelper.renderAsString_v2(individual.template)} Score: ${individual.fitness.toString}"
+      import scala.concurrent.duration._
+      val evaluationContextInfo: Option[EvaluationContextInfo] = if(individual.evaluationContextInfo.isCompleted) Some(Await.result(individual.evaluationContextInfo, 1 seconds)) else None
+      s"${TemplateTreeHelper.renderAsString_v2(individual.template)} Score: ${individual.fitness.toString} EvaluationCtx( ${evaluationContextInfo.getOrElse("not available yet")})"
     }
   }
 }

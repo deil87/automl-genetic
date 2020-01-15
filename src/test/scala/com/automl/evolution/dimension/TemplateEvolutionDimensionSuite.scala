@@ -49,8 +49,8 @@ class TemplateEvolutionDimensionSuite extends WordSpec with Matchers with SparkS
       val problemType = MultiClassClassificationProblem
       val t = new TemplateEvolutionDimension(initialPopulation = Some(population), problemType = problemType)
 
-      t.evaluatePopulation(population, ds20)
-      t.evaluatePopulation(population, ds300)
+      t.evaluatePopulation(population, ds20, null)
+      t.evaluatePopulation(population, ds300, null)
 
       t.individualsEvaluationCacheExtended.size should be (4)  // (numbers of templates in population) * (# of different sizes of training datasets)
     }
@@ -82,7 +82,7 @@ class TemplateEvolutionDimensionSuite extends WordSpec with Matchers with SparkS
       val iridData = Datasets.getIrisDataFrame(1234)
       val ds2 = iridData.limit(20)
 
-      t.evaluatePopulation(testPopulation, ds2).nonEmpty shouldBe true
+      t.evaluatePopulation(testPopulation, ds2, null).nonEmpty shouldBe true
 
       private val key = (template, template.internalHyperParamsMap, ds2.count())
       t.individualsEvaluationCacheExtended.get(key).nonEmpty shouldBe true

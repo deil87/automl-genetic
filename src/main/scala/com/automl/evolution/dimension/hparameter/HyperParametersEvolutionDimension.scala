@@ -5,7 +5,7 @@ import com.automl.{ConfigProvider, Evaluated, PaddedLogging}
 import com.automl.problemtype.ProblemType
 import org.apache.spark.sql.DataFrame
 import com.automl.evolution.dimension.{EvolutionDimension, TemplateEvolutionDimension}
-import com.automl.evolution.evaluation.{HyperParameterContemporaryPopulationEvaluator, HyperParameterMixedEvaluator}
+import com.automl.evolution.evaluation.{EvaluationContextInfo, HyperParameterContemporaryPopulationEvaluator, HyperParameterMixedEvaluator}
 import com.automl.evolution.mutation.{DepthDependentTemplateMutationStrategy, HPMutationStrategy}
 import com.automl.helper.PopulationHelper
 import com.automl.population.{GenericPopulationBuilder, HPPopulation}
@@ -69,9 +69,10 @@ class HyperParametersEvolutionDimension(parentTemplateEvDimension: TemplateEvolu
       else {}
   }
 
-  override def evaluatePopulation(population: HPPopulation, workingDF: DataFrame): Seq[EvaluatedHyperParametersField] = {
+  override def evaluatePopulation(population: HPPopulation, workingDF: DataFrame, evaluationContextInfo: EvaluationContextInfo): Seq[EvaluatedHyperParametersField] = {
 
-    new HyperParameterContemporaryPopulationEvaluator(parentTemplateEvDimension)(logPaddingSize + 4).evaluateIndividuals(population, workingDF, problemType, seed)
+    new HyperParameterContemporaryPopulationEvaluator(parentTemplateEvDimension)(logPaddingSize + 4)
+      .evaluateIndividuals(population, workingDF, problemType, evaluationContextInfo, seed)
 //    new HyperParameterMixedEvaluator(parentTemplateEvDimension)(logPaddingSize + 4).evaluateIndividuals(population, workingDF, problemType)
   }
 
@@ -102,11 +103,6 @@ class HyperParametersEvolutionDimension(parentTemplateEvDimension: TemplateEvolu
   // to the upcoming evolutions as for the first iteration we have nothing to compare against for HyperParameter dimension //TODO make it configurable strategy
   //But it makes sense to search for HPs first. It is faster and brings more value
   override def getBestFromHallOfFame: HyperParametersField = hallOfFame.headOption.map(_.field).getOrElse{getInitialPopulation.individuals.randElement}
-
-  override def getBestFromPopulation(workingDF: DataFrame): EvaluatedHyperParametersField = {
-    debug("Getting best individual from population...")
-    evaluatePopulation(getPopulation, workingDF).sortWith(_.score > _.score).head // TODO check that it might be stored already in a sorted way
-  }
 }
 
 

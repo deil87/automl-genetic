@@ -43,16 +43,16 @@ class HyperParametersEvolutionDimensionTest extends FunSuite with Matchers with 
     val workingDF = Datasets.getGlassDataFrame(1234)
 
     logger.debug("Evolving population for the very first time...")
-    dimension.evolve(initialPopulation, workingDF)
+    dimension.evolve(initialPopulation, workingDF, null)
 
     val evolvedPopulation = dimension.getPopulation
 
-    val bestIndividualAfterFirstEvolution = dimension.getBestFromPopulation(workingDF)
+    val bestIndividualAfterFirstEvolution = dimension.getLastEvaluatedPopulation(workingDF, null).sortWith(_.score > _.score).head
 
     logger.debug("Evolving population second time...")
-    dimension.evolve(evolvedPopulation, workingDF)
+    dimension.evolve(evolvedPopulation, workingDF, null)
 
-    val bestIndividualAfterSecondEvolution = dimension.getBestFromPopulation(workingDF)
+    val bestIndividualAfterSecondEvolution = dimension.getLastEvaluatedPopulation(workingDF, null).sortWith(_.score > _.score).head
 
     logger.debug(s"Best individual before ${bestIndividualAfterFirstEvolution.field} with score ${bestIndividualAfterFirstEvolution.score}")
     logger.debug(s"Best individual after ${bestIndividualAfterSecondEvolution.field} with score ${bestIndividualAfterSecondEvolution.score}")
@@ -78,7 +78,7 @@ class HyperParametersEvolutionDimensionTest extends FunSuite with Matchers with 
       } else population
     }
 
-    val evolveFun: HPPopulation => HPPopulation = dimension.evolve(_, workingDF)
+    val evolveFun: HPPopulation => HPPopulation = dimension.evolve(_, workingDF, null)
     repeatRecursively(initialPopulation, evolveFun, 15)
 
     val bestSmoothingValue = dimension.getBestFromHallOfFame.modelsHParameterGroups.head.hpParameters.filter { case Smoothing(_) => true }.head.currentValue

@@ -37,6 +37,7 @@ class TemplateSimpleEvaluator(implicit as: ActorSystem, val logPaddingSize: Int)
   override def evaluateIndividuals(population: TPopulation,
                                    workingDataSet: DataFrame,
                                    problemType: ProblemType,
+                                   evaluationContextInfo: EvaluationContextInfo,
                                    seed: Long)
                                   (implicit cache: mutable.Map[(TemplateTree[TemplateMember], HyperParametersField, Long), FitnessResult]): Seq[EvaluatedTemplateData] = {
 

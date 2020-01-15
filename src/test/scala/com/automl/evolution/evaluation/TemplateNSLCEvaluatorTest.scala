@@ -62,7 +62,7 @@ class TemplateNSLCEvaluatorTest extends FunSuite with Matchers {
 
     implicit val implicitCache = mutable.Map[(TemplateTree[TemplateMember], Option[HyperParametersField], Long), FitnessResult]()
 
-    evaluator.evaluateIndividuals(population, workingDF, MultiClassClassificationProblem, 1235)
+    evaluator.evaluateIndividuals(population, workingDF, MultiClassClassificationProblem, null, 1235)
 
     implicitCache.size shouldBe 2
   }
@@ -112,7 +112,7 @@ class TemplateNSLCEvaluatorTest extends FunSuite with Matchers {
 
     implicit val implicitCache = mutable.Map[(TemplateTree[TemplateMember], Option[HyperParametersField], Long), FitnessResult]()
 
-    evaluator.evaluateIndividuals(population, workingDF, MultiClassClassificationProblem, 1235)
+    evaluator.evaluateIndividuals(population, workingDF, MultiClassClassificationProblem, null, 1235)
 
     implicitCache.size shouldBe 1
   }

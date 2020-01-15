@@ -1,6 +1,7 @@
 package com.automl.evolution.dimension
 
 import com.automl.evolution.dimension.hparameter.HyperParametersField
+import com.automl.evolution.evaluation.EvaluationContextInfo
 import com.automl.helper.{FitnessResult, PopulationHelper}
 import com.automl.population.{Population, TPopulation}
 import com.automl.template.{TemplateMember, TemplateTree}
@@ -48,14 +49,15 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
   val hallOfFame: mutable.PriorityQueue[EvaluatedResult]
 
   // Template pattern
-  def evolveFromLastPopulation(workingDF: DataFrame): PopulationType = {
-    evolve(getPopulation, workingDF)
+  def evolveFromLastPopulation(workingDF: DataFrame, evaluationContext: EvaluationContextInfo): PopulationType = {
+    evolve(getPopulation, workingDF, evaluationContext)
   }
 
-  def evolve(population: PopulationType, workingDF: DataFrame): PopulationType = {
+  def evolve(population: PopulationType, workingDF: DataFrame, evaluationContextInfo: EvaluationContextInfo): PopulationType = {
     showCurrentPopulation()
     debug(s"Starting next $dimensionName evolution...")
-    val evaluatedOriginalPopulation = getLastEvaluatedPopulation(workingDF)
+    val evaluatedOriginalPopulation = getLastEvaluatedPopulation(workingDF, evaluationContextInfo)
+    evaluatedOriginalPopulation.foreach(eo => eo.setEvaluationContextInfo(evaluationContextInfo))
 
     debug("Selecting parents:")
     val selectedParents = selectParents(evaluatedOriginalPopulation)
@@ -66,7 +68,7 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
     val offspring = mutateParentPopulation(selectedParentsPopulation, getPopulation)
 
     debug("Evaluating offspring:")
-    val evaluatedOffspring = evaluatePopulation(offspring, workingDF)
+    val evaluatedOffspring: Seq[EvaluatedResult] = evaluatePopulation(offspring, workingDF, evaluationContextInfo)
 
     debug("Updating hallOfFame:")
     updateHallOfFame(evaluatedOffspring)
@@ -113,15 +115,16 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
   def mutateParentPopulation(population: PopulationType, notToIntersectWith: PopulationType): PopulationType
 
   //meaning each individual separately and not as a whole
-  def evaluatePopulation(population: PopulationType, workingDF: DataFrame): Seq[EvaluatedResult]
+  def evaluatePopulation(population: PopulationType, workingDF: DataFrame, evaluationContextInfo: EvaluationContextInfo): Seq[EvaluatedResult]
 
   def selectSurvived(populationSize:Int, evaluatedIndividuals: Seq[EvaluatedResult]):  Seq[EvaluatedResult]
 
   def getPopulation: PopulationType = if(_population.nonEmpty) _population else getInitialPopulation
 
+  // TODO do we it if we have getLastEvaluatedPopulation ?
   def getEvaluatedPopulation: Seq[EvaluatedResult] = _evaluatedEvolvedPopulation
 
-  def getLastEvaluatedPopulation(workingDF: DataFrame): Seq[EvaluatedResult] = {
+  def getLastEvaluatedPopulation(workingDF: DataFrame, evaluationContextInfo: EvaluationContextInfo): Seq[EvaluatedResult] = {
     val newWorkingDFSize = workingDF.count()
     val evaluated = if (getEvaluatedPopulation.nonEmpty && newWorkingDFSize == currentWorkingDFSize) {
       debug(s"Taking $dimensionName evaluated population from previous generation.")
@@ -130,18 +133,15 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
       if (newWorkingDFSize != currentWorkingDFSize && currentWorkingDFSize != 0) {
         debug(s"Reevaluating $dimensionName population due to increased working dataset size from $currentWorkingDFSize to $newWorkingDFSize")
         currentWorkingDFSize = newWorkingDFSize
-        evaluatePopulation(getPopulation, workingDF)
+        evaluatePopulation(getPopulation, workingDF, evaluationContextInfo)
       } else {
         currentWorkingDFSize = newWorkingDFSize
         debug(s"Evaluating $dimensionName population for the very first time.")
-        evaluatePopulation(getPopulation, workingDF)
+        evaluatePopulation(getPopulation, workingDF, evaluationContextInfo)
       }
     }
     evaluated
   }
-
-  def getBestFromPopulation(workingDF: DataFrame): EvaluatedResult
-
 }
 
 

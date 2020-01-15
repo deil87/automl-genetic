@@ -40,7 +40,7 @@ class RegParamLRTest extends FunSuite with Matchers with LazyLogging{
       } else population
     }
 
-    val evolveFun: HPPopulation => HPPopulation = dimension.evolve(_, workingDF)
+    val evolveFun: HPPopulation => HPPopulation = dimension.evolve(_, workingDF, null)
     repeatRecursively(initialPopulation, evolveFun, 15)
 
     val bestRegParamValue = dimension.getBestFromHallOfFame.modelsHParameterGroups.head.hpParameters.filter { case RegParamLR(_) => true }.head.currentValue
