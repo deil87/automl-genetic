@@ -64,7 +64,7 @@ class CarDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvider
     val autoMl = new AutoML(
       data = preparedCarDF,
       responseColumn = "indexedLabel",
-      maxTime = 3 * 60000,
+      maxTime = 1 * 60000,
       useMetaDB = false,
       initialPopulationSize = Some(3),
       seedPopulation = Some(seedPopulation),

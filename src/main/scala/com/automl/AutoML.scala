@@ -203,7 +203,7 @@ class AutoML(data: DataFrame,
       }
     }
 
-    AutoMLReporter.show(templateEvDim.hallOfFame.iterator, problemType)
+    AutoMLReporter.show(templateEvDim.hallOfFame.clone().dequeueAll.iterator, problemType)
     templateEvDim.hallOfFame
   }
 
