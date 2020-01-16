@@ -1,6 +1,6 @@
 package com.automl.template.simple
 
-import com.automl.evolution.dimension.hparameter.{HyperParametersField, HyperParametersGroup}
+import com.automl.evolution.dimension.hparameter.{HyperParametersField, HyperParametersGroup, MutableHParameter}
 import com.automl.{ConfigProvider, PaddedLogging}
 import com.automl.problemtype.ProblemType
 import com.automl.template._
@@ -18,19 +18,6 @@ trait SimpleModelMember extends TemplateMember { self: PaddedLogging =>
   def modelKey: ModelKey = ???
 
   def testStrategy: TestStrategy = ???
-
-  /**
-    * Selects hpGroup based on the way how we decided to derive it. Either from coevolution or through regular mutation from TemplateTree
-    */
-  def getActiveHPGroup(config: Config, hpGroup: Option[HyperParametersGroup[_]], hyperParametersField: Option[HyperParametersField]): HyperParametersGroup[_] = {
-    val hpCoevolutionIsEnabled = config.getBoolean("hyperParameterDimension.enabled")
-
-    // It is assumed that we have only one relevant HPGroup per model
-    def getRelevantHPGroup = hyperParametersField.get.modelsHParameterGroups.find(_.isRelevantTo(this))
-
-    val hpGroupOpt = if (hpCoevolutionIsEnabled) hpGroup else getRelevantHPGroup
-    hpGroupOpt.getOrElse(throw new IllegalStateException(s"No HP group found for a given estimator. Note: hpCoevolutionIsEnabled=$hpCoevolutionIsEnabled"))
-  }
 }
 
 object SimpleModelMember {

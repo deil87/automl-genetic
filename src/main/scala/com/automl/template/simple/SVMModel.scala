@@ -17,12 +17,15 @@ import org.apache.spark.sql._
 
 import scala.util.Random
 
-case class SVMModel(hpGroup: Option[SVMHPGroup] = None, seed: Long = Random.nextLong())(implicit val logPaddingSize: Int = 0)
+case class SVMModel(hpGroup: SVMHPGroup = SVMHPGroup(),
+                    seed: Long = Random.nextLong())(implicit val logPaddingSize: Int = 0)
   extends LinearModelMember
     with ClassificationMetricsHelper
     with PaddedLogging{
 
   override def name: String = "SVMModel " + super.name
+
+  var hpGroupInternal: HyperParametersGroup[_ <: MutableHParameter[Double, _]] = hpGroup
 
   override def canHandleProblemType: PartialFunction[ProblemType, Boolean] = {
     case BinaryClassificationProblem => true
@@ -36,7 +39,7 @@ case class SVMModel(hpGroup: Option[SVMHPGroup] = None, seed: Long = Random.next
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
 
-  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParametersField: Option[HyperParametersField]): FitnessResult = {
+  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hpFieldFromCoevolution: Option[HyperParametersField]): FitnessResult = {
     logger.debug(s"Evaluating $name ...")
     import utils.SparkMLUtils._
 
@@ -100,7 +103,7 @@ case class SVMModel(hpGroup: Option[SVMHPGroup] = None, seed: Long = Random.next
           .setPredictionCol("prediction")
           .setMetricName("f1")
 
-        val activeHPGroup = getActiveHPGroup(config, hpGroup, hyperParametersField)
+        val activeHPGroup: HyperParametersGroup[_] = getRelevantHPGroupFromActiveHPField(config, hpFieldFromCoevolution).getOrElse(hpGroup)
 
         // We can't train CV on `train+test` data and then predict on itself -> overfitted resuls.
         // We need at least `test` split  to get predictions which could be used to find phenotypic similarity.

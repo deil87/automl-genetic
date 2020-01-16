@@ -5,7 +5,7 @@ import com.automl.dataset.Datasets
 import com.automl.evolution.dimension.hparameter._
 import com.automl.evolution.mutation.HPMutationStrategy
 import com.automl.problemtype.ProblemType
-import com.automl.template.simple.{Bayesian, DecisionTree, RandomForest}
+import com.automl.template.simple.{Bayesian, DecisionTree, LogisticRegressionModel, RandomForest}
 import org.scalatest.{FunSuite, Matchers}
 
 class TemplateTreeTest extends FunSuite with Matchers {
@@ -221,7 +221,7 @@ class TemplateTreeTest extends FunSuite with Matchers {
     val preparedGlassDF = Datasets.getGlassDataFrame(1234)
     val Array(trainingSplit, testSplit) = preparedGlassDF.randomSplit(Array(0.8, 0.2))
 
-    val fitnessValue = individual.evaluateFitness(trainingSplit, testSplit, ProblemType.MultiClassClassificationProblem, hyperParamsMap = None)
+    val fitnessValue = individual.evaluateFitness(trainingSplit, testSplit, ProblemType.MultiClassClassificationProblem, hpFieldFromCoevolution = None)
   }
 
   //TODO we probably need to store only HPGroup that is suitable for a particular Member in the node
@@ -260,5 +260,24 @@ class TemplateTreeTest extends FunSuite with Matchers {
 
     individual should equal(individual)
     individual shouldNot equal(individual2)
+  }
+
+  test("hyperparameters that are passed through constructor ovverride everything else") {
+
+    val sameLogisticRegressionHPGroup = LogisticRegressionHPGroup(Seq(RegParamLR(Some(0.2)), ElasticNet(Some(0.2))))
+
+    val individual: TemplateTree[TemplateMember] = LeafTemplate(LogisticRegressionModel(sameLogisticRegressionHPGroup))
+    val individual2: TemplateTree[TemplateMember] = LeafTemplate(LogisticRegressionModel(sameLogisticRegressionHPGroup))
+
+    println(individual)
+
+    individual should equal(individual2)
+
+    val anotherLogisticRegressionHPGroup = LogisticRegressionHPGroup(Seq(RegParamLR(Some(0.4)), ElasticNet(Some(0.5))))
+
+
+    val individual3: TemplateTree[TemplateMember] = LeafTemplate(LogisticRegressionModel(anotherLogisticRegressionHPGroup))
+
+    individual should not equal(individual3)
   }
 }

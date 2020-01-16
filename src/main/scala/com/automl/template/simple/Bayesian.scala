@@ -1,13 +1,13 @@
 package com.automl.template.simple
 
 import com.automl.{ConfigProvider, ConsistencyChecker, LogLossCustom, PaddedLogging}
-import com.automl.evolution.dimension.hparameter.{BayesianHPGroup, HyperParametersField, Smoothing}
+import com.automl.evolution.dimension.hparameter._
 import com.automl.exception.SuspiciousPerformanceException
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
 import com.automl.spark.SparkSessionProvider
-import com.automl.template.EvaluationMagnet
+import com.automl.template.{EvaluationMagnet, TemplateMember}
 import com.automl.teststrategy.{TestStrategy, TrainingTestSplitStrategy}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.ml.classification.NaiveBayes
@@ -18,7 +18,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.types.{DoubleType, StringType}
 import utils.SparkMLUtils
 
-case class Bayesian(hpGroup: Option[BayesianHPGroup] = None)(implicit val logPaddingSize: Int = 0)
+case class Bayesian(hpGroup: BayesianHPGroup = BayesianHPGroup())(implicit val logPaddingSize: Int = 0)
   extends SimpleModelMember
     with ClassificationMetricsHelper
     with SparkSessionProvider
@@ -26,6 +26,8 @@ case class Bayesian(hpGroup: Option[BayesianHPGroup] = None)(implicit val logPad
     with ConsistencyChecker{
 
   override def name: String = "Bayesian " + super.name
+
+  var hpGroupInternal: HyperParametersGroup[_ <: MutableHParameter[Double, _]] = hpGroup
 
   override def canHandleProblemType: PartialFunction[ProblemType, Boolean] = {
     case BinaryClassificationProblem => true
@@ -39,7 +41,7 @@ case class Bayesian(hpGroup: Option[BayesianHPGroup] = None)(implicit val logPad
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
 
-  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParametersField: Option[HyperParametersField]): FitnessResult = {
+  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hpFieldFromCoevolution: Option[HyperParametersField]): FitnessResult = {
 
     debug(s"Evaluating $name ...")
 
@@ -86,7 +88,8 @@ case class Bayesian(hpGroup: Option[BayesianHPGroup] = None)(implicit val logPad
           .setPredictionCol("prediction")
           .setMetricName("f1")
 
-        val activeHPGroup = getActiveHPGroup(config, hpGroup, hyperParametersField)
+        val activeHPGroup: HyperParametersGroup[_] = getRelevantHPGroupFromActiveHPField(config, hpFieldFromCoevolution).getOrElse(hpGroup)
+
 
         if(validationStrategy == "cv") {
           val paramGrid = new ParamGridBuilder()

@@ -2,7 +2,7 @@ package com.automl.template
 
 import java.util.UUID
 
-import com.automl.{EvaluationRules, PaddedLogging}
+import com.automl.{ConfigProvider, EvaluationRules, PaddedLogging}
 import com.automl.evolution.dimension.hparameter._
 import com.automl.template.ensemble.EnsemblingModelMember
 import com.automl.template.simple.{DecisionTree, SimpleModelMember}
@@ -10,6 +10,7 @@ import org.apache.spark.sql.DataFrame
 import com.automl.helper.{FitnessResult, TemplateTreeHelper}
 import com.automl.population.HPPopulation
 import com.automl.problemtype.ProblemType
+import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
 import kamon.Kamon
 import kamon.metric.MeasurementUnit
@@ -34,11 +35,25 @@ sealed trait TemplateTree[+A <: TemplateMember]{
   var parent: Option[NodeTemplate[TemplateMember]] = None
 
   /**
-    * @param hyperParamsMap can come from coevolution outside of the TemplateTree or could be present in TemplateTree itself.
+    * @param hpFieldFromCoevolution come from coevolution outside of the TemplateTree
     */
-  def evaluateFitness(trainingDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParamsMap: Option[HyperParametersField], seed: Long = new Random().nextLong())(implicit tc: TreeContext = TreeContext()): FitnessResult
+  def evaluateFitness(trainingDF: DataFrame,
+                      testDF: DataFrame,
+                      problemType: ProblemType,
+                      hpFieldFromCoevolution: Option[HyperParametersField],
+                      seed: Long = new Random().nextLong())
+                     (implicit tc: TreeContext = TreeContext()): FitnessResult
 
-  var internalHyperParamsMap: Option[HyperParametersField] = Some(HPPopulation.randomRelevantHPFieldFor(member))
+  // TODO is it right that TemplateTree has HPField/HPGroups, when it is TemplateMember who needs it?
+  // This HP map will serve for all nodes of the templateTree. If we need ability to specify  on per member basis
+//  var internalHyperParamsMap = Some(HPPopulation.randomRelevantHPFieldFor(member))
+  // TODO we should not set HPField to every level of the tree. We nee to set HPField to root node and then share it's instance down the tree.
+  //TODO remove
+  var internalHyperParamsMap: Option[HyperParametersField] = Some(HPPopulation.randomRelevantHPFieldFor(member)) // ref to root HPField
+
+//  var internalHyperParamsMap: Option[HyperParametersField] = if (ConfigProvider.config.getBoolean("evolution.hyperParameterDimension.enabled"))
+//    Some(HPPopulation.randomRelevantHPFieldFor(member))
+//  else None
 
   def height: Int = 1 + subMembers.foldLeft(1){ case (h, subMember) => Math.max(h, subMember.height)}
 
@@ -63,21 +78,23 @@ sealed trait TemplateTree[+A <: TemplateMember]{
       case lt: NodeTemplate[A] => {
         val nt = NodeTemplate(member = lt.member, subMembers = lt.subMembers)
 //        nt.id = lt.id
-        val copyOfHPGroups = lt.internalHyperParamsMap.get.modelsHParameterGroups.map{
+       /* val copyOfHPGroups = lt.internalHyperParamsMap.get.modelsHParameterGroups.map{
           case bhpg: BayesianHPGroup  =>
-            val smoothing = Smoothing()
+            val smoothing = Smoothing() //TODO fixme can't do this as it will give random hps
             BayesianHPGroup(Seq( smoothing ))//bhpg.copy()
           case bhpg: DecisionTreeHPGroup  => DecisionTreeHPGroup()//bhpg.copy()
           case bhpg: LogisticRegressionHPGroup  => LogisticRegressionHPGroup()//bhpg.copy()
           case bhpg: RandomForestHPGroup  => RandomForestHPGroup()//bhpg.copy()
           case unknown  => throw new IllegalStateException(s"Method copy failed due to unsupported copy for $unknown")
         }
-        nt.internalHyperParamsMap = Some(lt.internalHyperParamsMap.get.copy(modelsHParameterGroups = copyOfHPGroups))
+        nt.internalHyperParamsMap = Some(lt.internalHyperParamsMap.get.copy(modelsHParameterGroups = copyOfHPGroups))*/
         nt
       }
       case _ => throw new IllegalStateException()
     }
   }
+
+  override def toString: String = TemplateTreeHelper.renderAsString_v2(this)
 }
 
 case class LeafTemplate[+A <: TemplateMember](member: A) extends TemplateTree[A] {
@@ -92,7 +109,7 @@ case class LeafTemplate[+A <: TemplateMember](member: A) extends TemplateTree[A]
     trainDF.cache()
     testDF.cache()
 
-    member.fitnessError(trainDF, testDF, problemType, this.internalHyperParamsMap)
+    member.fitnessError(trainDF, testDF, problemType, hyperParamsField)
   }
 
   override def height: Int = 1
@@ -112,11 +129,11 @@ case class NodeTemplate[+A <: TemplateMember](member: A, subMembers: Seq[Templat
   }
 
   //We delegating calculation to ensemble member as well
-  override def evaluateFitness(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParamsField: Option[HyperParametersField], seed: Long)(implicit tc: TreeContext = TreeContext()): FitnessResult = {
+  override def evaluateFitness(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hpFieldFromCoevolution: Option[HyperParametersField], seed: Long)(implicit tc: TreeContext = TreeContext()): FitnessResult = {
     val updatedTC = TemplateTree.updateNodeTC(member.name, height, tc)(logPaddingSize)
     //member.fitnessError(trainDF, testDF, subMembers)
     //or
-    member.asInstanceOf[EnsemblingModelMember].ensemblingFitnessError(trainDF, testDF, subMembers, problemType, hyperParamsField, seed)(updatedTC)
+    member.asInstanceOf[EnsemblingModelMember].ensemblingFitnessError(trainDF, testDF, subMembers, problemType, hpFieldFromCoevolution, seed)(updatedTC)
   }
 
   var degreeOfExploration: Double = 0
@@ -160,8 +177,12 @@ object TemplateTree extends PaddedLogging {
 
 case class TreeContext(level: Option[Int] = None)
 
+// TODO do we need SimpleModelMember ? it could probably be just TemplateMember. Or maybe marker class is fine...hm
 trait TemplateMember extends EvaluationRules { self: PaddedLogging =>
   def name: String
+
+  // We can have a real type of HyperParametersGroup in subclasses if we introduce type parameter for TemplateMember
+  var hpGroupInternal: HyperParametersGroup[_ <: MutableHParameter[Double, _]]
 
   @Deprecated() //"Consider to remove if there is no way to improve flexibility of evaluation API"
   def fitnessError(magnet: EvaluationMagnet): FitnessResult = null
@@ -175,7 +196,18 @@ trait TemplateMember extends EvaluationRules { self: PaddedLogging =>
     fitnessError(trainDF, testDF, problemType, None)
   }
 
-  def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParametersField: Option[HyperParametersField] = None): FitnessResult
+  def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hpFieldFromCoevolution: Option[HyperParametersField] = None): FitnessResult
+
+  /**
+    * Selects hpGroup based on the way how we decided to derive it. Either from coevolution or through regular mutation from TemplateTree
+    */
+  //TODO !!!! If we make Members to provide it's own HPGroups we don't need to select between two hp fields ( i.e. from Coevolutin or default random field)
+  def getRelevantHPGroupFromActiveHPField(config: Config, hpFieldFromCoevolution: Option[HyperParametersField]): Option[HyperParametersGroup[_]] = {
+
+    hpFieldFromCoevolution
+      .flatMap(_.modelsHParameterGroups.find(_.isRelevantTo(this)))
+//      .orElse(throw new IllegalStateException("getRelevantHPGroupFromActiveHPField should not be called when hpCoevolution is disabled"))
+  }
 
   override def toString: String = name
 

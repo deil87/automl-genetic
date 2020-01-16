@@ -23,7 +23,7 @@ trait EnsemblingModelMember extends TemplateMember { self: PaddedLogging =>
                                                   testDF: DataFrame,
                                                   subMembers: Seq[TemplateTree[A]],
                                                   problemType: ProblemType,
-                                                  hyperParamsMap: Option[HyperParametersField],
+                                                  hpFieldFromCoevolution: Option[HyperParametersField],
                                                   seed: Long)
                                                  (implicit tc: TreeContext = TreeContext()): FitnessResult
 

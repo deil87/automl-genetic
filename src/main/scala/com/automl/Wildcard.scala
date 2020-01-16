@@ -1,6 +1,6 @@
 package com.automl
 
-import com.automl.evolution.dimension.hparameter.HyperParametersField
+import com.automl.evolution.dimension.hparameter.{HyperParametersField, HyperParametersGroup, MutableHParameter}
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.template.{EvaluationMagnet, TemplateMember}
@@ -31,4 +31,8 @@ case class Wildcard(members: Seq[TemplateMember] = SimpleModelMember.poolOfSimpl
   }
   // TODO when to call this method? on new evolution or generation?
   def shrinkDegreeOfFreedom: Wildcard = this.copy(members = members.tail)
+
+  //TODO move to constructor
+  var hpGroupInternal: HyperParametersGroup[_ <: MutableHParameter[Double, _]] = ???
+
 }

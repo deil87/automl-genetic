@@ -17,7 +17,7 @@ case class EvaluatedTemplateData(id: String,
                                  rank: Long = -1,
                                  probability: Double = -1,
                                  neighbours: Seq[EvaluatedTemplateData] = Nil,
-                                 hyperParamsField: Option[HyperParametersField] = None) extends Evaluated[EvaluatedTemplateData] {
+                                 hyperParamsFieldFromCoevolution: Option[HyperParametersField] = None) extends Evaluated[EvaluatedTemplateData] {
 
   type ItemType = TemplateTree[TemplateMember]
   type FitnessType = FitnessResult
@@ -27,7 +27,9 @@ case class EvaluatedTemplateData(id: String,
 
   override def item: TemplateTree[TemplateMember] = template
   override def result: FitnessResult = fitness
-  override def params: Option[HyperParametersField] = hyperParamsField
+
+  // if not None, than HyperParametersField was set from Coevolution in TemplateNSLCEvaluator
+  override def params: Option[HyperParametersField] = hyperParamsFieldFromCoevolution
 
   def betterThan(that:EvaluatedTemplateData): Boolean = {
     if (theBiggerTheBetter(fitness.problemType))

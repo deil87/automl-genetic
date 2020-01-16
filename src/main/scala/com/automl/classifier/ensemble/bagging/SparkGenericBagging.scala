@@ -2,7 +2,7 @@ package com.automl.classifier.ensemble.bagging
 
 import com.automl.{ConsistencyChecker, LogLossCustom, PaddedLogging}
 import com.automl.dataset.{RandomSampling, StratifiedSampling}
-import com.automl.evolution.dimension.hparameter.HyperParametersField
+import com.automl.evolution.dimension.hparameter.{BaggingHPGroup, HyperParametersField, HyperParametersGroup, MutableHParameter}
 import com.automl.evolution.evaluation.EvaluationContextInfo
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
@@ -19,10 +19,12 @@ import org.apache.spark.ml.linalg.{DenseVector, Vector => MLVector}
 import scala.collection.{immutable, mutable}
 
 //TODO consider moving closer to BaggingMember
-case class SparkGenericBagging()(implicit val logPaddingSize: Int = 0) extends BaggingMember
+case class SparkGenericBagging(hpg: BaggingHPGroup = BaggingHPGroup())(implicit val logPaddingSize: Int = 0) extends BaggingMember
   with PaddedLogging with ConsistencyChecker{
 
   import utils.SparkMLUtils._
+
+  var hpGroupInternal: HyperParametersGroup[_ <: MutableHParameter[Double, _]] = hpg
 
   override def ensemblingRegressor[_](problemType: ProblemType): EnsemblingRegressor[_] = problemType match {
     case RegressionProblem => new AverageRegressor()

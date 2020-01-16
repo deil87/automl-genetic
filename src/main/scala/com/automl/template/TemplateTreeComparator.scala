@@ -8,11 +8,14 @@ object TemplateTreeComparator extends LazyLogging{
   def compare[A <: TemplateMember](left: TemplateTree[A], right: TemplateTree[A]): Boolean = {
     left match {
       case l: LeafTemplate[A] => {
-        val hpFieldsAreDefined = l.internalHyperParamsMap.isDefined && right.internalHyperParamsMap.isDefined
-        val hpFieldsAreEqual = l.internalHyperParamsMap.get == right.internalHyperParamsMap.get
-          if(!hpFieldsAreEqual) logger.debug("Hyperparameter fields of the LeafTemplates are not equal")
-        val membersAreEqual = l.member == right.member
-        membersAreEqual && hpFieldsAreDefined && hpFieldsAreEqual
+//        val hpFieldsAreBothEmpty = l.internalHyperParamsMap.isEmpty && right.internalHyperParamsMap.isEmpty
+//        val hpFieldsAreDefined = l.internalHyperParamsMap.isDefined && right.internalHyperParamsMap.isDefined
+//          if(!hpFieldsAreDefined) println("hpFieldsAreDefined are not defined in both trees")
+//        lazy val hpFieldsAreEqual = hpFieldsAreDefined && l.internalHyperParamsMap.get == right.internalHyperParamsMap.get
+//          if(!hpFieldsAreEqual) logger.debug("Hyperparameter fields of the LeafTemplates are not equal")
+        lazy val membersAreEqual = l.member == right.member
+//        (hpFieldsAreEqual || hpFieldsAreBothEmpty) && membersAreEqual
+        membersAreEqual
       }
       case l: NodeTemplate[A] if right.isInstanceOf[NodeTemplate[A]] => {
         calculateDiffAndCheck(l, right)

@@ -35,59 +35,21 @@ class CarDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvider
 
 
     val individuals = Seq(
-//      LeafTemplate(SVMModel()),
       LeafTemplate(LogisticRegressionModel()),
       LeafTemplate(Bayesian()),
       LeafTemplate(RandomForest()),
-//      NodeTemplate(SparkGenericBagging(), Seq(
-//        LeafTemplate(LogisticRegressionModel()),
-//        LeafTemplate(Bayesian()),
-//        LeafTemplate(RandomForest())
-//      )),
-      NodeTemplate(SparkGenericBagging(), Seq(
-        LeafTemplate(LogisticRegressionModel(Some(LogisticRegressionHPGroup(Seq(RegParamLR(Some(0.2)), ElasticNet(Some(0.2))))))),
-        LeafTemplate(Bayesian(Some(BayesianHPGroup(Seq(Smoothing(Some(7))))))),
-        LeafTemplate(RandomForest(Some(RandomForestHPGroup(Seq(MaxDepthRF(Some(3.0))))))),
-        LeafTemplate(LogisticRegressionModel(Some(LogisticRegressionHPGroup(Seq(RegParamLR(Some(0.2)), ElasticNet(Some(0.2))))))),
-        LeafTemplate(Bayesian(Some(BayesianHPGroup(Seq(Smoothing(Some(7))))))),
-        LeafTemplate(RandomForest(Some(RandomForestHPGroup(Seq(MaxDepthRF(Some(3.0))))))),
-        LeafTemplate(LogisticRegressionModel(Some(LogisticRegressionHPGroup(Seq(RegParamLR(Some(0.2)), ElasticNet(Some(0.2))))))),
-        LeafTemplate(Bayesian(Some(BayesianHPGroup(Seq(Smoothing(Some(7))))))),
-        LeafTemplate(RandomForest(Some(RandomForestHPGroup(Seq(MaxDepthRF(Some(3.0))))))),
-        LeafTemplate(LogisticRegressionModel(Some(LogisticRegressionHPGroup(Seq(RegParamLR(Some(0.2)), ElasticNet(Some(0.2))))))),
-        LeafTemplate(Bayesian(Some(BayesianHPGroup(Seq(Smoothing(Some(7))))))),
-        LeafTemplate(RandomForest(Some(RandomForestHPGroup(Seq(MaxDepthRF(Some(3.0))))))),
+      NodeTemplate(SparkGenericBagging(), Seq( // TODO SparkGenericBagging does not have relevant default HPs
+        LeafTemplate(LogisticRegressionModel(LogisticRegressionHPGroup(Seq(RegParamLR(Some(0.2)), ElasticNet(Some(0.2)))))),
+        LeafTemplate(Bayesian(BayesianHPGroup(Seq(Smoothing(Some(7)))))),
+        LeafTemplate(RandomForest(RandomForestHPGroup(Seq(MaxDepthRF(Some(3.0)))))),
         NodeTemplate(SparkGenericBagging(), Seq(
-          LeafTemplate(LogisticRegressionModel(Some(LogisticRegressionHPGroup(Seq(RegParamLR(Some(0.2)), ElasticNet(Some(0.2))))))),
-          LeafTemplate(Bayesian(Some(BayesianHPGroup(Seq(Smoothing(Some(7))))))),
-          LeafTemplate(RandomForest(Some(RandomForestHPGroup(Seq(MaxDepthRF(Some(3.0))))))),
-          LeafTemplate(LogisticRegressionModel(Some(LogisticRegressionHPGroup(Seq(RegParamLR(Some(0.2)), ElasticNet(Some(0.2))))))),
-          LeafTemplate(Bayesian(Some(BayesianHPGroup(Seq(Smoothing(Some(7))))))),
-          LeafTemplate(RandomForest(Some(RandomForestHPGroup(Seq(MaxDepthRF(Some(3.0))))))),
-          LeafTemplate(LogisticRegressionModel(Some(LogisticRegressionHPGroup(Seq(RegParamLR(Some(0.2)), ElasticNet(Some(0.2))))))),
-          LeafTemplate(Bayesian(Some(BayesianHPGroup(Seq(Smoothing(Some(7))))))),
-          LeafTemplate(RandomForest(Some(RandomForestHPGroup(Seq(MaxDepthRF(Some(3.0))))))),
-          LeafTemplate(LogisticRegressionModel(Some(LogisticRegressionHPGroup(Seq(RegParamLR(Some(0.2)), ElasticNet(Some(0.2))))))),
-          LeafTemplate(Bayesian(Some(BayesianHPGroup(Seq(Smoothing(Some(7))))))),
-          LeafTemplate(RandomForest(Some(RandomForestHPGroup(Seq(MaxDepthRF(Some(3.0)))))))
+          LeafTemplate(LogisticRegressionModel(LogisticRegressionHPGroup(Seq(RegParamLR(Some(0.5)), ElasticNet(Some(0.9)))))),
+          LeafTemplate(Bayesian(BayesianHPGroup(Seq(Smoothing(Some(8)))))),
+          LeafTemplate(RandomForest(RandomForestHPGroup(Seq(MaxDepthRF(Some(5.0)))))),
+          LeafTemplate(LogisticRegressionModel(LogisticRegressionHPGroup(Seq(RegParamLR(Some(0.1)), ElasticNet(Some(0.3))))))
         ))
       )),
-//      NodeTemplate(SparkGenericBagging(),
-//        Seq(
-//          LeafTemplate(Bayesian()),
-//          LeafTemplate(DecisionTree())
-//        )
-//      ),
-//      NodeTemplate(GenericStacking(),
-//        Seq(
-//          LeafTemplate(Bayesian()),
-//          LeafTemplate(DecisionTree())
-//        )
-//      ),
-      //      LeafTemplate(GradientBoosting()), //TODO multiclass classification case is not supported
-      //        LeafTemplate(NeuralNetwork(Array(5,10,5))), // TODO need to implement detection of features number and number of classes
-      LeafTemplate(DecisionTree())/*,
-      nt*/
+      LeafTemplate(DecisionTree())
     )
 
     val seedPopulation = new TPopulation(individuals)

@@ -5,7 +5,7 @@ import com.automl.template.{TemplateMember, TemplateTree}
 
 import scala.util.Random
 
-
+// TODO we probably better to use Set[LogisticRegressionHParameter[Double]]
 case class LogisticRegressionHPGroup(hpParameters:Seq[LogisticRegressionHParameter[Double]] = Seq(RegParamLR(), ElasticNet()))
   extends HyperParametersGroup[LogisticRegressionHParameter[Double]] {
 

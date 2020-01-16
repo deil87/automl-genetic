@@ -102,16 +102,26 @@ class HyperParametersEvolutionDimension(parentTemplateEvDimension: TemplateEvolu
   // WE can start Template evolution with default hyper parameters because evaluation of hyper parameters on first iteration contributes only
   // to the upcoming evolutions as for the first iteration we have nothing to compare against for HyperParameter dimension //TODO make it configurable strategy
   //But it makes sense to search for HPs first. It is faster and brings more value
-  override def getBestFromHallOfFame: HyperParametersField = hallOfFame.headOption.map(_.field).getOrElse{getInitialPopulation.individuals.randElement}
+  override def getBestFromHallOfFame: HyperParametersField =
+    hallOfFame.headOption.map(_.field)
+//      .getOrElse{getInitialPopulation.individuals.randElement}
+      .getOrElse{throw new IllegalStateException("HP coevolution did not produce any HPField yet. For researc purposes it is better not to return randElement")}
 }
 
 
-//Подумать над тем чтобы использовать обычный Map
+// TODO Подумать над тем чтобы использовать обычный Map
 trait HyperParametersGroup[HPModelBoundedType <: MutableHParameter[Double, HPModelBoundedType]]{
   def hpParameters : Seq[HPModelBoundedType]
   def mutate(): HyperParametersGroup[HPModelBoundedType]
   //TODO maybe it is better to use Map as for now we have only one HPGroup per model
   def isRelevantTo(template: TemplateMember): Boolean
+
+  override def equals(obj: Any): Boolean = {
+    require(obj.isInstanceOf[HyperParametersGroup[HPModelBoundedType]])
+    val another = obj.asInstanceOf[HyperParametersGroup[HPModelBoundedType]]
+    val diff = this.hpParameters.map(hp => (hp.currentValue, hp.getClass)).diff(another.hpParameters.map(hp => (hp.currentValue, hp.getClass)))
+    diff.isEmpty
+  }
 } //TODO instead of using Any we can create our own hierarhy of wrapper classes to make them have coomon ancestor like ParameterType
 
 

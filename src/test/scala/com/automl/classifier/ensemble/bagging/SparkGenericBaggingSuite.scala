@@ -55,7 +55,7 @@ class SparkGenericBaggingSuite extends FunSuite with Matchers with SparkSessionP
 
     val Array(trainingSplit, testSplit) = data.randomSplit(Array(0.8, 0.2))
 
-    val result = ensemb.evaluateFitness(trainingSplit, testSplit, ProblemType.MultiClassClassificationProblem, hyperParamsField = Some(HyperParametersField.default))
+    val result = ensemb.evaluateFitness(trainingSplit, testSplit, ProblemType.MultiClassClassificationProblem, hpFieldFromCoevolution = Some(HyperParametersField.default))
     println("Logloss: " + result.getCorrespondingMetric)
   }
 
@@ -86,14 +86,14 @@ class SparkGenericBaggingSuite extends FunSuite with Matchers with SparkSessionP
 
     val Array(trainingSplit, testSplit) = data.randomSplit(Array(0.8, 0.2), seedForEverything)
 
-    val result = ensemb.evaluateFitness(trainingSplit, testSplit, ProblemType.MultiClassClassificationProblem, hyperParamsField = Some(HyperParametersField.default), seed = seedForEverything)
+    val result = ensemb.evaluateFitness(trainingSplit, testSplit, ProblemType.MultiClassClassificationProblem, hpFieldFromCoevolution = Some(HyperParametersField.default), seed = seedForEverything)
 
     // ^^^ Should be equal to result2 from same actions below:
     val data2 = Datasets.getIrisDataFrame(seedForEverything)
 
     val Array(trainingSplit2, testSplit2) = data2.randomSplit(Array(0.8, 0.2), seedForEverything)
 
-    val result2 = ensemb.evaluateFitness(trainingSplit2, testSplit2, ProblemType.MultiClassClassificationProblem, hyperParamsField = Some(HyperParametersField.default), seed = seedForEverything)
+    val result2 = ensemb.evaluateFitness(trainingSplit2, testSplit2, ProblemType.MultiClassClassificationProblem, hpFieldFromCoevolution = Some(HyperParametersField.default), seed = seedForEverything)
 
     result.getCorrespondingMetric shouldBe result2.getCorrespondingMetric
   }
@@ -151,7 +151,7 @@ class SparkGenericBaggingSuite extends FunSuite with Matchers with SparkSessionP
 
     val problemType = ProblemType.MultiClassClassificationProblem
 
-    val baggingF1 = ensemb.evaluateFitness(trainingSplit, testSplit, problemType, hyperParamsField = Some(HyperParametersField.default), seed = shufflingSeed).getCorrespondingMetric
+    val baggingF1 = ensemb.evaluateFitness(trainingSplit, testSplit, problemType, hpFieldFromCoevolution = Some(HyperParametersField.default), seed = shufflingSeed).getCorrespondingMetric
 
     val dtF1 = DecisionTree().fitnessError(trainingSplit, testSplit, problemType).getMetricByName("f1")
 
@@ -218,9 +218,9 @@ class SparkGenericBaggingSuite extends FunSuite with Matchers with SparkSessionP
 
     val problemType = ProblemType.MultiClassClassificationProblem
 
-    val baggingF1 = ensemb.evaluateFitness(trainingSplit, testSplit, problemType, hyperParamsField = Some(HyperParametersField.default)).getCorrespondingMetric
+    val baggingF1 = ensemb.evaluateFitness(trainingSplit, testSplit, problemType, hpFieldFromCoevolution = Some(HyperParametersField.default)).getCorrespondingMetric
 
-    val dtF1 = DecisionTree().fitnessError(trainingSplit, testSplit, problemType, hyperParametersField = None).getMetricByName("f1")
+    val dtF1 = DecisionTree().fitnessError(trainingSplit, testSplit, problemType, hpFieldFromCoevolution = None).getMetricByName("f1")
 
     println("Bagging's F1:" + baggingF1)
     println("DT's F1:" + dtF1)

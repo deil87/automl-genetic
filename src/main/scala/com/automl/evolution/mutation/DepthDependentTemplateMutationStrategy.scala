@@ -1,6 +1,6 @@
 package com.automl.evolution.mutation
 
-import com.automl.evolution.dimension.hparameter.{HPRangeWasExploredException, HyperParametersEvolutionDimension}
+import com.automl.evolution.dimension.hparameter.{HPRangeWasExploredException, HyperParametersEvolutionDimension, HyperParametersGroup, MutableHParameter}
 import com.automl.{ConfigProvider, PaddedLogging}
 import com.automl.evolution.diversity.DiversityStrategy
 import com.automl.evolution.selection.{RankBasedSelectionProbabilityAssigner, RouletteWheel}
@@ -123,12 +123,12 @@ class DepthDependentTemplateMutationStrategy(/*unused*/diversityStrategy: Divers
               if (randomValue > pivotForMutatingStructureVsHPs) { // chance to nutate hps: 0.9 + (1-pivotForMutatingStructureVsHPs)
                 try {
                   info(s"\t\t- Mutating hps of $lt at level = $currentLevel with based on degree of exploration pivot = $pivotForMutatingStructureVsHPs (case 1)")
-                  mutateHPMap(lt)
+                  mutateHPGroupAspectOfTemplateTree(lt)
                 } catch {
                   case ex: HPRangeWasExploredException =>
                     info(s"\t\t- Mutating hps of $lt at level = $currentLevel resulted in an increase of parent's degree of exploration (case 2)")
                     lt.parent.get.degreeOfExploration = lt.parent.get.degreeOfExploration + 1
-                    mutateHPMap(lt)
+                    mutateHPGroupAspectOfTemplateTree(lt)
                 }
               } else { // chance to mutate to ensembling node = 0.9 * pivotForMutatingStructureVsHPs * 0.2
                 info(s"\t\t- Mutating of $lt at level = $currentLevel resulted in a structure mutation (case 3)")
@@ -139,7 +139,7 @@ class DepthDependentTemplateMutationStrategy(/*unused*/diversityStrategy: Divers
             if (randomValue > pivotBetweenStructureAndHPMutations) { // TODO maybe we don't need `pivotBetweenStructureAndHPMutations` as we are going to estimate exploration degree for submembers
               try {
                 info(s"\t\t- Mutating hps of $lt at level = $currentLevel with based on pivotBetweenStructureAndHPMutations pivot = $pivotBetweenStructureAndHPMutations (case 4)")
-                mutateHPMap(lt)
+                mutateHPGroupAspectOfTemplateTree(lt)
               } catch {
                 case ex: HPRangeWasExploredException =>
                   info(s"\t\t- Mutating hps of $lt at level = $currentLevel resulted in a structure mutation as we don't have parent node (case 5)")
@@ -238,12 +238,18 @@ class DepthDependentTemplateMutationStrategy(/*unused*/diversityStrategy: Divers
     }
   }
 
-  private def mutateHPMap(lt: TemplateTree[TemplateMember]): TemplateTree[TemplateMember] = {
-    val hpPopulationToMutate = new HPPopulation(lt.internalHyperParamsMap.toSeq)
-    val ltWithMutatedHPs = LeafTemplate(lt.member)
-    ltWithMutatedHPs.internalHyperParamsMap = hPMutationStrategy.mutate(hpPopulationToMutate).individuals.headOption
-    ltWithMutatedHPs.parent = lt.parent
-    ltWithMutatedHPs
+  // TEmplateTree could be from any level of the ensemble tree. Which exactly level is decided outside of this method.
+  def mutateHPGroupAspectOfTemplateTree(lt: TemplateTree[TemplateMember]): TemplateTree[TemplateMember] = {
+    lt match {
+      case template: NodeTemplate[_] => ??? //is this case possible at all? or we always call it for leafs?
+      case template: LeafTemplate[_] =>
+        //TODO make hpGroup non optional. If not provided we just need defualt values
+        val member = lt.member
+        val mutatedHPGroup: HyperParametersGroup[_ <: MutableHParameter[Double, _]] = member.hpGroupInternal.mutate()
+        member.hpGroupInternal = mutatedHPGroup
+        LeafTemplate(member)
+    }
+
   }
 
   def mutateNTimes(population: TPopulation, times: Int): TPopulation = {

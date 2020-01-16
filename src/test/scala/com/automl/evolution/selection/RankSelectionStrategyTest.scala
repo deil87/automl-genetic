@@ -28,7 +28,7 @@ class RankSelectionStrategyTest extends WordSpec with Matchers{
 
       val selectionStrategy = new RankSelectionStrategy
       val evaluatedTemplateDatas = individualsSpanned.zipWithIndex.map { case (inds, idx) =>
-        EvaluatedTemplateData(idx.toString, inds, null, FitnessResult(Map("rmse" -> Random.nextDouble()), RegressionProblem, null), hyperParamsField = null)
+        EvaluatedTemplateData(idx.toString, inds, null, FitnessResult(Map("rmse" -> Random.nextDouble()), RegressionProblem, null), hyperParamsFieldFromCoevolution = null)
       }
 
       val selectedParents = selectionStrategy.parentSelectionByShare(selectionShare, evaluatedTemplateDatas)
@@ -232,7 +232,7 @@ class RankSelectionStrategyTest extends WordSpec with Matchers{
 
       val selectionStrategy = new RankSelectionStrategy
       val evaluatedTemplateDatas: Seq[EvaluatedTemplateData] = individuals.zipWithIndex.map { case (inds, idx) =>
-        EvaluatedTemplateData(idx.toString, inds, null, FitnessResult(Map("rmse" -> sameRMSE), RegressionProblem, null), hyperParamsField = null)
+        EvaluatedTemplateData(idx.toString, inds, null, FitnessResult(Map("rmse" -> sameRMSE), RegressionProblem, null), hyperParamsFieldFromCoevolution = null)
       }
 
       1 to 10 foreach { index =>

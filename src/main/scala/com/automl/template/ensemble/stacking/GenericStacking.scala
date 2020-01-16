@@ -6,7 +6,7 @@ import com.automl.regressor.EnsemblingRegressor
 import com.automl.template.{EvaluationMagnet, TemplateMember, TemplateTree, TreeContext}
 import com.automl.template.ensemble.EnsemblingModelMember
 import com.automl.classifier.ensemble.stacking.SparkGenericStacking
-import com.automl.evolution.dimension.hparameter.HyperParametersField
+import com.automl.evolution.dimension.hparameter.{HyperParametersField, HyperParametersGroup, MutableHParameter}
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
 import com.typesafe.scalalogging.LazyLogging
@@ -93,5 +93,7 @@ case class GenericStacking(unusedMetaLearner: PipelineStage = new LinearRegressi
 
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
+  //TODO move to constructor
+  var hpGroupInternal: HyperParametersGroup[_ <: MutableHParameter[Double, _]] = null
 }
 

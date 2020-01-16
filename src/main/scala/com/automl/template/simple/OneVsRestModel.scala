@@ -1,7 +1,7 @@
 package com.automl.template.simple
 
 import com.automl.PaddedLogging
-import com.automl.evolution.dimension.hparameter.HyperParametersField
+import com.automl.evolution.dimension.hparameter.{HyperParametersField, HyperParametersGroup, MutableHParameter}
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
@@ -53,4 +53,6 @@ case class OneVsRestModel()(implicit val logPaddingSize: Int = 0) extends Simple
     }
   }
 
+  //TODO move to constructor
+  var hpGroupInternal: HyperParametersGroup[_ <: MutableHParameter[Double, _]] = null
 }

@@ -50,7 +50,7 @@ class HyperParameterContemporaryPopulationEvaluator(parentTemplateEvDimension: T
 
           //TODO make sure that when our corresponding metric is "the less the better" we properly compare results
           debug(s"Evaluating hpfield  on ${tPopulation.size}  templates in current template population:")
-          val threeBestEvaluations = tPopulation.individuals.map(template => template.evaluateFitness(trainingSplit, testSplit, problemType, hyperParamsMap = Some(hpField)).getCorrespondingMetric)
+          val threeBestEvaluations = tPopulation.individuals.map(template => template.evaluateFitness(trainingSplit, testSplit, problemType, hpFieldFromCoevolution = Some(hpField)).getCorrespondingMetric)
           val totalSumMetric = threeBestEvaluations.sum
           debug(s"Entry $hpField with hashCode = ${cacheKey.hashCode()} was added to the cache with score = $totalSumMetric")
           totalSumMetric

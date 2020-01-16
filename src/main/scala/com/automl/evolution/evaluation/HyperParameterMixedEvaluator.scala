@@ -59,21 +59,21 @@ class HyperParameterMixedEvaluator(parentTemplateEvDimension: TemplateEvolutionD
           debug(s"Evaluating 1nd term for hpfield on base models:")
           val metricsFromBaseModels = hpField.modelsHParameterGroups.map {
             case hpGroup@BayesianHPGroup(_) =>
-              val metric = Bayesian(Some(hpGroup))(currentLogPadding).fitnessError(trainingSplit, testSplit, problemType).getCorrespondingMetric
+              val metric = Bayesian(hpGroup)(currentLogPadding).fitnessError(trainingSplit, testSplit, problemType).getCorrespondingMetric
               // We should get last Best Population from the TemplateCoevolution and estimate on the whole population or representative sample
               metric
             case hpGroup@LogisticRegressionHPGroup(_) =>
-              val metric = LogisticRegressionModel(Some(hpGroup))(currentLogPadding).fitnessError(trainingSplit, testSplit, problemType).getCorrespondingMetric
+              val metric = LogisticRegressionModel(hpGroup)(currentLogPadding).fitnessError(trainingSplit, testSplit, problemType).getCorrespondingMetric
               metric
             case hpGroup@DecisionTreeHPGroup(_) =>
-              val metric = DecisionTree(Some(hpGroup))(currentLogPadding).fitnessError(trainingSplit, testSplit, problemType).getCorrespondingMetric
+              val metric = DecisionTree(hpGroup)(currentLogPadding).fitnessError(trainingSplit, testSplit, problemType).getCorrespondingMetric
               metric
             case _ => throw new IllegalStateException("Unmatched HPGroup found in HP's evaluatePopulation method")
           }
           //TODO make sure that when our corresponding metric is "the less the better" we properly compare results
           // Estimating 2)
           debug(s"Evaluating 2nd term for hpfield  on ${threeBestTemplates.size} best templates in current template population:")
-          val threeBestEvaluations = threeBestTemplates.map(template => template.evaluateFitness(trainingSplit, testSplit, problemType, hyperParamsMap = Some(hpField)).getCorrespondingMetric)
+          val threeBestEvaluations = threeBestTemplates.map(template => template.evaluateFitness(trainingSplit, testSplit, problemType, hpFieldFromCoevolution = Some(hpField)).getCorrespondingMetric)
           val totalSumMetric = metricsFromBaseModels.sum + threeBestEvaluations.sum // we sum all metrics from each ModelHPGroup inn the field so that we can later decide which Field is the best
           debug(s"Entry $hpField with hashCode = ${cacheKey.hashCode()} was added to the cache with score = $totalSumMetric")
           totalSumMetric

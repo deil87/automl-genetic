@@ -18,13 +18,16 @@ import org.apache.spark.sql._
 
 import scala.util.Random
 
-case class RandomForest(hpGroup: Option[RandomForestHPGroup] = None, seed: Long = Random.nextLong())(implicit val logPaddingSize: Int = 0)
+case class RandomForest(hpGroup: RandomForestHPGroup = RandomForestHPGroup(),
+                        seed: Long = Random.nextLong())(implicit val logPaddingSize: Int = 0)
   extends SimpleModelMember
     with ClassificationMetricsHelper
     with SparkSessionProvider
     with PaddedLogging{
+
   override def name: String = "Random forest " + super.name
 
+  var hpGroupInternal: HyperParametersGroup[_ <: MutableHParameter[Double, _]] = hpGroup
 
   override def canHandleProblemType: PartialFunction[ProblemType, Boolean] = {
     case BinaryClassificationProblem => true
@@ -37,7 +40,7 @@ case class RandomForest(hpGroup: Option[RandomForestHPGroup] = None, seed: Long 
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
 
-  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParametersField: Option[HyperParametersField]): FitnessResult = {
+  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hpFieldFromCoevolution: Option[HyperParametersField]): FitnessResult = {
 
     problemType match {
       case RegressionProblem =>
@@ -84,7 +87,7 @@ case class RandomForest(hpGroup: Option[RandomForestHPGroup] = None, seed: Long 
           .setPredictionCol("prediction")
           .setMetricName("f1")
 
-        val activeHPGroup = getActiveHPGroup(config, hpGroup, hyperParametersField)
+        val activeHPGroup: HyperParametersGroup[_] = getRelevantHPGroupFromActiveHPField(config, hpFieldFromCoevolution).getOrElse(hpGroup)
 
         // We can't train CV on `train+test` data and then predict on itself -> overfitted resuls.
         // We need at least `test` split  to get predictions which could be used to find phenotypic similarity.

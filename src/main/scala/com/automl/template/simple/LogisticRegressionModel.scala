@@ -1,7 +1,7 @@
 package com.automl.template.simple
 
 import com.automl.{ConfigProvider, LogLossCustom, PaddedLogging}
-import com.automl.evolution.dimension.hparameter._
+import com.automl.evolution.dimension.hparameter.{HyperParametersGroup, _}
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
@@ -13,10 +13,12 @@ import org.apache.spark.ml.feature.StandardScaler
 import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
 import org.apache.spark.sql._
 
-case class LogisticRegressionModel(hpGroup: Option[LogisticRegressionHPGroup] = None)(implicit val logPaddingSize: Int = 0)
+case class LogisticRegressionModel(hpGroup: LogisticRegressionHPGroup = LogisticRegressionHPGroup())(implicit val logPaddingSize: Int = 0)
   extends LinearModelMember
     with ClassificationMetricsHelper
     with PaddedLogging{
+
+  var hpGroupInternal: HyperParametersGroup[_ <: MutableHParameter[Double, _]] = hpGroup
 
   override def name: String = "LogisticRegressionModel " + super.name
 
@@ -34,7 +36,7 @@ case class LogisticRegressionModel(hpGroup: Option[LogisticRegressionHPGroup] = 
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
   //We need here a task/problemType or something like ModelSearchContext()
-  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParametersField: Option[HyperParametersField] = None): FitnessResult = {
+  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hpFieldFromCoevolution: Option[HyperParametersField] = None): FitnessResult = {
 
   debug(s"Evaluating $name ...")
     problemType match {
@@ -65,8 +67,7 @@ case class LogisticRegressionModel(hpGroup: Option[LogisticRegressionHPGroup] = 
           .setLabelCol("indexedLabel")
           .setMaxIter(20)
 
-        val activeHPGroup = getActiveHPGroup(config, hpGroup, hyperParametersField)
-
+        val activeHPGroup: HyperParametersGroup[_] = getRelevantHPGroupFromActiveHPField(config, hpFieldFromCoevolution).getOrElse(hpGroupInternal)
 
         val preparedTrainingDF = trainDF
           .applyTransformation(scaler)

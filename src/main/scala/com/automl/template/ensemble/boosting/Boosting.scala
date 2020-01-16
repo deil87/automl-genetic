@@ -1,7 +1,7 @@
 package com.automl.template.ensemble.boosting
 
 import com.automl.PaddedLogging
-import com.automl.evolution.dimension.hparameter.HyperParametersField
+import com.automl.evolution.dimension.hparameter.{HyperParametersField, HyperParametersGroup, MutableHParameter}
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.regressor.EnsemblingRegressor
@@ -22,5 +22,7 @@ case class Boosting()(implicit val logPaddingSize: Int = 0) extends BoostingMemb
 
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
+  //TODO move to constructor
+  var hpGroupInternal: HyperParametersGroup[_ <: MutableHParameter[Double, _]] = ???
 }
 

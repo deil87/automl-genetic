@@ -2,6 +2,7 @@ package com.automl.evolution.mutation
 
 import com.automl.ConfigProvider
 import com.automl.classifier.ensemble.bagging.SparkGenericBagging
+import com.automl.evolution.dimension.hparameter.DecisionTreeHPGroup
 import com.automl.evolution.diversity.DistinctDiversityStrategy
 import com.automl.helper.PopulationHelper
 import com.automl.population.{GenericPopulationBuilder, TPopulation}
@@ -194,14 +195,26 @@ class DepthDependentTemplateMutationStrategyTest extends FunSuite with Matchers 
 
   }
 
-  test("that copy of LeafTree copy internal field") {
+  ignore("that copy of LeafTree copy internal field") {
     val individual = LeafTemplate(DecisionTree())
     val copy = individual.copy()
 //    individual == individual shouldBe true
 //    individual == copy shouldBe false
   }
 
-  test("that we will receive new unique population by using mutate method ") {
+
+  test("we can mutate hpGroup and that equals method from hpGroup works") {
+    implicit val padding: Int = 0
+    val strategy = new DepthDependentTemplateMutationStrategy(null, ProblemType.MultiClassClassificationProblem)
+
+    val template = LeafTemplate(DecisionTree())
+    val originalHPGroup: DecisionTreeHPGroup = template.member.hpGroup
+    val mutatedHPGroup = strategy.mutateHPGroupAspectOfTemplateTree(template).member.hpGroupInternal
+
+    originalHPGroup == mutatedHPGroup should not be true
+  }
+
+    test("that we will receive new unique population by using mutate method ") {
 
     implicit val padding: Int = 0
     val strategy = new DepthDependentTemplateMutationStrategy(null, ProblemType.MultiClassClassificationProblem)
