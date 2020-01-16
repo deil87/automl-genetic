@@ -6,14 +6,13 @@ import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.MultiClassClassificationProblem
 import com.automl.{AutoML, ConfigProvider}
 import com.automl.dataset.Datasets
-import com.automl.evolution.dimension.hparameter.{BayesianHPGroup, MaxDepthRF, RandomForestHPGroup, Smoothing}
+import com.automl.evolution.dimension.hparameter._
 import com.automl.population.TPopulation
 import com.automl.spark.SparkSessionProvider
 import com.automl.template.{LeafTemplate, NodeTemplate}
 import com.automl.template.simple._
 import org.apache.spark.ml.feature.VectorAssembler
 import org.scalatest.{Matchers, WordSpec}
-import utils.SparkMLUtils
 
 class TemplateEvolutionDimensionSuite extends WordSpec with Matchers with SparkSessionProvider {
   import ss.implicits._
@@ -76,8 +75,6 @@ class TemplateEvolutionDimensionSuite extends WordSpec with Matchers with SparkS
         LeafTemplate(RandomForest(RandomForestHPGroup(Seq(MaxDepthRF(Some(3.0))))))
       )
 
-      val population = new TPopulation(seedPopulation)
-
       val iridData = Datasets.getIrisDataFrame(1234)
       val ds300 = iridData.limit(300)
 
@@ -91,6 +88,57 @@ class TemplateEvolutionDimensionSuite extends WordSpec with Matchers with SparkS
       t.evaluatePopulation(new TPopulation(seedPopulation2), ds300, null)
 
       t.individualsEvaluationCacheExtended.size should be (4)  // (numbers of templates in population) * (# of different sizes of training datasets)
+    }
+
+    "use same cache values for essentially same templates (different order of sub-members)" in new Fixture {
+      ConfigProvider.clearOverride.addOverride(
+        """
+          |evolution {
+          |  hyperParameterDimension {
+          |    enabled = false
+          |  }
+          |}
+        """)
+
+      val seed = 1234
+      val seedPopulation: Seq[LeafTemplate[SimpleModelMember]] = Seq(
+        LeafTemplate(Bayesian(BayesianHPGroup(Seq(Smoothing(Some(3.0)))))),
+        LeafTemplate(RandomForest(RandomForestHPGroup(Seq(MaxDepthRF(Some(6.0)))), seed))
+      )
+
+      val seedPopulation2: Seq[LeafTemplate[SimpleModelMember]] = Seq(
+        LeafTemplate(RandomForest(RandomForestHPGroup(Seq(MaxDepthRF(Some(6.0)))), seed)),
+        LeafTemplate(Bayesian(BayesianHPGroup(Seq(Smoothing(Some(3.0))))))
+      )
+
+      val iridData = Datasets.getIrisDataFrame(1234)
+      val ds20 = iridData.limit(20)
+
+      val problemType = MultiClassClassificationProblem
+      val t = new TemplateEvolutionDimension(initialPopulation = None, problemType = problemType)
+
+      t.evaluatePopulation(new TPopulation(seedPopulation), ds20, null)
+      t.evaluatePopulation(new TPopulation(seedPopulation2), ds20, null)
+
+
+      t.individualsEvaluationCacheExtended.size should be (2)
+    }
+
+    "hash codes for all types of TemplateTree are same ( need to make sure that seeds are set)" in {
+      val bayesian = LeafTemplate(Bayesian(BayesianHPGroup(Seq(Smoothing(Some(3.0))))))
+      val bayesian2 = LeafTemplate(Bayesian(BayesianHPGroup(Seq(Smoothing(Some(3.0))))))
+
+      bayesian.hashCode() shouldBe bayesian2.hashCode()
+
+      val dt = LeafTemplate(DecisionTree(DecisionTreeHPGroup(Seq(MaxDepth(Some(6.0)))), 1234))
+      val dt2 = LeafTemplate(DecisionTree(DecisionTreeHPGroup(Seq(MaxDepth(Some(6.0)))), 1234))
+
+      dt.hashCode() shouldBe dt2.hashCode()
+
+      val rf = LeafTemplate(RandomForest(RandomForestHPGroup(Seq(MaxDepthRF(Some(6.0)))), 12345))
+      val rf2 = LeafTemplate(RandomForest(RandomForestHPGroup(Seq(MaxDepthRF(Some(6.0)))), 12345))
+
+      rf.hashCode() shouldBe rf2.hashCode()
     }
 
     "caching is working within ensemble nodes" ignore new Fixture{

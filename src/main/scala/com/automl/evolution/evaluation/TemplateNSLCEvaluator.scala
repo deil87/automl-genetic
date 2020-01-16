@@ -101,10 +101,12 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
         val cacheKey = generateCacheKey(workingDF, bestHPFieldFromCoevolution, individualTemplate)
         if (cache.isDefinedAt(cacheKey)) {
           debug(s"Cache hit happened for $idx-th individual based on: template: $cacheKey")
-          debug(s"Retrieved value from the cache with hashCode = ${cacheKey.hashCode()} : ${cache(cacheKey)}")
+          val keyHashCode = cacheKey.hashCode()
+          val restoredFromCache = cache(cacheKey)
+          debug(s"Retrieved value from the cache with hashCode = ${keyHashCode} : ${restoredFromCache}")
         }
 
-        //TODO FIX We are storing this result in cache but not into the queue
+        //TODO FIX We are storing this result in cache but not in the priority queue
         val fitness: FitnessResult = cache.getOrElseUpdate(cacheKey, {
 
           individualTemplate.setLogPadding(logPaddingSize)
