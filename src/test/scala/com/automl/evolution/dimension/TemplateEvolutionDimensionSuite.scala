@@ -124,6 +124,45 @@ class TemplateEvolutionDimensionSuite extends WordSpec with Matchers with SparkS
       t.individualsEvaluationCacheExtended.size should be (2)
     }
 
+    "use different cache records if we have different samples( count does not guaranty much)" in new Fixture {
+      ConfigProvider.clearOverride.addOverride(
+        """
+          |evolution {
+          |  hyperParameterDimension {
+          |    enabled = false
+          |  }
+          |}
+        """)
+
+      val seed = 1234
+      val seedPopulation: Seq[LeafTemplate[SimpleModelMember]] = Seq(
+        LeafTemplate(Bayesian(BayesianHPGroup(Seq(Smoothing(Some(3.0))))))
+      )
+
+      val iridData = Datasets.getIrisDataFrame(1234)
+      val ds20 = iridData.limit(20)
+      val iridData2 = Datasets.getIrisDataFrame(5678)
+      val ds20_another_sample = iridData2.limit(20)
+
+      val problemType = MultiClassClassificationProblem
+      val t = new TemplateEvolutionDimension(initialPopulation = None, problemType = problemType)
+
+      val code1 = ds20.hashCode()
+      val code2 = ds20.hashCode()
+
+      code1 shouldBe code2
+
+      val code3 = ds20_another_sample.hashCode()
+      code1 shouldNot be(code3)
+
+
+      t.evaluatePopulation(new TPopulation(seedPopulation), ds20, null)
+      t.evaluatePopulation(new TPopulation(seedPopulation), ds20, null)
+      t.evaluatePopulation(new TPopulation(seedPopulation), ds20_another_sample, null)
+
+      t.individualsEvaluationCacheExtended.size should be (2)
+    }
+
     "hash codes for all types of TemplateTree are same ( need to make sure that seeds are set)" in {
       val bayesian = LeafTemplate(Bayesian(BayesianHPGroup(Seq(Smoothing(Some(3.0))))))
       val bayesian2 = LeafTemplate(Bayesian(BayesianHPGroup(Seq(Smoothing(Some(3.0))))))

@@ -64,7 +64,7 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
   override implicit val individualsEvaluationCache = mutable.Map[(TemplateTree[TemplateMember], Long), FitnessResult]()
 
   // TODO generalize and make dependent dimensions to be used in the key automatically. maybe just use string with tree respresentation inside
-  implicit val individualsEvaluationCacheExtended = mutable.Map[(TemplateTree[TemplateMember], Option[HyperParametersField], Long), FitnessResult]()
+  implicit val individualsEvaluationCacheExtended = mutable.Map[(TemplateTree[TemplateMember], Option[HyperParametersField], Long, Int), FitnessResult]()
 
   override val hallOfFame: mutable.PriorityQueue[EvaluatedTemplateData] = collection.mutable.PriorityQueue[EvaluatedTemplateData]()
 

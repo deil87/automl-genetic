@@ -55,7 +55,7 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
   extends PopulationEvaluator[TPopulation, TemplateTree[TemplateMember], EvaluatedTemplateData] with ConsistencyChecker with PaddedLogging{
 
 
-  override type CacheKeyType = (TemplateTree[TemplateMember], Option[HyperParametersField], Long)
+  override type CacheKeyType = (TemplateTree[TemplateMember], Option[HyperParametersField], Long, Int)
 
   val tdConfig = ConfigProvider.config.getConfig("evolution.templateDimension")
 
@@ -69,7 +69,7 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
                                    problemType: ProblemType, // TODO could be removed as we can use templateEvDimension.problemType
                                    evaluationContextInfo: EvaluationContextInfo,
                                    seed: Long)
-                                  (implicit cache: mutable.Map[(TemplateTree[TemplateMember], Option[HyperParametersField], Long), FitnessResult]): Seq[EvaluatedTemplateData] = {
+                                  (implicit cache: mutable.Map[CacheKeyType, FitnessResult]): Seq[EvaluatedTemplateData] = {
     debug("TemplateNSLCEvaluator. Evaluation of templates have started.")
 
     val bestHPFieldFromCoevolution: Option[HyperParametersField] = hyperParamsEvDimOpt.map{ hyperParamsEvDim =>
@@ -134,9 +134,9 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
 
   private def generateCacheKey(workingDF: DataFrame, bestHPFieldFromCoevolution: Option[HyperParametersField], individualTemplate: TemplateTree[TemplateMember]) = {
     if(bestHPFieldFromCoevolution.isDefined) // TODO it would be great to have concise representation for Template to use it as a hashcode.
-      (individualTemplate, bestHPFieldFromCoevolution, workingDF.count())
+      (individualTemplate, bestHPFieldFromCoevolution, workingDF.count(), workingDF.hashCode())
     else
-      (individualTemplate, None/*individualTemplate.member.hpGroup*/, workingDF.count())
+      (individualTemplate, None/*individualTemplate.member.hpGroup*/, workingDF.count(), workingDF.hashCode()) //TODO probably don't need second element in tuple as we check them from `individualTemplate`
   }
 }
 
