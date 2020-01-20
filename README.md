@@ -20,7 +20,7 @@ Contributions of any kind are very welcome! Please contact me deil_87@mail.ru fo
 <p align="center">
 <img src="https://www.fit.cvut.cz/sites/default/images/favicon.png" width="60" height="60" "></p>
                                                                                             
- Supported by [FIT faculty of Czech Technical University](https://www.fit.cvut.cz/) in Prague and ShowmaxLab sponsored by [Showmax](https://tech.showmax.com).
+ Supported by [FIT faculty of Czech Technical University](https://www.fit.cvut.cz/) in Prague.
  
  ## Demo
  
