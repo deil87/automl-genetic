@@ -163,7 +163,7 @@ class TemplateEvolutionDimensionSuite extends WordSpec with Matchers with SparkS
       t.individualsEvaluationCacheExtended.size should be (2)
     }
 
-    "hash codes for all types of TemplateTree are same ( need to make sure that seeds are set)" in {
+    "hash codes for all algos are consistent ( need to make sure that seeds are set)" in {
       val bayesian = LeafTemplate(Bayesian(BayesianHPGroup(Seq(Smoothing(Some(3.0))))))
       val bayesian2 = LeafTemplate(Bayesian(BayesianHPGroup(Seq(Smoothing(Some(3.0))))))
 

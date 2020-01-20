@@ -86,35 +86,34 @@ class SparkGenericBaggingSuite extends FunSuite with Matchers with SparkSessionP
 
     val Array(trainingSplit, testSplit) = data.randomSplit(Array(0.8, 0.2), seedForEverything)
 
-    val result = ensemb.evaluateFitness(trainingSplit, testSplit, ProblemType.MultiClassClassificationProblem, hpFieldFromCoevolution = Some(HyperParametersField.default), seed = seedForEverything)
+    val result = ensemb.evaluateFitness(trainingSplit, testSplit, ProblemType.MultiClassClassificationProblem, hpFieldFromCoevolution = None, seed = seedForEverything)
 
     // ^^^ Should be equal to result2 from same actions below:
     val data2 = Datasets.getIrisDataFrame(seedForEverything)
 
     val Array(trainingSplit2, testSplit2) = data2.randomSplit(Array(0.8, 0.2), seedForEverything)
 
-    val result2 = ensemb.evaluateFitness(trainingSplit2, testSplit2, ProblemType.MultiClassClassificationProblem, hpFieldFromCoevolution = Some(HyperParametersField.default), seed = seedForEverything)
+    val result2 = ensemb.evaluateFitness(trainingSplit2, testSplit2, ProblemType.MultiClassClassificationProblem, hpFieldFromCoevolution = None, seed = seedForEverything)
 
     result.getCorrespondingMetric shouldBe result2.getCorrespondingMetric
   }
 
-  //TODO fix the test
-  ignore("Spark Bagging should sample training dataset for submembers in appropriate way )") {
+  test("Spark Bagging should sample training dataset for submembers and preserve all labels)") {
     import ss.implicits._
     val threeDistinctLevelsDF = ss.sparkContext.parallelize(
       Seq(
-        (1, "level1"),
-        (2, "level2"),
-        (3, "level3")
+        (1, /*"level1"*/0.0),
+        (2, /*"level2"*/1.0),
+        (3, /*"level3"*/2.0)
       )
-    ).toDF("a", "label")
+    ).toDF("a", "indexedLabel")
     val onlyDistinctLevelsDF: DataFrame = ss.sparkContext.parallelize(
       Seq(
-        (1, "level1"),
-        (2, "level2"),
-        (3, "level2")
+        (1, /*"level1"*/0.0),
+        (2, /*"level2"*/1.0),
+        (3, /*"level2"*/1.0)
       )
-    ).toDF("a", "label")
+    ).toDF("a", "indexedLabel")
 
     val samples: Seq[(TemplateTree[TemplateMember], DataFrame)] = Seq(
       (LeafTemplate(DecisionTree()), threeDistinctLevelsDF),
@@ -127,10 +126,24 @@ class SparkGenericBaggingSuite extends FunSuite with Matchers with SparkSessionP
   }
 
   // We have the same test but in benchmarking
-  ignore("Spark Bagging should calculate over multiple decision trees( Classification problem )") {
+  test("Spark Bagging should calculate over multiple decision trees( Classification problem )") {
+
+    val metric = "f1"
+    ConfigProvider.clearOverride.addOverride(
+      s"""
+         |evolution {
+         |  hpGridSearch = false
+         |  hyperParameterDimension {
+         |    enabled = false
+         |  }
+         |  evaluation {
+         |    multiclass.metric = "$metric"
+         |  }
+         |}
+      """)
 
     val models = Seq(
-      LeafTemplate(DecisionTree()), //TODO We need n-classes +2 base models to be able to find majority
+      LeafTemplate(DecisionTree()),
       LeafTemplate(DecisionTree()),
       LeafTemplate(DecisionTree()),
       LeafTemplate(DecisionTree()),
@@ -151,9 +164,9 @@ class SparkGenericBaggingSuite extends FunSuite with Matchers with SparkSessionP
 
     val problemType = ProblemType.MultiClassClassificationProblem
 
-    val baggingF1 = ensemb.evaluateFitness(trainingSplit, testSplit, problemType, hpFieldFromCoevolution = Some(HyperParametersField.default), seed = shufflingSeed).getCorrespondingMetric
+    val baggingF1 = ensemb.evaluateFitness(trainingSplit, testSplit, problemType, hpFieldFromCoevolution = None, seed = shufflingSeed).getCorrespondingMetric
 
-    val dtF1 = DecisionTree().fitnessError(trainingSplit, testSplit, problemType).getMetricByName("f1")
+    val dtF1 = DecisionTree().fitnessError(trainingSplit, testSplit, problemType, hpFieldFromCoevolution = None).getCorrespondingMetric
 
     println("Bagging's F1:" + baggingF1)
     println("DT's F1:" + dtF1)

@@ -2,7 +2,7 @@ package com.automl.template.simple
 
 import com.automl.{ConfigProvider, LogLossCustom, PaddedLogging}
 import com.automl.evolution.dimension.hparameter._
-import com.automl.helper.FitnessResult
+import com.automl.helper.{FitnessResult, TemplateTreeHelper}
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
 import com.automl.spark.SparkSessionProvider
@@ -106,7 +106,7 @@ case class DecisionTree(hpGroup: DecisionTreeHPGroup = DecisionTreeHPGroup(),
            info(s"Finished. $name : F1 metric = " + f1 + s". Number of rows = ${trainDF.count()} / ${testDF.count()}")
            FitnessResult(Map("f1" -> f1, "accuracy" -> accuracy, "logloss" -> logLoss), problemType, predictions)
 
-         } else {
+         } else { // non-HPGridSearch version
 
            // could be also moved to TemplateMember
            val activeHPGroup: HyperParametersGroup[_] = getRelevantHPGroupFromActiveHPField(config, hpFieldFromCoevolution).getOrElse(hpGroup)
@@ -140,6 +140,9 @@ case class DecisionTree(hpGroup: DecisionTreeHPGroup = DecisionTreeHPGroup(),
 
              printConfusionMatrix(predictions, testDF)
              //        MulticlassMetricsHelper.showStatistics(predictions)
+             val mapOfMetrics = Map("f1" -> f1, "logloss" -> logLoss)
+
+             info(s"Finished. $name ${activeHPGroup.hpParameters.mkString(",")} : ${mapOfMetrics.map{ nameToValue => nameToValue._1 + " = " + nameToValue._2}.mkString("",",", "")}. Number of rows = train:${trainDF.count()} / test:${testDF.count()}")
 
              FitnessResult(Map("f1" -> f1CV, "accuracy" -> -1, "logloss" -> logLoss), problemType, predictions)
            } else {
@@ -157,13 +160,14 @@ case class DecisionTree(hpGroup: DecisionTreeHPGroup = DecisionTreeHPGroup(),
 
              val f1: Double = evaluator.setMetricName("f1").evaluate(predictions)
              val accuracy: Double = evaluator.setMetricName("accuracy").evaluate(predictions)
+             val logLoss = LogLossCustom.compute(predictions)
 
              //         val indexOfStageForModelInPipeline = 0
              //         val treeModel = model.stages(indexOfStageForModelInPipeline).asInstanceOf[DecisionTreeClassificationModel]
              //         debug("Learned classification tree model:\n" + treeModel.toDebugString)
 
-             val mapOfMetrics = Map("f1" -> f1, "accuracy" -> accuracy)
-             info(s"Finished. $name : ${mapOfMetrics.map{nameToValue => nameToValue._1 + " = " + nameToValue._2}.mkString("",",", "")}. Number of rows = ${trainDF.count()} / ${testDF.count()}")
+             val mapOfMetrics = Map("f1" -> f1, "accuracy" -> accuracy, "logloss" -> logLoss)
+             info(s"Finished. ${name} ${activeHPGroup.hpParameters.mkString(",")} : ${mapOfMetrics.map{ nameToValue => nameToValue._1 + " = " + nameToValue._2}.mkString("",",", "")}. Number of rows = train:${trainDF.count()} / test:${testDF.count()}")
              FitnessResult(mapOfMetrics, problemType, predictions)
            }
          }

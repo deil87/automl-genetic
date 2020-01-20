@@ -47,10 +47,10 @@ case class SparkGenericBagging(hpg: BaggingHPGroup = BaggingHPGroup())(implicit 
     debug(s"Evaluating $name")
     debug(s"Sampling(stratified/random) without replacement for submembers of $name")
     val sampler = new RandomSampling
-    val trainingSamplesForSubmembers = subMembers.zipWithIndex.map { case (model, idx) =>
+    val trainingSamplesForSubmembers = subMembers.zipWithIndex.map { case (member, idx) =>
 //      val samplingSeed = new Random(seed).nextLong()//seed + idx
       val sample = sampler.sampleRatio(trainDF, 0.5, seed + idx)
-      (model, sample)
+      (member, sample)
     }
 
     BenchmarkHelper.time("SparkBagging consistency check") {

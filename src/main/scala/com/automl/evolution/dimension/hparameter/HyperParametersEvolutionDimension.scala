@@ -234,6 +234,8 @@ trait MutableHParameter[T, V <: MutableHParameter[T, V]] extends HParameter[T] {
   def mutate(): V
   var explored = mutable.Map.empty[Double, Boolean]
   var isExplored: Boolean = false
+
+  override def toString: String = currentValue.toString
 }
 
 case class EvaluatedHyperParametersField(field: HyperParametersField, score:Double, problemType: ProblemType) extends Evaluated[EvaluatedHyperParametersField] {
