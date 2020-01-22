@@ -5,7 +5,7 @@ import com.automl.evolution.evaluation.EvaluationContextInfo
 import com.automl.helper.{FitnessResult, PopulationHelper}
 import com.automl.population.{Population, TPopulation}
 import com.automl.template.{TemplateMember, TemplateTree}
-import com.automl.{Evaluated, EvaluatedTemplateData, PaddedLogging}
+import com.automl.{Evaluated, EvaluatedTemplateData, EvaluationRules, PaddedLogging}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.DataFrame
 
@@ -18,7 +18,7 @@ import scala.collection.mutable
   * @tparam T
   */
 //TODO problemType: ProblemType parameter might be moved somewhere to a field like `population`
-trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: Evaluated[EvaluatedResult]] { self: PaddedLogging =>
+trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: Evaluated[EvaluatedResult]] extends EvaluationRules { self: PaddedLogging =>
 
   def dimensionName: String
 
@@ -89,16 +89,15 @@ trait EvolutionDimension[PopulationType <: Population[T], T, EvaluatedResult <: 
   def updateHallOfFame(evaluatedIndividuals: Seq[EvaluatedResult]):Unit = {
     val hallOfFameUpdateSize = 5  // TODO Config
     hallOfFame.headOption.map{bestAtAllTimes =>
-      //TODO >= should be <= when we have "the less the better" approach
       debug("WARNING!!! Check that updateHallOfFame supports regressiong problem")
       val goingToTheHallOfFame = evaluatedIndividuals.toSet
-        .filter(r => r.compare(bestAtAllTimes) > 0)
+        .filter(r => r.betterThanOrEqual(bestAtAllTimes) > 0)
         .take(hallOfFameUpdateSize)
         .diff(hallOfFame.toSet)
       info(s"Following templates were added to the hall of fame: ${goingToTheHallOfFame.map(_.idShort).mkString(",")}")
       hallOfFame ++= goingToTheHallOfFame
     }.getOrElse{
-      hallOfFame ++= evaluatedIndividuals.take(hallOfFameUpdateSize)
+      hallOfFame ++= evaluatedIndividuals.sorted.reverse.take(hallOfFameUpdateSize) // make sure we don't sort unnecessary second time
     }
   }
 

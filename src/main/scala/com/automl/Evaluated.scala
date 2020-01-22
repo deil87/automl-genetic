@@ -4,7 +4,7 @@ import com.automl.evolution.evaluation.EvaluationContextInfo
 
 import scala.concurrent.{Future, Promise}
 
-trait Evaluated[T <: Evaluated[T]] extends Ordered[T] with EvaluationRules {
+trait Evaluated[T <: Evaluated[T]] extends Ordered[T] with BetterThanComparable[T] with EvaluationRules {
   type ItemType
   type FitnessType
   type ParamsType

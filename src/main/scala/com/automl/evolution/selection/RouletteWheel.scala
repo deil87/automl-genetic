@@ -20,6 +20,8 @@ class RouletteWheel[T](items: List[( T, Double)]) extends Selector[T] with LazyL
   }
   private val sortedAscendingItems: List[(T, Double)] = items.sortWith(_._2 < _._2)
 
+  def getSortedItemsASC = sortedAscendingItems
+
   private lazy val rankedWithCumulativeProbs = sortedAscendingItems.drop(1).scanLeft(sortedAscendingItems.head){
     case (acc, (item, probability)) => (item, acc._2 + probability)
   }

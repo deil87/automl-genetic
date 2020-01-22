@@ -32,12 +32,15 @@ case class EvaluatedTemplateData(id: String,
   override def params: Option[HyperParametersField] = hyperParamsFieldFromCoevolution
 
   def betterThan(that:EvaluatedTemplateData): Boolean = {
-      compare(that) > 0
+    fitness.betterThan(that.fitness)
+  }
+
+  def betterThanOrEqual(that:EvaluatedTemplateData): Int = {
+    fitness.betterThanOrEqual(that.fitness)
   }
 
   override def compare(that: EvaluatedTemplateData): Int = {
-    val comparisonResult = fitness.compareTo(that.fitness)
-    if (theBiggerTheBetter(fitness.problemType)) comparisonResult else -comparisonResult
+    fitness.compareTo(that.fitness)
   }
 
   def withRank(value: Long): EvaluatedTemplateData = copy(rank = value)
@@ -63,6 +66,12 @@ case class EvaluatedTemplateData(id: String,
 }
 
 object EvaluatedTemplateData extends LazyLogging {
+
+  implicit val etdOrdering = new Ordering[EvaluatedTemplateData] {
+    override def compare(x: EvaluatedTemplateData, y: EvaluatedTemplateData) = {
+      x.betterThanOrEqual(y)
+    }
+  }
 
   implicit def evaluatedHelper(individual: EvaluatedTemplateData) = new {
     def render(problemType: ProblemType): String = {

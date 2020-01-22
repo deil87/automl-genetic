@@ -12,26 +12,8 @@ class EvaluatedTemplateDataTest extends FunSuite with Matchers {
     list.sorted.head should be (36.0)
   }
 
-  test("order for FitnessResult with `logloss` metric is ascending ( the less the better case)") {
-    val testOverride: Config = ConfigFactory.parseString(
-      """
-        |evolution {
-        |  evaluation {
-        |    multiclass.metric = "logloss"
-        |  }
-        |}
-      """.stripMargin)
-    ConfigProvider.addOverride(testOverride)
-
-    val list = Seq(FitnessResult(Map("logloss" -> 42.0), MultiClassClassificationProblem, null),
-      FitnessResult(Map("logloss" -> 36.0), MultiClassClassificationProblem, null),
-      FitnessResult(Map("logloss" -> 75.0), MultiClassClassificationProblem, null)
-    )
-    list.sorted.head.getMetricByName("logloss") should be (36.0)
-  }
-
-  test("order for FitnessResult with `f1` metric is descending ( the greater the better case)") {
-
+  // But the issue is with `implicit val impl = implicitly[Ordering[EvaluatedTemplateData]]`. It stays in scope and seems like is not being overriden after first setting
+  test("config for EvaluationRules is being changed correctly") {
     ConfigProvider.clearOverride.addOverride(
       """
         |evolution {
@@ -41,30 +23,66 @@ class EvaluatedTemplateDataTest extends FunSuite with Matchers {
         |}
       """)
 
-    val list = Seq(FitnessResult(Map("f1" -> 42.0), MultiClassClassificationProblem, null),
-      FitnessResult(Map("f1" -> 36.0), MultiClassClassificationProblem, null),
-      FitnessResult(Map("f1" -> 75.0), MultiClassClassificationProblem, null)
-    )
-    list.sorted.head.getMetricByName("f1") should be (75.0)
+    val evaluatedA = EvaluatedTemplateData("id1", null, null, FitnessResult(Map("f1" -> 0.2, "logloss" -> 0.3), MultiClassClassificationProblem, null))
+    evaluatedA.theBiggerTheBetter(MultiClassClassificationProblem) shouldBe true
+
+    ConfigProvider.clearOverride.addOverride(
+      """
+        |evolution {
+        |  evaluation {
+        |    multiclass.metric = "logloss"
+        |  }
+        |}
+      """)
+
+    evaluatedA.theBiggerTheBetter(MultiClassClassificationProblem) shouldBe false
+
   }
 
   test("ordering for EvaluatedTemplateData respects configuration parameters as well") {
-    val testOverride: Config = ConfigFactory.parseString(
+    ConfigProvider.clearOverride.addOverride(
       """
         |evolution {
         |  evaluation {
         |    multiclass.metric = "f1"
         |  }
         |}
-      """.stripMargin)
-    ConfigProvider.addOverride(testOverride)
+      """)
 
-    val evaluatedA = new EvaluatedTemplateData("id1", null, null, FitnessResult(Map("f1" -> 5.2), MultiClassClassificationProblem, null))
-    val evaluatedB = new EvaluatedTemplateData("id2", null, null, FitnessResult(Map("f1" -> 5.3), MultiClassClassificationProblem, null))
-    val evaluatedC = new EvaluatedTemplateData("id3", null, null, FitnessResult(Map("f1" -> 5.1), MultiClassClassificationProblem, null))
+    val evaluatedA = EvaluatedTemplateData("id1", null, null, FitnessResult(Map("f1" -> 0.2, "logloss" -> 0.3), MultiClassClassificationProblem, null))
+    val evaluatedB = EvaluatedTemplateData("id2", null, null, FitnessResult(Map("f1" -> 0.3, "logloss" -> 0.2), MultiClassClassificationProblem, null))
+    val evaluatedC = EvaluatedTemplateData("id3", null, null, FitnessResult(Map("f1" -> 0.1, "logloss" -> 0.1), MultiClassClassificationProblem, null))
+
+    implicit val impl = implicitly[Ordering[EvaluatedTemplateData]]
 
     val sortedItems = Seq(evaluatedA, evaluatedB,evaluatedC).sorted
 
-    sortedItems.head.result.getMetricByName("f1") should be (5.3)
+    evaluatedB.betterThan(evaluatedA) shouldBe true
+
+    evaluatedB.compare(evaluatedA) > 0 shouldBe true
+
+    sortedItems.head should be (evaluatedC)
+    sortedItems.reverse.head should be (evaluatedB)
+  }
+
+  test("ordering for EvaluatedTemplateData respects configuration parameters logloss") {
+    ConfigProvider.clearOverride.addOverride(
+      """
+        |evolution {
+        |  evaluation {
+        |    multiclass.metric = "logloss"
+        |  }
+        |}
+      """)
+
+    val evaluatedA = EvaluatedTemplateData("id1", null, null, FitnessResult(Map("logloss" -> 0.3), MultiClassClassificationProblem, null))
+    val evaluatedB = EvaluatedTemplateData("id2", null, null, FitnessResult(Map("logloss" -> 0.2), MultiClassClassificationProblem, null))
+    val evaluatedC = EvaluatedTemplateData("id3", null, null, FitnessResult(Map("logloss" -> 0.1), MultiClassClassificationProblem, null))
+
+    implicit val impl = implicitly[Ordering[EvaluatedTemplateData]]
+
+    val sortedBasedOnLoglossItems = Seq(evaluatedA, evaluatedB,evaluatedC).sorted(impl)
+    sortedBasedOnLoglossItems.head shouldBe evaluatedA
+    sortedBasedOnLoglossItems.reverse.head should be (evaluatedC)
   }
 }

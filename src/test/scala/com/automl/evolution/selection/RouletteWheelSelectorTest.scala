@@ -4,6 +4,7 @@ import com.automl.helper.{FitnessResult, PopulationHelper}
 import com.automl.template.LeafTemplate
 import com.automl.template.simple.{DecisionTree, LinearRegressionModel, SimpleModelMember}
 import com.automl.EvaluatedTemplateData
+import com.automl.problemtype.ProblemType.MultiClassClassificationProblem
 import org.scalatest.{Matchers, WordSpec}
 
 import scala.util.Random
@@ -69,6 +70,20 @@ class RouletteWheelSelectorTest extends WordSpec with Matchers{
       assertThrows[IllegalArgumentException] {
         val selector = new RouletteWheel(items)
       }
+    }
+
+
+    "sorting to get rank of the items is done based on the input probabilities" in {
+
+      val evaluatedA: (EvaluatedTemplateData, Double) = (EvaluatedTemplateData("id1", null, null, FitnessResult(Map("f1" -> 0.2, "logloss" -> 0.3), MultiClassClassificationProblem, null)), 0.2)
+      val evaluatedB = (EvaluatedTemplateData("id2", null, null, FitnessResult(Map("f1" -> 0.3, "logloss" -> 0.2), MultiClassClassificationProblem, null)), 0.3)
+      val evaluatedC = (EvaluatedTemplateData("id3", null, null, FitnessResult(Map("f1" -> 0.1, "logloss" -> 0.1), MultiClassClassificationProblem, null)), 0.5)
+
+      val items = List(evaluatedA, evaluatedB,evaluatedC)
+
+      val selector = new RouletteWheel[EvaluatedTemplateData](items)
+
+      selector.getSortedItemsASC.head shouldBe evaluatedA
     }
   }
 }

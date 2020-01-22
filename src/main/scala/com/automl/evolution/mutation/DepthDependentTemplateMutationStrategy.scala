@@ -87,8 +87,8 @@ class DepthDependentTemplateMutationStrategy(/*unused*/diversityStrategy: Divers
     def chooseLevelOfMutationBasedOnDepth( depth: Int): Int = {
 
       val contenders = (0 until depth).toList
-      val probabilityAssigner = new RankBasedSelectionProbabilityAssigner[Int].assign(contenders)
-      val selector = new RouletteWheel[Int](probabilityAssigner)
+      val withAssignedProbabilities = new RankBasedSelectionProbabilityAssigner[Int].assign(contenders)
+      val selector = new RouletteWheel[Int](withAssignedProbabilities)
       val levelOfMutation = selector.getNext._1
 
       levelOfMutation

@@ -251,6 +251,11 @@ case class EvaluatedHyperParametersField(field: HyperParametersField, score:Doub
   override def item: HyperParametersField = field
   override def result: Double = score
 
+
+  override def betterThan(that: EvaluatedHyperParametersField): Boolean = ???
+
+  override def betterThanOrEqual(that: EvaluatedHyperParametersField): Int = ???
+
   override def compare(other: EvaluatedHyperParametersField): Int = {
     val comparisonResult = score.compare(other.score)
     if(theBiggerTheBetter(problemType)) comparisonResult else (-1) * comparisonResult
