@@ -80,8 +80,9 @@ case class DecisionTree(hpGroup: DecisionTreeHPGroup = DecisionTreeHPGroup(),
            .setPredictionCol("prediction")
            .setMetricName("f1")
 
+         debug(s"DecisionTree is being run with performGridSearch=$performGridSearch and validationStrategy=$validationStrategy")
+
          if(performGridSearch) {
-           debug(s"DecisionTree performs GridSearch over hps.")
            val paramGrid = new ParamGridBuilder()
              .addGrid(dtr.maxDepth, Array(3, 4, 5, 7))
 //             .addGrid(dtr.maxBins, Array(32, 48, 64))

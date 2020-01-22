@@ -1,6 +1,7 @@
 package com.automl.classifier.ensemble.bagging
 
 import com.automl.ConfigProvider
+import com.automl.classifier.ensemble.stacking.SparkGenericStacking
 import com.automl.dataset.Datasets
 import com.automl.evolution.dimension.hparameter.HyperParametersField
 import com.automl.helper.TemplateTreeHelper
@@ -9,8 +10,8 @@ import com.automl.spark.SparkSessionProvider
 import com.automl.template._
 import com.automl.template.simple._
 import org.apache.spark.ml.feature.{IndexToString, StringIndexer, VectorAssembler}
+import org.apache.spark.ml.regression.{GBTRegressor, LinearRegression}
 import org.apache.spark.sql.{DataFrame, Dataset, Row}
-import org.bytedeco.javacpp.opencv_ml.LogisticRegression
 import org.scalatest.{FunSuite, Matchers}
 import utils.SparkMLUtils
 
@@ -20,6 +21,7 @@ import scala.util.Random
 class SparkGenericBaggingSuite extends FunSuite with Matchers with SparkSessionProvider{
 
   import utils.SparkMLUtils._
+  import ss.implicits._
   import org.apache.spark.sql.functions.monotonically_increasing_id
 
   test("Spark Bagging should calculate over complex tree algorithm") {
@@ -257,6 +259,61 @@ class SparkGenericBaggingSuite extends FunSuite with Matchers with SparkSessionP
     val res = list.zipWithIndex.groupBy(_._1).map{case (clazz, items) => (clazz, items.size.toDouble / list.size)}
 
     val ttt = 3737
+  }
+
+  ignore("Should combine models for stacking") {
+    val observations = ss.sparkContext.parallelize(
+      Seq(
+        (1, 1, 100.0),
+        (2, 2, 200.0),
+        (3, 3, 300.0),
+        (4, 2, 200.0),
+        (5, 1, 100.0),
+        (6, 2, 200.0),
+        (7, 1, 200.0), // <- error
+        (8, 2, 300.0), // <- error
+        (9, 1, 100.0),
+        (10, 2, 200.0),
+        (11, 1, 100.0),
+        (12, 2, 200.0),
+        (13, 1, 100.0),
+        (14, 2, 200.0),
+        (15, 1, 100.0),
+        (16, 2, 200.0)
+      )
+    ).toDF("uniqueIdColumn", "num", "label").toLong("uniqueIdColumn")
+
+    def featuresAssembler = {
+      new VectorAssembler()
+        .setInputCols(Array("num"))
+        .setOutputCol("features")
+    }
+
+    val preparedObservations = featuresAssembler.transform(observations)
+
+
+    val stacking = new SparkGenericStacking(3, "label")
+
+    val Array(trainingSplit,testSplit)  = preparedObservations.randomSplit(Array(0.8, 0.2),11L)
+
+    stacking.foldingStage(trainingSplit, testSplit)
+
+    val problemType = ProblemType.RegressionProblem
+    val predictor2 = new LinearRegression()
+    stacking.addModel(predictor2, trainingSplit, testSplit, problemType)
+
+    val predictor3 = new LinearRegression().setFitIntercept(false).setRegParam(0.1)
+    stacking.addModel(predictor3, trainingSplit, testSplit, problemType)
+    val predictor4 = new GBTRegressor()
+    stacking.addModel(predictor4, trainingSplit, testSplit, problemType)
+
+    //    stacking.trainModelsPredictionsDF.showAll()
+    //    stacking.testModelsPredictionsDF.showAll()
+
+    val finalPredictions = stacking.performStacking(predictor4)
+    logger.info("Final predictions GenericStackingShowcaseSuite:")
+    //    finalPredictions.showAll()
+
   }
 
 

@@ -2,7 +2,7 @@ package com.automl.classifier.ensemble.bagging
 
 import com.automl.{ConsistencyChecker, LogLossCustom, PaddedLogging}
 import com.automl.dataset.{RandomSampling, StratifiedSampling}
-import com.automl.evolution.dimension.hparameter.{BaggingHPGroup, HyperParametersField, HyperParametersGroup, MutableHParameter}
+import com.automl.evolution.dimension.hparameter.{StackingHPGroup, HyperParametersField, HyperParametersGroup, MutableHParameter}
 import com.automl.evolution.evaluation.EvaluationContextInfo
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
@@ -19,10 +19,16 @@ import org.apache.spark.ml.linalg.{DenseVector, Vector => MLVector}
 import scala.collection.{immutable, mutable}
 
 //TODO consider moving closer to BaggingMember
-case class SparkGenericBagging(hpg: BaggingHPGroup = BaggingHPGroup())(implicit val logPaddingSize: Int = 0) extends BaggingMember
+case class SparkGenericBagging(hpg: StackingHPGroup = StackingHPGroup())(implicit val logPaddingSize: Int = 0) extends BaggingMember
   with PaddedLogging with ConsistencyChecker{
 
   import utils.SparkMLUtils._
+
+  override def canHandleProblemType: PartialFunction[ProblemType, Boolean] = {
+    case BinaryClassificationProblem => ??? // TODO enable
+    case MultiClassClassificationProblem => true
+    case RegressionProblem => ??? // TODO enable
+  }
 
   var hpGroupInternal: HyperParametersGroup[_ <: MutableHParameter[Double, _]] = hpg
 
@@ -41,6 +47,8 @@ case class SparkGenericBagging(hpg: BaggingHPGroup = BaggingHPGroup())(implicit 
 
     import trainDF.sparkSession.implicits._
     import org.apache.spark.sql.functions._
+
+    require(subMembers.size > 1)
 
     val THE_LESS_THE_BETTER = ! theBiggerTheBetter(problemType)
 
@@ -244,7 +252,7 @@ case class SparkGenericBagging(hpg: BaggingHPGroup = BaggingHPGroup())(implicit 
               .withColumn("isDisputable", markDisputableInstanceUDF($"$baseModelsPredictionsColName")) // TODO this is for debug purposes
               .join(dfWithPredictionsFromBaseModels.head.select("uniqueIdColumn", "indexedLabel"), Seq("uniqueIdColumn"), joinType = "left_outer")
               .withColumn("misclassified", $"prediction" =!= $"indexedLabel") // TODO this is for debug purposes
-              .showN_AndContinue(1800, "With weighted raw probabilities (and unused majority predictions)")
+//              .showN_AndContinue(1800, "With weighted raw probabilities (and unused majority predictions)")
               .cache()
 
 //        mergedAndRegressedDF.show(21, false)

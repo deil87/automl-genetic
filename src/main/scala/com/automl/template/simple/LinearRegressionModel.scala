@@ -30,6 +30,7 @@ case class LinearRegressionModel()(implicit val logPaddingSize: Int = 0) extends
 
   override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParametersField: Option[HyperParametersField]): FitnessResult = {
 
+    require(canHandleProblemType(problemType), "canHandleProblemType requirement failed")
     logger.debug(s"Evaluating $name ...")
     val linearRegression = new LinearRegression() // It is a newer version of LinearRegressionWithSGD from mllib
 

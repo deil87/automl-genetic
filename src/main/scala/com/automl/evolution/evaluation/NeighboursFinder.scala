@@ -2,12 +2,12 @@ package com.automl.evolution.evaluation
 
 import akka.actor.ActorSystem
 import com.automl.evolution.dimension.TemplateEvolutionDimension
-import com.automl.evolution.dimension.hparameter.{HyperParametersField, HyperParametersEvolutionDimension}
+import com.automl.evolution.dimension.hparameter.{HyperParametersEvolutionDimension, HyperParametersField}
 import com.automl.evolution.diversity.{DistanceStrategy, MultidimensionalDistanceMetric}
 import com.automl.helper.{FitnessResult, TemplateTreeHelper}
 import com.automl.problemtype.ProblemType
 import com.automl.template.{TemplateMember, TemplateTree}
-import com.automl.{ConsistencyChecker, EvaluatedTemplateData, PaddedLogging}
+import com.automl.{ConsistencyChecker, EvaluatedTemplateData, EvaluationRules, PaddedLogging}
 import org.apache.spark.sql.DataFrame
 import utils.BenchmarkHelper
 import utils.SparkMLUtils._
@@ -17,9 +17,9 @@ import scala.collection.mutable
 
 class NeighboursFinder[DistMetric <: MultidimensionalDistanceMetric](distanceStrategy: DistanceStrategy[DataFrame, DistMetric])
                                                                     (implicit as: ActorSystem, val logPaddingSize: Int)
-  extends ConsistencyChecker with PaddedLogging{
+  extends ConsistencyChecker with PaddedLogging with EvaluationRules{
 
-  def findNeighbours(forWhomWeWantToFindNeighbours: Seq[EvaluatedTemplateData], neighbourhood: Seq[EvaluatedTemplateData], populationSize: Int) = {
+  def findNeighbours(forWhomWeWantToFindNeighbours: Seq[EvaluatedTemplateData], neighbourhood: Seq[EvaluatedTemplateData], populationSize: Int, problemType: ProblemType) = {
     // QUESTION original  and withOffspring populations will have different neighbourhood sizes. Should we pass different `populationSize` or only size of original population
     val sizeOfTheNeighbourhood = if (populationSize <= 30) 3 else populationSize / 10
     BenchmarkHelper.time("Calculation of neighbours"){ // Note: logPaddingSize is set below as third list of parameters

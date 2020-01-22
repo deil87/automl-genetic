@@ -206,6 +206,12 @@ object Datasets extends SparkSessionProvider {
 
     val featuresColName: String = "features"
 
+    val scaler = new StandardScaler()
+      .setInputCol("features")
+      .setOutputCol("scaledFeatures")
+      .setWithStd(true)
+      .setWithMean(false)
+
     def featuresAssembler = {
       new VectorAssembler()
         .setInputCols(combinedFeatures)
@@ -216,6 +222,9 @@ object Datasets extends SparkSessionProvider {
     lazy val prepairedAirlineDF = airlineDF
       .limit(3000)
       .applyTransformation(featuresAssembler)
+      .applyTransformation(scaler)
+      .withColumnReplace("features", "scaledFeatures")
+
       .withColumnRenamed("DepDelay", "label")
       .toDouble("label")
       .filterOutNull("label")

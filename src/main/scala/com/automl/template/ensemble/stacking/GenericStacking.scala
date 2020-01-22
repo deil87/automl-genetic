@@ -6,10 +6,9 @@ import com.automl.regressor.EnsemblingRegressor
 import com.automl.template.{EvaluationMagnet, TemplateMember, TemplateTree, TreeContext}
 import com.automl.template.ensemble.EnsemblingModelMember
 import com.automl.classifier.ensemble.stacking.SparkGenericStacking
-import com.automl.evolution.dimension.hparameter.{HyperParametersField, HyperParametersGroup, MutableHParameter}
+import com.automl.evolution.dimension.hparameter.{HyperParametersField, HyperParametersGroup, MutableHParameter, StackingHPGroup}
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
-import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.evaluation.{MulticlassClassificationEvaluator, RegressionEvaluator}
 import org.apache.spark.ml.regression.LinearRegression
@@ -18,10 +17,19 @@ import org.apache.spark.sql.DataFrame
 import utils.SparkMLUtils._
 
 
-case class GenericStacking(unusedMetaLearner: PipelineStage = new LinearRegression())(implicit val logPaddingSize: Int = 0)
+case class GenericStacking(unusedMetaLearner: PipelineStage = new LinearRegression(),
+                           hpg: StackingHPGroup = StackingHPGroup()
+                          )(implicit val logPaddingSize: Int = 0)
   extends StackingMember with PaddedLogging {
   override def name: String = "SparkStacking " + super.name
 
+  override def canHandleProblemType: PartialFunction[ProblemType, Boolean] = {
+    case BinaryClassificationProblem => ??? // TODO enable
+    case MultiClassClassificationProblem => true
+    case RegressionProblem => ??? // TODO enable
+  }
+
+  var hpGroupInternal: HyperParametersGroup[_ <: MutableHParameter[Double, _]] = hpg
 
   override def ensemblingFitnessError[A <: TemplateMember](trainDF: DataFrame,
                                                            testDF: DataFrame,
@@ -42,6 +50,7 @@ case class GenericStacking(unusedMetaLearner: PipelineStage = new LinearRegressi
 
       stackingModel.addModel(nextMember, trainDF, testDF, problemType, hyperParamsField)
     })
+    logger.debug(s"All Stacking submembers were added to a Stacking model")
 
     problemType match {
       case RegressionProblem =>
@@ -67,11 +76,15 @@ case class GenericStacking(unusedMetaLearner: PipelineStage = new LinearRegressi
           .setLabelCol("indexedLabel")
           .setMaxIter(20)
 
-        val finalPredictions = stacking.performStacking(metaLearner)
+        logger.debug(s"Running performStacking() method")
+        val stackedFrame = stacking.performStacking(metaLearner)
+        logger.debug(s"Finished performStacking() method")
+
+        val finalPredictions = stackedFrame
 //          .showN_AndContinue(100, "Before rounding predictions from GenericStacking's metalearner")
 //          .withColumnReplace("prediction", rint($"prediction")) //NOTE we need to round because LinearRegression metalearner returns raw predictions
 //          .showN_AndContinue(500, "predictions from GenericStacking's metalearner")
-          .select("uniqueIdColumn", "features", "prediction") //TODO make sure that performStacking is returning predictions for testDF
+          .select("uniqueIdColumn", "features", "prediction", "probability") //TODO make sure that performStacking is returning predictions for testDF
           .cache()
 
         val predictionsReunitedWithLabels = finalPredictions.join(testDF.select("indexedLabel", "uniqueIdColumn"), "uniqueIdColumn")
@@ -83,17 +96,16 @@ case class GenericStacking(unusedMetaLearner: PipelineStage = new LinearRegressi
           .setLabelCol("indexedLabel") // True labels from testDF
           .setMetricName("f1")
 
+        // Based on `probability` column that is coming from metaLearner ( in current case LogisticRegression)
         val logLoss = LogLossCustom.compute(predictionsReunitedWithLabels)
 
         val f1 = evaluator.evaluate(predictionsReunitedWithLabels)
-        logger.info(s"Finished. $name : F1 = " + f1)
+        logger.info(s"Finished $name : F1 = $f1, logloss = $logLoss")
         FitnessResult(Map("f1" -> f1, "logloss" -> logLoss), problemType, predictionsReunitedWithLabels)
     }
   }
 
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = ???
 
-  //TODO move to constructor
-  var hpGroupInternal: HyperParametersGroup[_ <: MutableHParameter[Double, _]] = null
 }
 

@@ -104,7 +104,7 @@ case class LogisticRegressionModel(hpGroup: LogisticRegressionHPGroup = Logistic
           printConfusionMatrix(predictions, testDF)
 
           val logLoss = LogLossCustom.compute(predictions)
-
+          info(s"Finished. $name : F1 = $f1CV, logloss = $logLoss")
           FitnessResult(Map("f1" -> f1CV, "accuracy" -> -1, "logloss" -> logLoss), problemType, predictions)
         } else {
           val lrWithHP = activeHPGroup.hpParameters.foldLeft(lrEstimator)((res, next) => next match {
@@ -116,13 +116,14 @@ case class LogisticRegressionModel(hpGroup: LogisticRegressionHPGroup = Logistic
               res.setElasticNetParam(p.currentValue)
           })
           val lrModel = lrWithHP.fit(preparedTrainingDF)
-          val prediction = lrModel.transform(testDF).cache()
+          val predictions = lrModel.transform(testDF).cache()
 
 
-          val f1 = evaluator.evaluate(prediction)
-          info(s"Finished. $name : F1 = " + f1)
+          val f1 = evaluator.evaluate(predictions)
+          val logLoss = LogLossCustom.compute(predictions)
+          info(s"Finished. $name : F1 = $f1, logloss = $logLoss")
 
-          FitnessResult(Map("f1" -> f1), problemType, prediction)
+          FitnessResult(Map("f1" -> f1, "logloss" -> logLoss), problemType, predictions)
         }
 
       case RegressionProblem =>

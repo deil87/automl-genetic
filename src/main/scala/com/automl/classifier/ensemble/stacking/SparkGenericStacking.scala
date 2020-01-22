@@ -41,9 +41,10 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) extends LazyLog
   * @df training set which wil be folded
   * */
   def foldingStage(trainDF: DataFrame, testDF: DataFrame) = {
-    logger.debug(s"Folding stage of SparkGenericStacking is started. Preparing $numFold train/valid pair from training frame.")
+    logger.debug(s"Folding stage of SparkGenericStacking is started. Preparing $numFold train/valid pairs based on training frame( rows=${trainDF.count()}).")
 
     val projection = trainDF.select("uniqueIdColumn", responseColumn)
+
     val ss = trainDF.sparkSession
 
     /*
@@ -52,12 +53,16 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) extends LazyLog
     trainModelsPredictionsDF = projection.cache()
     testModelsPredictionsDF = testDF.select("uniqueIdColumn").cache()
 
-    val splitsRdd = MLUtils.kFold(projection.rdd, numFold, seed)
+    val splitsRdd = MLUtils.kFold(projection.rdd, numFold, seed + projection.count())
     val schema = new StructType(Array(StructField("uniqueIdColumn", LongType, nullable = false)))
+    //converting rdds -> DFs
     splits = splitsRdd.map { case (training, validation) =>
+      val validationCount = validation.count()
+      val trainCount = training.count()
       val trainingSplitDF = ss.createDataFrame(training, schema).cache()
       val validationSplitDF = ss.createDataFrame(validation, schema).cache()
-      logger.debug(f"Created ${training.count()}%10s train / ${validation.count()}%-10s validation pair.")
+      logger.debug(f"Created ${trainCount}%10s train / ${validationCount}%-10s validation pair.")
+      require(validationCount > 0 && trainCount > 0, "Validation or training split is of 0 size")
       (trainingSplitDF, validationSplitDF)
     }
   }
@@ -132,6 +137,7 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) extends LazyLog
     * Adding TemplateMember to the ensemble
     */
   def addModel[A <: TemplateMember](member: TemplateTree[A], trainDataSet: DataFrame, testDataSet: DataFrame, problemType: ProblemType, hyperParamsMap: Option[HyperParametersField]): SparkGenericStacking = {
+    logger.info(s"Adding TemplateMember ${member.render} to the ensemble")
     trainDataSet.cache()
     testDataSet.cache()
     import utils.SparkMLUtils._
@@ -203,6 +209,8 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) extends LazyLog
     logger.info(s"Predictions based on the whole training dataset were calculated by ${member.member.name} and added to `testModelsPredictionsDF`")
 
     testModelsPredictionsDF = testModelsPredictionsDF.join(predictionsForTestSetDF, "uniqueIdColumn").cache()
+
+    logger.info(s"Predictions based on the whole training dataset were calculated and joined")
 
     numberOfModels += 1
     this

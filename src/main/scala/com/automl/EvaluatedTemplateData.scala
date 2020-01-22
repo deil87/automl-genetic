@@ -32,10 +32,9 @@ case class EvaluatedTemplateData(id: String,
   override def params: Option[HyperParametersField] = hyperParamsFieldFromCoevolution
 
   def betterThan(that:EvaluatedTemplateData): Boolean = {
-    if (theBiggerTheBetter(fitness.problemType))
       compare(that) > 0
-    else compare(that) < 0
   }
+
   override def compare(that: EvaluatedTemplateData): Int = {
     val comparisonResult = fitness.compareTo(that.fitness)
     if (theBiggerTheBetter(fitness.problemType)) comparisonResult else -comparisonResult

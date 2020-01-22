@@ -48,8 +48,8 @@
     <logger name="com.automl" level="DEBUG"/>
     <logger name="com.automl.EvaluatedTemplateData" level="DEBUG"/>
     <logger name="com.automl.AutoML" level="DEBUG"/>
-    <logger name="com.automl.template" level="INFO" />
-    <logger name="com.automl.template.simple" level="INFO" />
+    <logger name="com.automl.template" level="DEBUG" />
+    <logger name="com.automl.template.simple" level="DEBUG" />
     <logger name="com.automl.template.simple.Bayesian" level="DEBUG" />
     <logger name="com.automl.template.simple.SVMModel" level="DEBUG" />
     <logger name="com.automl.evolution.evaluation" level="DEBUG"/>

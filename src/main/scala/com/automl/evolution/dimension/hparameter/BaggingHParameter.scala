@@ -6,24 +6,24 @@ import com.automl.template.{TemplateMember, TemplateTree}
 import scala.util.Random
 
 
-case class BaggingHPGroup(hpParameters:Seq[BaggingHParameter] = Seq())
-  extends HyperParametersGroup[BaggingHParameter] {
+case class BaggingHPGroup(hpParameters:Seq[StackingHParameter] = Seq())
+  extends HyperParametersGroup[StackingHParameter] {
 
   override def isRelevantTo(templateTree: TemplateMember): Boolean = templateTree.isInstanceOf[LogisticRegressionModel]
 
-  override def mutate(): HyperParametersGroup[BaggingHParameter] = {
-    BaggingHPGroup(hpParameters = hpParameters.map(hpModelTpe => hpModelTpe.mutate()))
+  override def mutate(): HyperParametersGroup[StackingHParameter] = {
+    StackingHPGroup(hpParameters = hpParameters.map(hpModelTpe => hpModelTpe.mutate()))
   }
 }
 
 object BaggingHPGroup {
-  val default = LogisticRegressionHPGroup()
+  val default = BaggingHPGroup()
 }
 
-trait BaggingHParameter extends MutableHParameter[Double, BaggingHParameter]
+trait BaggingHParameter extends MutableHParameter[Double, StackingHParameter]
 
 
-case class BaggingExaggeration(initialValue: Option[Double] = None) extends BaggingHParameter with DoubleHPRange[BaggingHParameter] { // we can specialize with Marker trait which parameter can be used with which Model
+case class BaggingExaggeration(initialValue: Option[Double] = None) extends StackingHParameter with DoubleHPRange[StackingHParameter] { // we can specialize with Marker trait which parameter can be used with which Model
   override def min: Double = 0.0
 
   override def max: Double = 0.5
@@ -32,7 +32,7 @@ case class BaggingExaggeration(initialValue: Option[Double] = None) extends Bagg
 
   override def getDefault: Double = round(new Random().nextDouble(), 1) // In theory we are interested not only on round values but on the best ones
 
-  override def newInstance: BaggingHParameter = BaggingExaggeration()
+  override def newInstance: StackingHParameter = BaggingExaggeration()
 
   override def toString: String = "lambda:" + currentValue.toString
 }

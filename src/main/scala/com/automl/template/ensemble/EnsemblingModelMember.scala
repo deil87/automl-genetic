@@ -19,6 +19,17 @@ trait EnsemblingModelMember extends TemplateMember { self: PaddedLogging =>
     throw new IllegalStateException("We should call ensemblingFitnessError method for ensembling classifiers")
   }
 
+  def ensemblingFitnessErrorWithValidation[A <: TemplateMember](trainDF: DataFrame,
+                                                  testDF: DataFrame,
+                                                  subMembers: Seq[TemplateTree[A]],
+                                                  problemType: ProblemType,
+                                                  hpFieldFromCoevolution: Option[HyperParametersField],
+                                                  seed: Long)
+                                                 (implicit tc: TreeContext = TreeContext()): FitnessResult = {
+    require(canHandleProblemType(problemType), "canHandleProblemType requirement failed")
+    ensemblingFitnessError(trainDF, testDF, subMembers, problemType, hpFieldFromCoevolution, seed)
+  }
+
   def ensemblingFitnessError[A <: TemplateMember](trainDF: DataFrame,
                                                   testDF: DataFrame,
                                                   subMembers: Seq[TemplateTree[A]],

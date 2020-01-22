@@ -109,7 +109,7 @@ case class LeafTemplate[+A <: TemplateMember](member: A) extends TemplateTree[A]
     trainDF.cache()
     testDF.cache()
 
-    member.fitnessError(trainDF, testDF, problemType, hyperParamsField)
+    member.fitnessErrorWithValidation(trainDF, testDF, problemType, hyperParamsField)
   }
 
   override def height: Int = 1
@@ -133,7 +133,7 @@ case class NodeTemplate[+A <: TemplateMember](member: A, subMembers: Seq[Templat
     val updatedTC = TemplateTree.updateNodeTC(member.name, height, tc)(logPaddingSize)
     //member.fitnessError(trainDF, testDF, subMembers)
     //or
-    member.asInstanceOf[EnsemblingModelMember].ensemblingFitnessError(trainDF, testDF, subMembers, problemType, hpFieldFromCoevolution, seed)(updatedTC)
+    member.asInstanceOf[EnsemblingModelMember].ensemblingFitnessErrorWithValidation(trainDF, testDF, subMembers, problemType, hpFieldFromCoevolution, seed)(updatedTC)
   }
 
   var degreeOfExploration: Double = 0
@@ -184,6 +184,8 @@ trait TemplateMember extends EvaluationRules { self: PaddedLogging =>
   // We can have a real type of HyperParametersGroup in subclasses if we introduce type parameter for TemplateMember
   var hpGroupInternal: HyperParametersGroup[_ <: MutableHParameter[Double, _]]
 
+  def canHandleProblemType: PartialFunction[ProblemType, Boolean]
+
   @Deprecated() //"Consider to remove if there is no way to improve flexibility of evaluation API"
   def fitnessError(magnet: EvaluationMagnet): FitnessResult = null
 
@@ -193,7 +195,12 @@ trait TemplateMember extends EvaluationRules { self: PaddedLogging =>
     val msg = "Consider to use fitnessError() method with `hyperParametersField` parameter"
     info(s"!!!!!!!!!!!! $msg")
     throw new IllegalStateException(msg)
-    fitnessError(trainDF, testDF, problemType, None)
+    fitnessErrorWithValidation(trainDF, testDF, problemType, None)
+  }
+
+  def fitnessErrorWithValidation(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hpFieldFromCoevolution: Option[HyperParametersField] = None): FitnessResult = {
+    require(canHandleProblemType(problemType), "canHandleProblemType requirement failed")
+    fitnessError(trainDF, testDF, problemType, hpFieldFromCoevolution)
   }
 
   def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hpFieldFromCoevolution: Option[HyperParametersField] = None): FitnessResult

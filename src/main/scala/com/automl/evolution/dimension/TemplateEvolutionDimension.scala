@@ -112,7 +112,7 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
 
     //Need to decide where selecting neighbours should go. To evaluation or selection or to its own phase.
     debug("Finding neighbours for NSLC algorithm:")
-    val evaluatedOriginalPopulationWithNeighbours = neighboursFinder.findNeighbours(evaluatedPopulation, evaluatedPopulation, population.size)
+    val evaluatedOriginalPopulationWithNeighbours = neighboursFinder.findNeighbours(evaluatedPopulation, evaluatedPopulation, population.size, problemType)
 
     debug("Selecting parents:")
     val selectedParents = selectParents(evaluatedOriginalPopulationWithNeighbours)
@@ -129,7 +129,7 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
     debug("Updating hallOfFame:") // TODO maybe we don't need to update it here as we did it during evaluations in Evaluator
     updateHallOfFame(evaluatedOffspring)
 
-    val evaluatedOffspringWithNeighbours = neighboursFinder.findNeighbours(evaluatedOffspring, evaluatedOffspring ++ evaluatedOriginalPopulationWithNeighbours, population.size)
+    val evaluatedOffspringWithNeighbours = neighboursFinder.findNeighbours(evaluatedOffspring, evaluatedOffspring ++ evaluatedOriginalPopulationWithNeighbours, population.size, problemType)
 
     val evaluationResultsForNewExpandedGeneration = evaluatedOffspringWithNeighbours ++ evaluatedOriginalPopulationWithNeighbours
 

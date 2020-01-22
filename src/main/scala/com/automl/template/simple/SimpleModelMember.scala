@@ -13,8 +13,6 @@ import scala.collection.JavaConverters._
 trait SimpleModelMember extends TemplateMember { self: PaddedLogging =>
   override def name: String = "simpleModel member"
 
-  def canHandleProblemType: PartialFunction[ProblemType, Boolean]
-
   def modelKey: ModelKey = ???
 
   def testStrategy: TestStrategy = ???

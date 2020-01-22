@@ -6,6 +6,7 @@ import com.automl.dataset.Datasets
 import com.automl.evolution.dimension.hparameter._
 import com.automl.population.TPopulation
 import com.automl.spark.SparkSessionProvider
+import com.automl.template.ensemble.stacking.GenericStacking
 import com.automl.template.{LeafTemplate, NodeTemplate}
 import com.automl.template.simple._
 import com.automl.{AutoML, ConfigProvider}
@@ -21,7 +22,7 @@ class CarDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvider
         |  templateDimension {
         |    populationSize = 10
         |    poolOfSimpleModels = ["logistic_regression", "decision_tree", "bayesian", "random_forest"]
-        |    poolOfEnsemblingModels = ["bagging"]
+        |    poolOfEnsemblingModels = ["bagging", "stacking"]
         |    maxEnsembleDepth = 5
         |  }
         |  hyperParameterDimension {
@@ -38,7 +39,13 @@ class CarDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvider
       LeafTemplate(LogisticRegressionModel()),
       LeafTemplate(Bayesian()),
       LeafTemplate(RandomForest()),
-      NodeTemplate(SparkGenericBagging(), Seq( // TODO SparkGenericBagging does not have relevant default HPs
+      NodeTemplate(GenericStacking(), Seq(
+        LeafTemplate(LogisticRegressionModel()),
+        LeafTemplate(Bayesian()),
+        LeafTemplate(DecisionTree()),
+        LeafTemplate(RandomForest())
+      )),
+      /*NodeTemplate(SparkGenericBagging(), Seq( // TODO SparkGenericBagging does not have relevant default HPs
         LeafTemplate(LogisticRegressionModel(LogisticRegressionHPGroup(Seq(RegParamLR(Some(0.2)), ElasticNet(Some(0.2)))))),
         LeafTemplate(Bayesian(BayesianHPGroup(Seq(Smoothing(Some(7)))))),
         LeafTemplate(RandomForest(RandomForestHPGroup(Seq(MaxDepthRF(Some(3.0)))))),
@@ -48,7 +55,7 @@ class CarDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvider
           LeafTemplate(RandomForest(RandomForestHPGroup(Seq(MaxDepthRF(Some(5.0)))))),
           LeafTemplate(LogisticRegressionModel(LogisticRegressionHPGroup(Seq(RegParamLR(Some(0.1)), ElasticNet(Some(0.3))))))
         ))
-      )),
+      )),*/
       LeafTemplate(DecisionTree())
     )
 
@@ -62,7 +69,7 @@ class CarDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvider
     val autoMl = new AutoML(
       data = preparedCarDF,
       responseColumn = "indexedLabel",
-      maxTime = 2 * 60000,
+      maxTime = 20 * 60000,
       useMetaDB = false,
       initialPopulationSize = Some(3),
       seedPopulation = Some(seedPopulation),

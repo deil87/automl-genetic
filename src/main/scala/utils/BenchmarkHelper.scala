@@ -26,7 +26,7 @@ object BenchmarkHelper extends PaddedLogging {
       result = block
     } catch {
       case NonFatal(ex) =>
-        debugImpl(s"$marker# Failure: ${ex.getMessage}")
+        debugImpl(s"$marker#\n\n !!!!!!! Failure: ${ex.getMessage}")
     } finally {
       val t1 = System.currentTimeMillis()
       val endMsg = s"Benchmark << $marker >> took: " + (t1 - t0) + "ms"
