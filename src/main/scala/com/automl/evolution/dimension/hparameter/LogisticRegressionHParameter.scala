@@ -38,7 +38,7 @@ trait LogisticRegressionHParameter[T <: AnyVal] extends MutableHParameter[T, Log
 case class RegParamLR(initialValue: Option[Double] = None) extends LogisticRegressionHParameter[Double] with DoubleHPRange[LogisticRegressionHParameter[Double]] { // we can specialize with Marker trait which parameter can be used with which Model
   override def min: Double = 0.0
 
-  override def max: Double = 0.5
+  override def max: Double = 0.3
 
   override def step: Double = 0.1 //TODO can we change step during evolution? we need to detect stagnations/convergence and them change step for fine tuning.
 

@@ -1,9 +1,7 @@
 package com.automl.template.simple
 
-import akka.actor.ActorSystem
 import com.automl.{AutoML, ConfigProvider}
 import com.automl.dataset.Datasets
-import com.automl.population.TPopulation
 import com.automl.problemtype.ProblemType
 import com.automl.spark.SparkSessionProvider
 import com.automl.template.LeafTemplate
@@ -27,8 +25,7 @@ class LogisticRegressionModelTest extends FunSuite with Matchers with BeforeAndA
     .withColumnRenamed("Nonflavanoid.phenols", "nf_flavonoid")
     .withColumnRenamed("Color.int", "color_int")
 
-  // TODO fix the test
-  ignore("be able to separate dataset into three classes( multiclass case) with LogisticRegression") {
+  test("be able to separate dataset Wine into three classes( multiclass case) with LogisticRegression") {
 
     val features = Array("Mg", "Flavanoids", "nf_flavonoid", "Proanth", "color_int", "Hue", "OD", "Proline")
 
@@ -62,8 +59,10 @@ class LogisticRegressionModelTest extends FunSuite with Matchers with BeforeAndA
     val model = new LogisticRegression()
       .setLabelCol("label")
       .setMaxIter(500)
-      .setRegParam(0.2)
+      .setRegParam(0.0)
+//      .setRegParam(0.6)
       .setElasticNetParam(0.8)
+//      .setElasticNetParam(0.7)
 
     val lrModel = model.fit(trainDF)
     val prediction = lrModel.transform(testDF)
@@ -74,8 +73,68 @@ class LogisticRegressionModelTest extends FunSuite with Matchers with BeforeAndA
 
     val f1 = evaluator.evaluate(prediction)
 
+    ClassificationMetricsHelper.printConfusionMatrix("lr", prediction, testDF, "label")
+
     logger.info(s"F1 measure: $f1")
     f1 shouldBe 0.9 +- 0.1
+
+  }
+
+  test("be able to separate dataset Wine into multiple classes( multiclass case) with LogisticRegression") {
+
+    ConfigProvider.clearOverride.addOverride(
+      s"""
+         |evolution {
+         |  hyperParameterDimension {
+         |    enabled = false
+         |  }
+         |  evaluation {
+         |    multiclass.metric = "logloss"
+         |  }
+         |}
+        """)
+
+    val seed = 1234
+    val preparedCarDF = Datasets.getWineDataframe(seed)
+
+    val template = LeafTemplate(LogisticRegressionModel())
+
+    val Array(trainDF, testDF) = preparedCarDF.randomSplit(Array(0.8, 0.2))
+
+    val result = template.evaluateFitness(trainDF, testDF, ProblemType.MultiClassClassificationProblem, None, seed)
+
+    ClassificationMetricsHelper.printConfusionMatrix("lr", result.dfWithPredictions, testDF)
+
+    result.getCorrespondingMetric should be >= 0.0
+
+  }
+
+  test("be able to separate dataset Cars into multiple classes( multiclass case) with LogisticRegression") {
+
+    ConfigProvider.clearOverride.addOverride(
+      s"""
+         |evolution {
+         |  hyperParameterDimension {
+         |    enabled = false
+         |  }
+         |  evaluation {
+         |    multiclass.metric = "logloss"
+         |  }
+         |}
+        """)
+
+    val seed = 1234
+    val preparedCarDF = Datasets.getCarDataFrame(seed)
+
+    val template = LeafTemplate(LogisticRegressionModel())
+
+    val Array(trainDF, testDF) = preparedCarDF.randomSplit(Array(0.8, 0.2))
+
+    val result = template.evaluateFitness(trainDF, testDF, ProblemType.MultiClassClassificationProblem, None, seed)
+
+    ClassificationMetricsHelper.printConfusionMatrix("lr", result.dfWithPredictions, testDF)
+
+    result.getCorrespondingMetric should be >= 0.0
 
   }
 
