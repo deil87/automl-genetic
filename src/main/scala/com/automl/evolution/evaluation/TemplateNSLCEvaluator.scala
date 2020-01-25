@@ -5,7 +5,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.{ActorRef, ActorSelection, ActorSystem}
 import akka.util.Timeout
 import com.automl.evolution.dimension.TemplateEvolutionDimension
-import com.automl.evolution.dimension.hparameter.{HyperParametersField, HyperParametersEvolutionDimension}
+import com.automl.evolution.dimension.hparameter.{HyperParametersEvolutionDimension, HyperParametersField}
 import com.automl.evolution.diversity.{CosineSimilarityAssistant, DistanceMetric, DistanceStrategy, MultidimensionalDistanceMetric}
 import com.automl.helper.{FitnessResult, TemplateTreeHelper}
 import com.automl.population.TPopulation
@@ -24,6 +24,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import spray.json._
 import DefaultJsonProtocol._
+import org.apache.spark.mllib.util.MLUtils
 
 
 
@@ -86,57 +87,88 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
       bestHPField
     }
 
-    //TODO make use of hyperParamsMap for templates/nodes/classifiers
+    val numFold = 5 // TODO Config
 
-    val Array(trainingSplit, testSplit) = workingDF.randomSplit(Array(1 - testSplitRatio, testSplitRatio), seed)
-    trainingSplit.cache()
-    testSplit.cache()
+    val trainTestPairs: Array[(DataFrame, DataFrame)] = workingDF.toTrainTestPairs(numFold, seed)
+
+    testSplitRatio // TODO deprecated?
 
     val evaluatedTemplatesData: Seq[EvaluatedTemplateData] = population.individuals.zipWithIndex
       .map { case (individualTemplate, idx) =>
 
+
         // TODO we don't use Wildcards and therefore no need in materialization. Should we use them ? It could be a variance regulator.
         val materializedTemplate = TemplateTreeHelper.materialize(individualTemplate)
 
-        val cacheKey = generateCacheKey(workingDF, bestHPFieldFromCoevolution, individualTemplate)
-        if (cache.isDefinedAt(cacheKey)) {
-          debug(s"Cache hit happened for $idx-th individual based on: template: $cacheKey")
-          val keyHashCode = cacheKey.hashCode()
-          val restoredFromCache = cache(cacheKey)
-          debug(s"Retrieved value from the cache with hashCode = ${keyHashCode} : ${restoredFromCache}")
+        val evaluatedCV = trainTestPairs.map { case (trainSplit, testSplit) =>
+
+          val cacheKey = generateCacheKey(workingDF, testSplit,  bestHPFieldFromCoevolution, individualTemplate)
+          if (cache.isDefinedAt(cacheKey)) {
+            debug(s"Cache hit happened for $idx-th individual based on: template: $cacheKey")
+            val keyHashCode = cacheKey.hashCode()
+            val restoredFromCache = cache(cacheKey)
+            debug(s"Retrieved value from the cache with hashCode = ${keyHashCode} : ${restoredFromCache}")
+          }
+
+          //TODO FIX We are storing this result in cache but not in the priority queue
+          val fitness: FitnessResult = cache.getOrElseUpdate(cacheKey, {
+
+            individualTemplate.setLogPadding(logPaddingSize)
+            materializedTemplate.setLogPadding(logPaddingSize)
+
+            val fitnessResult = individualTemplate.evaluateFitness(trainSplit, testSplit, problemType, bestHPFieldFromCoevolution)
+            debug(s"Entry $cacheKey with hashCode = ${cacheKey.hashCode()} was added to the cache with score = $fitnessResult")
+            fitnessResult
+          })
+          fitness
         }
 
-        //TODO FIX We are storing this result in cache but not in the priority queue
-        val fitness: FitnessResult = cache.getOrElseUpdate(cacheKey, {
-
-          individualTemplate.setLogPadding(logPaddingSize)
-          materializedTemplate.setLogPadding(logPaddingSize)
-
-          val fitnessResult = individualTemplate.evaluateFitness(trainingSplit, testSplit, problemType, bestHPFieldFromCoevolution)
-          debug(s"Entry $cacheKey with hashCode = ${cacheKey.hashCode()} was added to the cache with score = $fitnessResult")
-          fitnessResult
-        })
+        // ugly
+        val averagedFitness = evaluatedCV.reduceOption((fitnessLeft, fitnessRight) => {
+          FitnessResult(
+            sumMaps(fitnessLeft.metricsMap, fitnessRight.metricsMap),
+            problemType = fitnessLeft.problemType,
+            fitnessLeft.dfWithPredictions) // TODO we will need to store every fold's predictions. Use zip with index.
+        }).map(fitnessResultSum => {
+          FitnessResult(
+            fitnessResultSum.metricsMap.map(item => (item._1, item._2 / numFold)),
+            problemType = fitnessResultSum.problemType,
+            fitnessResultSum.dfWithPredictions)
+        }).get
 
         val result = EvaluatedTemplateData(idx.toString + ":" + individualTemplate.id, individualTemplate,
-          materializedTemplate, fitness, hyperParamsFieldFromCoevolution = bestHPFieldFromCoevolution)
+          materializedTemplate, averagedFitness, hyperParamsFieldFromCoevolution = bestHPFieldFromCoevolution)
         result.setEvaluationContextInfo(evaluationContextInfo)
 
-        templateEvDimension.hallOfFame += result
 
-        import EvaluatedTemplateDataDTOJsonProtocol._
-        import spray.json._
-        val evaluatedTemplateDataDTO = EvaluatedTemplateDataDTO(result, problemType).toJson
-        webClientNotifier ! UpdateWebWithJson(evaluatedTemplateDataDTO.prettyPrint)
+        registerInHallOfFame(result)
+        notifyWebClient(problemType, result)
+
         result
       }
     evaluatedTemplatesData
   }
 
-  private def generateCacheKey(workingDF: DataFrame, bestHPFieldFromCoevolution: Option[HyperParametersField], individualTemplate: TemplateTree[TemplateMember]) = {
+  def sumMaps(mapLeft: Map[String,Double], mapRight: Map[String,Double]): Map[String, Double] = {
+    mapLeft.map{ case (key, value) => (key, value + mapRight(key))}
+  }
+
+  private def notifyWebClient(problemType: ProblemType, result: EvaluatedTemplateData) = {
+    import EvaluatedTemplateDataDTOJsonProtocol._
+    import spray.json._
+    val evaluatedTemplateDataDTO = EvaluatedTemplateDataDTO(result, problemType).toJson
+    webClientNotifier ! UpdateWebWithJson(evaluatedTemplateDataDTO.prettyPrint)
+  }
+
+  private def registerInHallOfFame(result: EvaluatedTemplateData) = {
+    templateEvDimension.hallOfFame += result
+  }
+
+  private def generateCacheKey(workingDF: DataFrame, testSplitDF: DataFrame, bestHPFieldFromCoevolution: Option[HyperParametersField], individualTemplate: TemplateTree[TemplateMember]) = {
     if(bestHPFieldFromCoevolution.isDefined) // TODO it would be great to have concise representation for Template to use it as a hashcode.
-      (individualTemplate, bestHPFieldFromCoevolution, workingDF.count(), workingDF.hashCode())
+      (individualTemplate, bestHPFieldFromCoevolution, workingDF.count(), testSplitDF.hashCode())
     else
-      (individualTemplate, None/*individualTemplate.member.hpGroup*/, workingDF.count(), workingDF.hashCode()) //TODO probably don't need second element in tuple as we check them from `individualTemplate`
+      (individualTemplate, None/*individualTemplate.member.hpGroup*/, workingDF.count(), testSplitDF.hashCode()) //TODO probably don't need second element in tuple as we check them from `individualTemplate`
   }
 }
 

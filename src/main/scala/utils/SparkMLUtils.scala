@@ -9,6 +9,7 @@ import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.sql._
 import org.apache.spark.ml.feature.{LabeledPoint => MLLabeledPoint, _}
+import org.apache.spark.mllib.util.MLUtils
 import org.apache.spark.sql
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions._
@@ -363,6 +364,19 @@ object SparkMLUtils {
     def filterZeroAndNull(featureName: String) = {
       checkExistenceAndType(featureName, DoubleType)
       df.filter((df(featureName) === 0) || df(featureName).isNull)
+    }
+
+    def toTrainTestPairs(nFolds:Int, seed: Long) = {
+      val splitsRdd = MLUtils.kFold(df.rdd, nFolds, seed )
+      val splits = splitsRdd.map { case (training, validation) =>
+        val validationCount = validation.count()
+        val trainCount = training.count()
+        val trainingSplitDF = df.sparkSession.createDataFrame(training, df.schema).cache()
+        val validationSplitDF = df.sparkSession.createDataFrame(validation, df.schema).cache()
+        require(validationCount > 0 && trainCount > 0, "Validation or training split is of 0 size")
+        (trainingSplitDF, validationSplitDF)
+      }
+      splits
     }
 
     def checkTrainCount = {

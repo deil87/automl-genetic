@@ -32,6 +32,16 @@ class SparkMLUtilsSuite extends FunSuite with Matchers with SparkSessionProvider
     2.0 should be(2.0)
   }
 
+  test("toTrainTestPairs works") {
+
+    val pairs = observations.toTrainTestPairs(3, 1234)
+
+    pairs.foreach(pair => {
+      pair._1.showAll()
+      pair._2.showAll()
+    })
+  }
+
   test("Calculate window function - repairNullWithRangeMeanRate") {
 
     val repaired = observations
