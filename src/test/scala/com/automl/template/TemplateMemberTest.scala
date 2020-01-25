@@ -2,13 +2,30 @@ package com.automl.template
 
 import com.automl.classifier.ensemble.bagging.SparkGenericBagging
 import com.automl.evolution.dimension.hparameter._
-import com.automl.template.simple.LogisticRegressionModel
+import com.automl.template.simple.{DecisionTree, LogisticRegressionModel}
 import org.bytedeco.javacpp.opencv_ml.LogisticRegression
 import org.scalatest.{FunSuite, Matchers}
 
 import scala.collection.mutable
 
 class TemplateMemberTest  extends FunSuite with Matchers  {
+
+  test ("two TemplateMembers with same hps should be equal") {
+
+    val dtTemplate = DecisionTree(DecisionTreeHPGroup(Seq(MaxDepth(Some(4.0)))))
+    val dtTemplate2 = DecisionTree(DecisionTreeHPGroup(Seq(MaxDepth(Some(4.0)))))
+
+    dtTemplate shouldEqual dtTemplate2
+  }
+
+  test ("two TemplateMembers with different hps should not be equal") {
+
+    val dtTemplate = DecisionTree(DecisionTreeHPGroup(Seq(MaxDepth(Some(4.0)))))
+    val dtTemplate2 = DecisionTree(DecisionTreeHPGroup(Seq(MaxDepth(Some(5.0)))))
+
+    dtTemplate == dtTemplate2 shouldBe false
+  }
+
   test ("we can set hpGroups") {
 
     val lr = LogisticRegressionModel()

@@ -13,7 +13,7 @@ object TemplateTreeComparator extends LazyLogging{
 //          if(!hpFieldsAreDefined) println("hpFieldsAreDefined are not defined in both trees")
 //        lazy val hpFieldsAreEqual = hpFieldsAreDefined && l.internalHyperParamsMap.get == right.internalHyperParamsMap.get
 //          if(!hpFieldsAreEqual) logger.debug("Hyperparameter fields of the LeafTemplates are not equal")
-        lazy val membersAreEqual = l.member == right.member
+        val membersAreEqual = l.member == right.member
 //        (hpFieldsAreEqual || hpFieldsAreBothEmpty) && membersAreEqual
         membersAreEqual
       }

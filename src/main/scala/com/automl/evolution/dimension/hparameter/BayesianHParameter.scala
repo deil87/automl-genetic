@@ -27,7 +27,7 @@ case class Smoothing(initialValue: Option[Double] = None) extends BayesianHParam
 
   override def step: Double = 1.0
 
-  override def getDefault: Double = getNextWithinTheRange
+  override def getDefaultRandomly: Double = getNextWithinTheRange
 
 
   override def newInstance: BayesianHParameter[Double] = Smoothing()

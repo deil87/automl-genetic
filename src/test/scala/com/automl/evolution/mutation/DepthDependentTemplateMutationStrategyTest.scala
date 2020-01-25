@@ -253,9 +253,10 @@ class DepthDependentTemplateMutationStrategyTest extends FunSuite with Matchers 
   test("that we will increase complexity") {
     implicit val padding: Int = 0
 
-    val numberOfMutationPhases = 1000
+    val numberOfMutationPhases = 10
+    val seed = 1234
 
-    val strategy = new DepthDependentTemplateMutationStrategy(null, ProblemType.MultiClassClassificationProblem)
+    val strategy = new RandomTemplateMutationStrategy(null, ProblemType.MultiClassClassificationProblem, seed)
     val individual1: TemplateTree[TemplateMember] =
       NodeTemplate(SparkGenericBagging(),
         Seq(
@@ -282,7 +283,9 @@ class DepthDependentTemplateMutationStrategyTest extends FunSuite with Matchers 
     PopulationHelper.print(originalPopulation, "Original population:")
     PopulationHelper.print(newPopulation, "New population:")
 
-    newPopulation.depthComplexity shouldBe >= (originalPopulation.depthComplexity)
+    val originalComplexity = originalPopulation.depthComplexity
+    val newComplexity = newPopulation.depthComplexity
+    newComplexity shouldBe >= (originalComplexity)
   }
 
 

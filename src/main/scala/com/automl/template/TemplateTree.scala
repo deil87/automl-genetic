@@ -216,6 +216,14 @@ trait TemplateMember extends EvaluationRules { self: PaddedLogging =>
 //      .orElse(throw new IllegalStateException("getRelevantHPGroupFromActiveHPField should not be called when hpCoevolution is disabled"))
   }
 
+  override def equals(obj: Any): Boolean = {
+    require(obj.isInstanceOf[TemplateMember])
+    val another = obj.asInstanceOf[TemplateMember]
+    this.hpGroupInternal == another.hpGroupInternal &&
+      this.name == another.name &&
+      this.getClass == another.getClass // probably unnecessary as hps are typed
+  }
+
   override def toString: String = name
 
   def setLogPadding(size: Int): Unit = {

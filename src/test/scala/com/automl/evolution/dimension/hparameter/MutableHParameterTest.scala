@@ -62,8 +62,6 @@ class MutableHParameterTest extends FunSuite with Matchers with LazyLogging{
       }
       logger.debug("Smoothing:" + smoothing.currentValue)
     }
-
-    smoothing.explored.size == smoothing.numberOfEntries shouldBe true
   }
 
   test("Mutation of ElasticNet should return only new values") {

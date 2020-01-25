@@ -203,6 +203,8 @@ class AutoML(data: DataFrame,
       }
     }
 
+    PopulationHelper.print(templateEvDim.getPopulation, "Final population:")
+    
     AutoMLReporter.show(templateEvDim.hallOfFame.clone().dequeueAll.iterator, problemType)
     templateEvDim.hallOfFame
   }

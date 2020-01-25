@@ -20,77 +20,35 @@ class TemplateTreeTest extends FunSuite with Matchers {
 
   //TODO we can add option to mutate only on leaf level so that we can test with random template being transformed.
 
-  // TODO AG-203
-  test("that two templates with essentially the same base models but in different order are equal") {
+  test("that two leaf templates are equal") {
 
-    val dtTemplate = LeafTemplate(DecisionTree())
-    dtTemplate.internalHyperParamsMap = Some(HyperParametersField(
-      Seq(
-        DecisionTreeHPGroup(Seq(MaxDepth(Some(9.0))))
-      )
-    ))
+    val dtTemplate = LeafTemplate(DecisionTree(DecisionTreeHPGroup(Seq(MaxDepth(Some(4.0))))))
+    val dtTemplate2 = LeafTemplate(DecisionTree(DecisionTreeHPGroup(Seq(MaxDepth(Some(4.0))))))
 
-    val rfTemplate = LeafTemplate(RandomForest())
-    rfTemplate.internalHyperParamsMap = Some(HyperParametersField(
-      Seq(
-        RandomForestHPGroup(Seq(MaxDepthRF(Some(5.0))))
-      )
-    ))
-
-    val bayesianTemplate = LeafTemplate(Bayesian())
-    bayesianTemplate.internalHyperParamsMap = Some(HyperParametersField(
-      Seq(
-        BayesianHPGroup(Seq(Smoothing(Some(5.0))))
-      )
-    ))
-
-
-    val individual: TemplateTree[TemplateMember] =
-      NodeTemplate(SparkGenericBagging(),
-        Seq(
-          dtTemplate,
-          rfTemplate,
-          bayesianTemplate
-        )
-      )
-
-    val individual2: TemplateTree[TemplateMember] =
-      NodeTemplate(SparkGenericBagging(),
-        Seq(
-          rfTemplate,
-          dtTemplate,
-          bayesianTemplate
-        )
-      )
-
-    println(individual.render)
-    println(individual2.render)
-
-    bayesianTemplate == bayesianTemplate shouldBe true
-    bayesianTemplate == dtTemplate shouldBe false
-
-//    individual shouldEqual individual2
+    dtTemplate shouldEqual dtTemplate2
   }
 
-  // See bug https://github.com/scala-exercises/scala-exercises/issues/18
+  // See bug https://github.com/scala-exercises/scala-exercises/issues/18 ---
   test("Comparing Sets return expected results") {
     Set(1,2,3) sameElements Set(3,2,1) shouldBe false //  WTF?? expected to be true for Sets
 
     Set(1,2,3) diff Set(3,2,1) shouldBe Set()
   }
 
-  // TODO AG-203
-  ignore("that two templates with essentially the same base models but in different order are equal (case 2)") {
+  test("that two templates with essentially the same base models but in different order are equal (case 2)") {
 
+    val dtl = LeafTemplate(DecisionTree())
+    val rfl = LeafTemplate(RandomForest())
+    val rfl2 = LeafTemplate(RandomForest())
     val individual: TemplateTree[TemplateMember] =
       NodeTemplate(SparkGenericBagging(),
         Seq(
-          LeafTemplate(DecisionTree()),
-          LeafTemplate(RandomForest()),
+          dtl,
+          rfl,
           NodeTemplate(SparkGenericBagging(),
             Seq(
-              LeafTemplate(DecisionTree()),
-              LeafTemplate(RandomForest())
+              LeafTemplate(DecisionTree(DecisionTreeHPGroup(Seq(MaxDepth(Some(4.0)))))),
+              rfl2
             )
           )
         )
@@ -99,14 +57,14 @@ class TemplateTreeTest extends FunSuite with Matchers {
     val individual2: TemplateTree[TemplateMember] =
       NodeTemplate(SparkGenericBagging(),
         Seq(
-          LeafTemplate(RandomForest()),
+          rfl,
           NodeTemplate(SparkGenericBagging(),
             Seq(
-              LeafTemplate(RandomForest()),
-              LeafTemplate(DecisionTree())
+              rfl2,
+              LeafTemplate(DecisionTree(DecisionTreeHPGroup(Seq(MaxDepth(Some(4.0))))))
             )
           ),
-          LeafTemplate(DecisionTree())
+          dtl
         )
       )
 

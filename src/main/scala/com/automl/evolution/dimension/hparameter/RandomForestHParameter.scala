@@ -29,7 +29,7 @@ case class MaxDepthRF(initialValue: Option[Double] = None) extends RandomForestH
 
   override def step: Double = 1.0 //TODO can we change step during evolution? we need to detect stagnations/convergence and them change step for fine tuning.
 
-  override def getDefault: Double = getNextWithinTheRange
+  override def getDefaultRandomly: Double = getNextWithinTheRange
 
   override def newInstance: RandomForestHParameter[Double] = MaxDepthRF()
 

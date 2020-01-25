@@ -189,51 +189,29 @@ trait DoubleHPRange[V <: MutableHParameter[Double, V]] extends HPRange[Double] w
   def newInstance: V
 
   var currentValue: Double = {
-    val defaultValue = initialValue.getOrElse(getDefault)
-    explored(defaultValue) = true
+    val defaultValue = initialValue.getOrElse(getDefaultRandomly)
     defaultValue
   }
 
-  // Note: In DepthDependentTemplateMutationStrategy we use strategy to mutate.
-  // Here it is opposite... class has mutate method in its API and we can pass Strategy as parameter.
-  override def mutate(): V = {
-    // TODO issue: after a structure transformation we loose explored local cache and just being rejected by comparing
-    //  in population and hallOfFame - meaning that `explored.size == numberOfEntries` will not be satisfied => `isExplored = true` will
-    //  not be set to true => `if(!isExplored) {` will not prevent us from using while loop
-    if(!isExplored && explored.size == numberOfEntries) {
-      isExplored = true
-      //  this should be thrown once so that parent TemplateTree can estimate exploration degree for its submembers
-      throw new HPRangeWasExploredException()
+  override def mutate(): V = { // TODO could be simplified. Return Double type.
+    var mutatedVersion = newInstance
+    while (currentValue == mutatedVersion.currentValue) {
+      mutatedVersion = newInstance
     }
-    var newValue = getNextClosestWithinTheRange(currentValue)
-    if(!isExplored) { // when space is explored we are ok with any next value within range (from code line above)
-      while (explored.contains(newValue) /*&& explored.size < numberOfEntries*/ ) {
-        logger.debug(s"Cache hit: $newValue")
-        newValue = getNextClosestWithinTheRange(newValue)
-        validate(newValue)
-      }
-    }
-    val newVersion = newInstance
-    newVersion.currentValue = newValue
-    explored(newVersion.currentValue) = true
-    newVersion.isExplored = isExplored
-    newVersion.explored = explored
-    newVersion
+    mutatedVersion
   }
 
   def validate(value: Double): Unit = require(value <= max && value >=min, "Mutated value is outside of the allowed range")
 }
 
 sealed trait HParameter[+T] {
-  def getDefault:T
+  def getDefaultRandomly:T
   def initialValue:Option[T]
 }
 
 trait MutableHParameter[T, V <: MutableHParameter[T, V]] extends HParameter[T] {
   var currentValue: T
   def mutate(): V
-  var explored = mutable.Map.empty[Double, Boolean]
-  var isExplored: Boolean = false
 
   override def toString: String = currentValue.toString
 }

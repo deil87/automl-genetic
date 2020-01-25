@@ -20,21 +20,21 @@ trait SimpleModelMember extends TemplateMember { self: PaddedLogging =>
 
 object SimpleModelMember {
 
-  val DeepNeuralNetwork: SimpleModelMember = new DeepNeuralNetwork()
-  val NeuralNetwork: SimpleModelMember = new NeuralNetwork(Array(4,3,2,1))
-  val Bayesian: SimpleModelMember = new Bayesian()
-  val GLM: SimpleModelMember = new LinearRegressionModel()
-  val DT: SimpleModelMember = new DecisionTree()
-  val RF: SimpleModelMember = new RandomForest()
-  val KNN: SimpleModelMember = new KNearestNeighbours()
-  val LogisticRegression: SimpleModelMember = new LogisticRegressionModel()
-  val OneVsRestModel: SimpleModelMember = new OneVsRestModel()
-  val SVM: SimpleModelMember = new SVMModel()
-  val SupportVectorRegression: SimpleModelMember = new SupportVectorRegression()
-  val LinearPerceptron: SimpleModelMember = new LinearPerceptron()
-  val GradientBoosting: SimpleModelMember = new GradientBoosting() // Can we consider this as a simple model? It is actually an ensemble of trees
+  def DeepNeuralNetwork: SimpleModelMember = new DeepNeuralNetwork()
+  def NeuralNetwork: SimpleModelMember = new NeuralNetwork(Array(4,3,2,1))
+  def Bayesian: SimpleModelMember = new Bayesian()
+  def GLM: SimpleModelMember = new LinearRegressionModel()
+  def DT: SimpleModelMember = new DecisionTree()
+  def RF: SimpleModelMember = new RandomForest()
+  def KNN: SimpleModelMember = new KNearestNeighbours()
+  def LogisticRegression: SimpleModelMember = new LogisticRegressionModel()
+  def OneVsRestModel: SimpleModelMember = new OneVsRestModel()
+  def SVM: SimpleModelMember = new SVMModel()
+  def SupportVectorRegression: SimpleModelMember = new SupportVectorRegression()
+  def LinearPerceptron: SimpleModelMember = new LinearPerceptron()
+  def GradientBoosting: SimpleModelMember = new GradientBoosting() // Can we consider this as a simple model? It is actually an ensemble of trees
 
-  val poolOfSimpleModels: Seq[SimpleModelMember] = Seq(/*DeepNeuralNetwork,*/ Bayesian, GLM, DT, RF/*, SVM*//*,GradientBoosting,  KNN, LogisticRegression, SupportVectorRegression, LinearPerceptron*/)
+  def poolOfSimpleModels: Seq[SimpleModelMember] = Seq(/*DeepNeuralNetwork,*/ Bayesian, GLM, DT, RF/*, SVM*//*,GradientBoosting,  KNN, LogisticRegression, SupportVectorRegression, LinearPerceptron*/)
 
   def poolOfSimpleModels(problemType: ProblemType): Seq[SimpleModelMember] = {
     poolOfSimpleModels.filter(_.canHandleProblemType(problemType))

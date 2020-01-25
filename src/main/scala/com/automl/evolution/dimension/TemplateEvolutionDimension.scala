@@ -4,7 +4,7 @@ import com.automl.evolution.dimension.hparameter.{EvaluatedHyperParametersField,
 import com.automl.evolution.diversity.{DistinctDiversityStrategy, MisclassificationDistance}
 import com.automl.evolution.evaluation.{EvaluationContextInfo, NeighboursFinder, TemplateNSLCEvaluator}
 import com.automl.{ConfigProvider, EvaluatedTemplateData, EvaluatedTemplateDataDTOJsonProtocol, EvolutionProgressDTO, PaddedLogging}
-import com.automl.evolution.mutation.DepthDependentTemplateMutationStrategy
+import com.automl.evolution.mutation.{DepthDependentTemplateMutationStrategy, RandomTemplateMutationStrategy}
 import com.automl.evolution.selection.RankSelectionStrategy
 import com.automl.helper.{FitnessResult, PopulationHelper}
 import com.automl.population.{GenericPopulationBuilder, TPopulation}
@@ -44,7 +44,9 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
   lazy val populationSize: Int = tdConfig.getInt("populationSize")
 
   val distinctStrategy = new DistinctDiversityStrategy()
-  val mutationStrategy = new DepthDependentTemplateMutationStrategy(distinctStrategy, problemType)(logPaddingSize + 4)
+
+//  val mutationStrategy = new DepthDependentTemplateMutationStrategy(distinctStrategy, problemType)(logPaddingSize + 4)
+  val mutationStrategy = new RandomTemplateMutationStrategy(distinctStrategy, problemType, seed)(logPaddingSize + 4)
   val rankSelectionStrategy = new RankSelectionStrategy
 
   // Dependencies on other dimensions. Hardcoded for now. Should come from AutoML.runEvolution method parameters.

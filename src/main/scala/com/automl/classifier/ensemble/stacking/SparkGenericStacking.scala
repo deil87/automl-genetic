@@ -144,10 +144,10 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) extends LazyLog
     import trainDataSet.sparkSession.implicits._
     import org.apache.spark.ml.linalg.DenseVector
 
-    val predictionCol: String = s"prediction$numberOfModels"
-    val weightCol: String = s"weight$numberOfModels"
-    val probabilityCol: String = s"probability$numberOfModels"
-    val weightedProbCol: String = s"weightedProb$numberOfModels"
+    val predictionCol: String = s"prediction_stacking_m_$numberOfModels"
+    val weightCol: String = s"weight_stacking_m_$numberOfModels"
+    val probabilityCol: String = s"probability_stacking_m_$numberOfModels"
+    val weightedProbCol: String = s"weightedProb_stacking_m_$numberOfModels"
 
     def weightedProbability = {
       import org.apache.spark.sql.functions.udf
@@ -266,8 +266,8 @@ class SparkGenericStacking(numFold: Int, responseColumn: String) extends LazyLog
 
   def performStacking(metaPredictor: PipelineStage) = {
     import utils.SparkMLUtils._
-    val metaFeatures = (0 until numberOfModels).toArray.map(idx => s"prediction$idx")
-    val metaFeaturesWP = (0 until numberOfModels).toArray.map(idx => s"weightedProb$idx")
+    val metaFeatures = (0 until numberOfModels).toArray.map(modelNumber => s"prediction_stacking_m_$modelNumber")
+    val metaFeaturesWP = (0 until numberOfModels).toArray.map(modelNumber => s"weightedProb_stacking_m_$modelNumber")
     def featuresAssembler = new VectorAssembler()
       .setInputCols(metaFeatures)
       .setOutputCol("features")
