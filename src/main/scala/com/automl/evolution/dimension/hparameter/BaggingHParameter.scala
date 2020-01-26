@@ -1,18 +1,19 @@
 package com.automl.evolution.dimension.hparameter
 
+import com.automl.classifier.ensemble.bagging.SparkGenericBagging
 import com.automl.template.simple.LogisticRegressionModel
 import com.automl.template.{TemplateMember, TemplateTree}
 
 import scala.util.Random
 
 
-case class BaggingHPGroup(hpParameters:Seq[StackingHParameter] = Seq())
-  extends HyperParametersGroup[StackingHParameter] {
+case class BaggingHPGroup(hpParameters:Seq[BaggingHParameter] = Seq())
+  extends HyperParametersGroup[BaggingHParameter] {
 
-  override def isRelevantTo(templateTree: TemplateMember): Boolean = templateTree.isInstanceOf[LogisticRegressionModel]
+  override def isRelevantTo(templateTree: TemplateMember): Boolean = templateTree.isInstanceOf[SparkGenericBagging]
 
-  override def mutate(): HyperParametersGroup[StackingHParameter] = {
-    StackingHPGroup(hpParameters = hpParameters.map(hpModelTpe => hpModelTpe.mutate()))
+  override def mutate(): HyperParametersGroup[BaggingHParameter] = {
+    BaggingHPGroup(hpParameters = hpParameters.map(hpModelTpe => hpModelTpe.mutate()))
   }
 }
 
@@ -20,10 +21,10 @@ object BaggingHPGroup {
   val default = BaggingHPGroup()
 }
 
-trait BaggingHParameter extends MutableHParameter[Double, StackingHParameter]
+trait BaggingHParameter extends MutableHParameter[Double, BaggingHParameter]
 
 
-case class BaggingExaggeration(initialValue: Option[Double] = None) extends StackingHParameter with DoubleHPRange[StackingHParameter] { // we can specialize with Marker trait which parameter can be used with which Model
+case class BaggingExaggeration(initialValue: Option[Double] = None) extends BaggingHParameter with DoubleHPRange[BaggingHParameter] { // we can specialize with Marker trait which parameter can be used with which Model
   override def min: Double = 0.0
 
   override def max: Double = 0.5
@@ -32,7 +33,7 @@ case class BaggingExaggeration(initialValue: Option[Double] = None) extends Stac
 
   override def getDefaultRandomly: Double = getNextWithinTheRange // In theory we are interested not only on round values but on the best ones
 
-  override def newInstance: StackingHParameter = BaggingExaggeration()
+  override def newInstance: BaggingHParameter = BaggingExaggeration()
 
-  override def toString: String = "lambda:" + currentValue.toString
+  override def toString: String = "bagging exaggeration:" + currentValue.toString
 }

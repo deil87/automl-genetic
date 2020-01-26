@@ -108,6 +108,20 @@ class RandomForestSuite extends FunSuite with Matchers with SparkSessionProvider
     f1 shouldBe 0.8 +- 0.1
   }
 
+  test("mutation of NumTreesRF uses proper step") {
+
+    val hpParameter = NumTreesRF()
+    val currentValue = hpParameter.currentValue
+    println(currentValue)
+    val mutatedHPParameter = hpParameter.mutate()
+    println(mutatedHPParameter)
+    mutatedHPParameter.currentValue % 10 shouldBe 0
+
+    if(hpParameter.min != hpParameter.max)
+      currentValue should not be(mutatedHPParameter.currentValue)
+
+  }
+
 
 }
 

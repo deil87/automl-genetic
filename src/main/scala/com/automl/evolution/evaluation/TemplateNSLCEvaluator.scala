@@ -24,6 +24,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import spray.json._
 import DefaultJsonProtocol._
+import com.typesafe.config.Config
 import org.apache.spark.mllib.util.MLUtils
 
 
@@ -58,9 +59,11 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
 
   override type CacheKeyType = (TemplateTree[TemplateMember], Option[HyperParametersField], Long, Int)
 
-  val tdConfig = ConfigProvider.config.getConfig("evolution.templateDimension")
+  val tdConfig: Config = ConfigProvider.config.getConfig("evolution.templateDimension")
 
   lazy val testSplitRatio: Double = tdConfig.getDouble("testSplitRatio")
+
+  lazy val globalCVNumFolds: Int = tdConfig.getInt("globalCVNumFolds")
 
   // Updating UI
   val webClientNotifier: ActorSelection = as.actorSelection("user/webClientNotifier")
@@ -87,9 +90,7 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
       bestHPField
     }
 
-    val numFold = 5 // TODO Config
-
-    val trainTestPairs: Array[(DataFrame, DataFrame)] = workingDF.toTrainTestPairs(numFold, seed)
+    val trainTestPairs: Array[(DataFrame, DataFrame)] = workingDF.toTrainTestPairs(globalCVNumFolds, seed)
 
     testSplitRatio // TODO deprecated?
 
@@ -105,7 +106,11 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
         import util.control.Breaks._
         val evaluatedCV = mutable.Buffer.empty[FitnessResult]
         breakable {
+          var pairIdx = 0
           for( (trainSplit, testSplit) <- trainTestPairs) {
+            debug(s"Evaluating ${pairIdx}th fold:")
+//            trainSplit.showN_AndContinue(trainSplit.count().toInt, s"train from ${pairIdx}th fold:")
+//            testSplit.showN_AndContinue(trainSplit.count().toInt, s"test from ${pairIdx}th fold:")
             val cacheKey = generateCacheKey(workingDF, testSplit, bestHPFieldFromCoevolution, individualTemplate)
             if (cache.isDefinedAt(cacheKey)) {
               debug(s"Cache hit happened for $idx-th individual based on: template: $cacheKey")
@@ -131,6 +136,7 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
                 break() // leaving one fold performance as a representative
               }
             } // TODO test
+            pairIdx+=1
           }
         }
 
@@ -139,7 +145,7 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
           FitnessResult(
             sumMaps(fitnessLeft.metricsMap, fitnessRight.metricsMap),
             problemType = fitnessLeft.problemType,
-            fitnessLeft.dfWithPredictions) // TODO we will need to store every fold's predictions. Use zip with index.
+            fitnessLeft.dfWithPredictions) // TODO we will need to store every fold's predictions. Use zip with index. This way test split from first fold will be stored in FitnessResult and therefore used in neighbours finder.
         }).map(fitnessResultSum => {
           FitnessResult(
             fitnessResultSum.metricsMap.map(item => (item._1, item._2 / evaluatedCV.size)),

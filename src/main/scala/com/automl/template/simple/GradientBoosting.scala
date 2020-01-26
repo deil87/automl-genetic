@@ -19,7 +19,7 @@ case class GradientBoosting()(implicit val logPaddingSize: Int = 0) extends Simp
 
   override def canHandleProblemType: PartialFunction[ProblemType, Boolean] = {
     case BinaryClassificationProblem => true
-    case MultiClassClassificationProblem => true
+    case MultiClassClassificationProblem => false
     case RegressionProblem => true
   }
 

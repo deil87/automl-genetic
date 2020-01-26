@@ -4,7 +4,7 @@ import com.automl.template.TemplateMember
 import com.automl.template.simple.RandomForest
 
 
-case class RandomForestHPGroup(hpParameters:Seq[RandomForestHParameter[Double]] = Seq(MaxDepthRF()))
+case class RandomForestHPGroup(hpParameters:Seq[RandomForestHParameter[Double]] = Seq(MaxDepthRF(), NumTreesRF())) // TODO subsamplingRate, featureSubsetStrategy
   extends HyperParametersGroup[RandomForestHParameter[Double]] {
 
   override def isRelevantTo(templateTree: TemplateMember): Boolean = templateTree.isInstanceOf[RandomForest]
@@ -33,5 +33,19 @@ case class MaxDepthRF(initialValue: Option[Double] = None) extends RandomForestH
 
   override def newInstance: RandomForestHParameter[Double] = MaxDepthRF()
 
-  override def toString: String = "max_depth_fr:" + currentValue.toString
+  override def toString: String = "max_depth_rf:" + currentValue.toString
+}
+
+case class NumTreesRF(initialValue: Option[Double] = None) extends RandomForestHParameter[Double] with DoubleHPRange[RandomForestHParameter[Double]] {
+  override def min: Double = 20.0
+
+  override def max: Double = 20.0
+
+  override def step: Double = 10.0
+
+  override def getDefaultRandomly: Double = getNextWithinTheRange
+
+  override def newInstance: RandomForestHParameter[Double] = NumTreesRF()
+
+  override def toString: String = "num_trees_rf:" + currentValue.toString
 }

@@ -54,7 +54,8 @@ case class SparkGenericBagging(hpg: StackingHPGroup = StackingHPGroup())(implici
 
     debug(s"Evaluating $name")
     debug(s"Sampling(stratified/random) without replacement for submembers of $name")
-    val sampler = new RandomSampling
+//    val sampler = new RandomSampling
+    val sampler = new StratifiedSampling
     val trainingSamplesForSubmembers = subMembers.zipWithIndex.map { case (member, idx) =>
 //      val samplingSeed = new Random(seed).nextLong()//seed + idx
       val sample = sampler.sampleRatio(trainDF, 0.5, seed + idx)
@@ -241,7 +242,7 @@ case class SparkGenericBagging(hpg: StackingHPGroup = StackingHPGroup())(implici
           .setOutputCol(baseModelsProbabilities)
 
         val mergedAndRegressedDF =
-            joinedPredictions
+            joinedPredictions // <-- we changing order here. To avoid ordering maybe we can join carefully?
               .applyTransformation(predictionsAssembler)
               .applyTransformation(fitnessWeightsAssembler)
               .applyTransformation(probabilitiesAssembler)
@@ -257,7 +258,7 @@ case class SparkGenericBagging(hpg: StackingHPGroup = StackingHPGroup())(implici
 
 //        mergedAndRegressedDF.show(21, false)
 
-        results.foreach(_._2.dfWithPredictions.unpersist()) //TODO doubling see below
+//        results.foreach(_._2.dfWithPredictions.unpersist())
 
         val evaluator = new MulticlassClassificationEvaluator()
           .setLabelCol("indexedLabel")
@@ -291,7 +292,7 @@ case class SparkGenericBagging(hpg: StackingHPGroup = StackingHPGroup())(implici
           .cache()
 //            .showN_AndContinue(100)
 
-        results.foreach(_._2.dfWithPredictions.unpersist())
+//        results.foreach(_._2.dfWithPredictions.unpersist()) // TODO This changes order of rows. We don't want to do extra ordering
 
         val evaluator = new RegressionEvaluator()
 

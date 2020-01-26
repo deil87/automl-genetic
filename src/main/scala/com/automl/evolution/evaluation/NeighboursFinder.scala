@@ -1,12 +1,8 @@
 package com.automl.evolution.evaluation
 
 import akka.actor.ActorSystem
-import com.automl.evolution.dimension.TemplateEvolutionDimension
-import com.automl.evolution.dimension.hparameter.{HyperParametersEvolutionDimension, HyperParametersField}
 import com.automl.evolution.diversity.{DistanceStrategy, MultidimensionalDistanceMetric}
-import com.automl.helper.{FitnessResult, TemplateTreeHelper}
 import com.automl.problemtype.ProblemType
-import com.automl.template.{TemplateMember, TemplateTree}
 import com.automl.{ConsistencyChecker, EvaluatedTemplateData, EvaluationRules, PaddedLogging}
 import org.apache.spark.sql.DataFrame
 import utils.BenchmarkHelper
@@ -22,16 +18,22 @@ class NeighboursFinder[DistMetric <: MultidimensionalDistanceMetric](distanceStr
   def findNeighbours(forWhomWeWantToFindNeighbours: Seq[EvaluatedTemplateData], neighbourhood: Seq[EvaluatedTemplateData], populationSize: Int, problemType: ProblemType) = {
     // QUESTION original  and withOffspring populations will have different neighbourhood sizes. Should we pass different `populationSize` or only size of original population
     val sizeOfTheNeighbourhood = if (populationSize <= 30) 3 else populationSize / 10
-    BenchmarkHelper.time("Calculation of neighbours"){ // Note: logPaddingSize is set below as third list of parameters
-      checkOrderOfPredictionsIsTheSame(forWhomWeWantToFindNeighbours)
 
-      forWhomWeWantToFindNeighbours.foreach { currentEvaluatedTemplate =>
+    BenchmarkHelper.time("Calculation of neighbours"){ // Note: logPaddingSize is set below as third list of parameters
+      debug("NOTE: right now only first folds are being used to find similar neighbours. Probably we need to take into account all `globalCVNumFolds` number of samples.")
+
+      val forWhomWeWantToFindNeighboursOrdered: Seq[EvaluatedTemplateData] =
+        forWhomWeWantToFindNeighbours.map(etd => etd.copy(fitness = etd.fitness.copy(dfWithPredictions = etd.fitness.dfWithPredictions.orderBy("uniqueIdColumn"))))
+
+      checkOrderOfPredictionsIsTheSame(forWhomWeWantToFindNeighboursOrdered)
+
+      forWhomWeWantToFindNeighboursOrdered.foreach { currentEvaluatedTemplate =>
 //        compute most difficult instances. show them on stdout and show individuals that were added to population in the end of generation.
         debug(currentEvaluatedTemplate.renderPredictionsAsRow)
       }
 
       debug(s"Starting to calculate neighbours (size = $sizeOfTheNeighbourhood) for population (TemplateNSLCEvaluator):")
-      val withNeighbours = forWhomWeWantToFindNeighbours.map { currentEvaluatedTemplate =>
+      val withNeighbours = forWhomWeWantToFindNeighboursOrdered.map { currentEvaluatedTemplate =>
 
         val distanceToNeighbours = mutable.Buffer[(EvaluatedTemplateData, DistMetric)]() //TODO we can sort on the way by putting into sorted heap
         for (possibleNeighbour <- neighbourhood.diff(Seq(currentEvaluatedTemplate))) {
@@ -71,9 +73,9 @@ class NeighboursFinder[DistMetric <: MultidimensionalDistanceMetric](distanceStr
       if (!firstIds.forall(_ == firstIds.head)) {
         forWhomWeWantToFindNeighbours.foreach{etd =>
           val df = etd.fitness.dfWithPredictions.select("uniqueIdColumn","prediction")
-          debug("Count of rows in prediction column" + df.count())
+          debug("Count of rows in prediction column: " + df.count())
           debug(etd.template.render)
-//          df.showN_AndContinue(20)
+          df.showAllAndContinue
         }
         throw new IllegalStateException("Order of uniqueIdColumn is different in predictions")
       }

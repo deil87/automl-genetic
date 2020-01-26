@@ -98,6 +98,9 @@ case class RandomForest(hpGroup: RandomForestHPGroup = RandomForestHPGroup(),
             case p@MaxDepthRF(_) =>
               debug(s"Random Forest's max_depth_rf hyper-parameter was set to ${p.currentValue}")
               res.addGrid(rf.maxDepth, Array(p.currentValue.toInt))
+            case p@NumTreesRF(_) =>
+              debug(s"Random Forest's num_trees_rf hyper-parameter was set to ${p.currentValue}")
+              res.addGrid(rf.numTrees, Array(p.currentValue.toInt))
           }).build()
           val cv = new CrossValidator()
             .setEstimator(rf)
@@ -124,6 +127,9 @@ case class RandomForest(hpGroup: RandomForestHPGroup = RandomForestHPGroup(),
             case p@MaxDepthRF(_) =>
               debug(s"RandomForest MaxDepthRF hyper-parameter was set to ${p.currentValue}")
               res.setMaxDepth(p.currentValue.toInt)
+            case p@NumTreesRF(_) =>
+              debug(s"Random Forest's num_trees_rf hyper-parameter was set to ${p.currentValue}")
+              res.setNumTrees(p.currentValue.toInt)
           })
 
           val model = rfWithHP.fit(trainDF)

@@ -149,19 +149,8 @@ trait DoubleHPRange[V <: MutableHParameter[Double, V]] extends HPRange[Double] w
   }
 
   def getNextWithinTheRange: Double = {
-    try {
-      if(max <= 1.0 && min >= 0.0) {
-        (new Random().nextInt(((max*10).toInt + 1) - (min *10).toInt) + min *10 ) / 10
-      } else {
-        new Random().nextInt(max.toInt - min.toInt) + min
-      }
-
-    } catch  {
-      case ex: IllegalArgumentException =>
-        val bound = max.toInt - min.toInt
-        logger.info(s"Boundary must be appropriate for a Random.nextInt() but was ${bound}")
-        throw ex
-    }
+    val range = min to max by step
+    range(new Random().nextInt(range.length))
   }
 
   def getNextClosestWithinTheRange(currentValue: Double): Double = {
@@ -194,11 +183,15 @@ trait DoubleHPRange[V <: MutableHParameter[Double, V]] extends HPRange[Double] w
   }
 
   override def mutate(): V = { // TODO could be simplified. Return Double type.
-    var mutatedVersion = newInstance
-    while (currentValue == mutatedVersion.currentValue) {
-      mutatedVersion = newInstance
+    if(min == max) {
+      this.asInstanceOf[V]
+    } else {
+      var mutatedVersion = newInstance
+      while (currentValue == mutatedVersion.currentValue) {
+        mutatedVersion = newInstance
+      }
+      mutatedVersion
     }
-    mutatedVersion
   }
 
   def validate(value: Double): Unit = require(value <= max && value >=min, "Mutated value is outside of the allowed range")
