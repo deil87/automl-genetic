@@ -23,9 +23,13 @@ case class FitnessResult(metricsMap: Map[String, Double], problemType: ProblemTy
   def getMetricByName(name: String) = metricsMap.getOrElse(name, throw new IllegalArgumentException(s"Metric with name $name was not found"))
 
   def betterThan(that:FitnessResult): Boolean = {
+    betterThan(that, 1.0)
+  }
+
+  def betterThan(that:FitnessResult, coef: Double = 1.0): Boolean = {
     if(theBiggerTheBetter(problemType))
-      compareTo(that) > 0
-    else compareTo(that) < 0
+      compareTo(that, coef) > 0
+    else compareTo(that, coef) < 0
   }
 
   def betterThanOrEqual(that:FitnessResult): Int = {
@@ -34,9 +38,9 @@ case class FitnessResult(metricsMap: Map[String, Double], problemType: ProblemTy
     else -compareTo(that)
   }
 
-  def compareTo(that: FitnessResult): Int =
-    if (getCorrespondingMetric > that.getCorrespondingMetric) 1
-    else if (getCorrespondingMetric < that.getCorrespondingMetric) -1
+  def compareTo(that: FitnessResult, coef: Double = 1.0): Int =
+    if (getCorrespondingMetric > that.getCorrespondingMetric * coef) 1
+    else if (getCorrespondingMetric * coef < that.getCorrespondingMetric) -1
     else 0
 
   override def toString: String = problemType match {

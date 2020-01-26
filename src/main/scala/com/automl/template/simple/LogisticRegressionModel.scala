@@ -109,7 +109,7 @@ case class LogisticRegressionModel(hpGroup: LogisticRegressionHPGroup = Logistic
         } else {
           val lrWithHP = activeHPGroup.hpParameters.foldLeft(lrEstimator)((res, next) => next match {
             case p@RegParamLR(_) =>
-              debug(s"LogisticRegression lambda hyper-parameter was set to ${p.currentValue}")
+              debug(s"LogisticRegression's regParam hyper-parameter was set to ${p.currentValue}")
               res.setRegParam(p.currentValue)
             case p@ElasticNet(_) =>
               debug(s"LogisticRegression elastic_net hyper-parameter was set to ${p.currentValue}")

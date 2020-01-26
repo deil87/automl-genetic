@@ -120,7 +120,29 @@ case class RandomForest(hpGroup: RandomForestHPGroup = RandomForestHPGroup(),
 
           FitnessResult(Map("f1" -> f1CV, "accuracy" -> -1, "logloss" -> logLoss), problemType, predictions)
         } else {
-          throw new IllegalStateException("Only CV strategy for RandomForest is supported.")
+          val rfWithHP = activeHPGroup.hpParameters.foldLeft(rf)((res, next) => next match {
+            case p@MaxDepthRF(_) =>
+              debug(s"RandomForest MaxDepthRF hyper-parameter was set to ${p.currentValue}")
+              res.setMaxDepth(p.currentValue.toInt)
+          })
+
+          val model = rfWithHP.fit(trainDF)
+
+          val predictions = model.transform(testDF)
+
+          val metrics = new MulticlassMetrics(predictions.select("prediction", "indexedLabel").rdd.map(r => (r.getDouble(0), r.getDouble(1))))
+
+          val logLoss = LogLossCustom.compute(predictions)
+
+          info(s"Finished. $name : F1 metric = " + metrics.weightedFMeasure + s". Number of rows = ${trainDF.count()} / ${testDF.count()}")
+          FitnessResult(
+            Map("f1" -> metrics.weightedFMeasure,
+              "weightedPrecision" -> metrics.weightedPrecision,
+              "weightedRecall" -> metrics.weightedRecall,
+              "logloss" -> logLoss),
+            problemType,
+            predictions
+          )
         }
     }
   }

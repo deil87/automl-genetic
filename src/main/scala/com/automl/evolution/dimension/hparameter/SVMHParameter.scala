@@ -45,7 +45,7 @@ case class RegParamSVM(initialValue: Option[Double] = None) extends SVMHParamete
 
   override def step: Double = 0.1 //TODO can we change step during evolution? we need to detect stagnations/convergence and them change step for fine tuning.
 
-  override def getDefaultRandomly: Double = round(new Random().nextDouble(), 1) // In theory we are interested not only on round values but on the best ones
+  override def getDefaultRandomly: Double = getNextWithinTheRange // In theory we are interested not only on round values but on the best ones
 
   override def newInstance: SVMHParameter[Double] = RegParamSVM()
 

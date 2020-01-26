@@ -93,6 +93,8 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
 
     testSplitRatio // TODO deprecated?
 
+    def bestResultSoFar = templateEvDimension.hallOfFame.headOption.map(_.fitness)
+
     val evaluatedTemplatesData: Seq[EvaluatedTemplateData] = population.individuals.zipWithIndex
       .map { case (individualTemplate, idx) =>
 
@@ -100,27 +102,36 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
         // TODO we don't use Wildcards and therefore no need in materialization. Should we use them ? It could be a variance regulator.
         val materializedTemplate = TemplateTreeHelper.materialize(individualTemplate)
 
-        val evaluatedCV = trainTestPairs.map { case (trainSplit, testSplit) =>
+        import util.control.Breaks._
+        val evaluatedCV = mutable.Buffer.empty[FitnessResult]
+        breakable {
+          for( (trainSplit, testSplit) <- trainTestPairs) {
+            val cacheKey = generateCacheKey(workingDF, testSplit, bestHPFieldFromCoevolution, individualTemplate)
+            if (cache.isDefinedAt(cacheKey)) {
+              debug(s"Cache hit happened for $idx-th individual based on: template: $cacheKey")
+              val keyHashCode = cacheKey.hashCode()
+              val restoredFromCache = cache(cacheKey)
+              debug(s"Retrieved value from the cache with hashCode = ${keyHashCode} : ${restoredFromCache}")
+            }
 
-          val cacheKey = generateCacheKey(workingDF, testSplit,  bestHPFieldFromCoevolution, individualTemplate)
-          if (cache.isDefinedAt(cacheKey)) {
-            debug(s"Cache hit happened for $idx-th individual based on: template: $cacheKey")
-            val keyHashCode = cacheKey.hashCode()
-            val restoredFromCache = cache(cacheKey)
-            debug(s"Retrieved value from the cache with hashCode = ${keyHashCode} : ${restoredFromCache}")
+            //TODO FIX We are storing this result in cache but not in the priority queue
+            val currentPairFitness: FitnessResult = cache.getOrElseUpdate(cacheKey, {
+
+              individualTemplate.setLogPadding(logPaddingSize)
+              materializedTemplate.setLogPadding(logPaddingSize)
+
+              val fitnessResult = individualTemplate.evaluateFitness(trainSplit, testSplit, problemType, bestHPFieldFromCoevolution)
+              debug(s"Entry $cacheKey with hashCode = ${cacheKey.hashCode()} was added to the cache with score = $fitnessResult")
+              fitnessResult
+            })
+            evaluatedCV.append(currentPairFitness)
+            bestResultSoFar.foreach { result =>
+              if (result.betterThan(currentPairFitness, 2.0)) {
+                info("!!!!! SKIPPING other folds as performance looks bad")
+                break() // leaving one fold performance as a representative
+              }
+            } // TODO test
           }
-
-          //TODO FIX We are storing this result in cache but not in the priority queue
-          val fitness: FitnessResult = cache.getOrElseUpdate(cacheKey, {
-
-            individualTemplate.setLogPadding(logPaddingSize)
-            materializedTemplate.setLogPadding(logPaddingSize)
-
-            val fitnessResult = individualTemplate.evaluateFitness(trainSplit, testSplit, problemType, bestHPFieldFromCoevolution)
-            debug(s"Entry $cacheKey with hashCode = ${cacheKey.hashCode()} was added to the cache with score = $fitnessResult")
-            fitnessResult
-          })
-          fitness
         }
 
         // ugly
@@ -131,7 +142,7 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
             fitnessLeft.dfWithPredictions) // TODO we will need to store every fold's predictions. Use zip with index.
         }).map(fitnessResultSum => {
           FitnessResult(
-            fitnessResultSum.metricsMap.map(item => (item._1, item._2 / numFold)),
+            fitnessResultSum.metricsMap.map(item => (item._1, item._2 / evaluatedCV.size)),
             problemType = fitnessResultSum.problemType,
             fitnessResultSum.dfWithPredictions)
         }).get
