@@ -39,7 +39,7 @@ case class MaxDepthRF(initialValue: Option[Double] = None) extends RandomForestH
 case class NumTreesRF(initialValue: Option[Double] = None) extends RandomForestHParameter[Double] with DoubleHPRange[RandomForestHParameter[Double]] {
   override def min: Double = 20.0
 
-  override def max: Double = 20.0
+  override def max: Double = 30.0
 
   override def step: Double = 10.0
 
