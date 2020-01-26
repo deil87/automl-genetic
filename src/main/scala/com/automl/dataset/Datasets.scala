@@ -174,11 +174,11 @@ object Datasets extends SparkSessionProvider {
 
     val preparedCarDF = carDF
       .orderBy(rand(shufflingSeed))  // Shuffling
-      .withColumn("buyingEncoded", udf { buyingAsStr => ordinalBuyingOrMaintMapping.get(buyingAsStr)}.apply($"buying"))
-      .withColumn("maintEncoded", udf { maintAsStr => ordinalBuyingOrMaintMapping.get(maintAsStr)}.apply($"maint"))
-      .withColumn("personsEncoded", udf { personsAsStr => ordinalPersonsMapping.get(personsAsStr)}.apply($"persons"))
-      .withColumn("doorsEncoded", udf { doorsAsStr => ordinalDoorsMapping.get(doorsAsStr)}.apply($"doors"))
-      .withColumn("lugBootEncoded", udf { lugBootAsStr => ordinalLuggageBootMapping.get(lugBootAsStr)}.apply($"lug_boot"))
+      .withColumn("buyingEncoded", udf { buyingAsStr:String => ordinalBuyingOrMaintMapping.get(buyingAsStr)}.apply($"buying"))
+      .withColumn("maintEncoded", udf { maintAsStr:String => ordinalBuyingOrMaintMapping.get(maintAsStr)}.apply($"maint"))
+      .withColumn("personsEncoded", udf { personsAsStr:String => ordinalPersonsMapping.get(personsAsStr)}.apply($"persons"))
+      .withColumn("doorsEncoded", udf { doorsAsStr:String => ordinalDoorsMapping.get(doorsAsStr)}.apply($"doors"))
+      .withColumn("lugBootEncoded", udf { lugBootAsStr:String => ordinalLuggageBootMapping.get(lugBootAsStr)}.apply($"lug_boot"))
 
       .applyTransformation(featuresAssembler)
       //      .applyTransformation(scaler)

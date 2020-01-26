@@ -141,7 +141,7 @@ class AutoMLSuite extends WordSpec with Matchers with SparkSessionProvider {
         LeafTemplate(LogisticRegressionModel()),
         LeafTemplate(Bayesian()),
         LeafTemplate(RandomForest()),
-        LeafTemplate(DecisionTree()),
+        LeafTemplate(DecisionTree())
 //        LeafTemplate(SVMModel()) // TODO AG-184
       )
 
