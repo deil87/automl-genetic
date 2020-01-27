@@ -105,7 +105,7 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
     skipEvolutionCountDown = evolveEveryNGenerations - 1
 
     showCurrentPopulation()
-
+    //TODO should we retrain whole population once workingDF increased?
     val evaluatedPopulation = getLastEvaluatedPopulation(workingDF, evaluationContextInfo)
 
     import PopulationDTOJsonProtocol._
@@ -128,8 +128,8 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
     debug("Evaluating offspring:")
     val evaluatedOffspring = evaluatePopulation(offspring, workingDF, evaluationContextInfo)
 
-    debug("Updating hallOfFame:") // TODO maybe we don't need to update it here as we did it during evaluations in Evaluator
-    updateHallOfFame(evaluatedOffspring)
+//    debug("Updating hallOfFame:") // TODO maybe we don't need to update it here as we did it during evaluations in Evaluator
+//    updateHallOfFame(evaluatedOffspring)
 
     val evaluatedOffspringWithNeighbours = neighboursFinder.findNeighbours(evaluatedOffspring, evaluatedOffspring ++ evaluatedOriginalPopulationWithNeighbours, population.size, problemType)
 
@@ -138,7 +138,7 @@ class TemplateEvolutionDimension(initialPopulation: Option[TPopulation] = None, 
     debug("Selecting survivals:")
     val survivedForNextGenerationEvaluatedTemplates = selectSurvived(population.size, evaluationResultsForNewExpandedGeneration)
 
-    _evaluatedEvolvedPopulation = survivedForNextGenerationEvaluatedTemplates
+    _evaluatedEvolvedPopulation = survivedForNextGenerationEvaluatedTemplates.sortWith(_.betterThan(_))
 
     val evolvedPopulation = new TPopulation(survivedForNextGenerationEvaluatedTemplates.map(_.template))
 

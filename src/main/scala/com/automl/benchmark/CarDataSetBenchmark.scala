@@ -24,6 +24,7 @@ class CarDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvider
         |    poolOfSimpleModels = ["logistic_regression", "decision_tree", "bayesian", "random_forest"]
         |    poolOfEnsemblingModels = ["bagging", "stacking"]
         |    maxEnsembleDepth = 3
+        |    globalCVNumFolds = 5
         |  }
         |  hyperParameterDimension {
         |    enabled = false
@@ -39,6 +40,8 @@ class CarDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvider
       LeafTemplate(LogisticRegressionModel()),
       LeafTemplate(Bayesian()),
       LeafTemplate(RandomForest()),
+//      LeafTemplate(OneVsRestModel()),
+//      LeafTemplate(NeuralNetwork()),
       NodeTemplate(GenericStacking(), Seq(
         LeafTemplate(LogisticRegressionModel()),
         LeafTemplate(Bayesian()),
@@ -69,7 +72,7 @@ class CarDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvider
     val autoMl = new AutoML(
       data = preparedCarDF,
       responseColumn = "indexedLabel",
-      maxTime = 60 * 60000,
+      maxTime = 5 * 60000,
       useMetaDB = false,
       initialPopulationSize = Some(3),
       seedPopulation = Some(seedPopulation),

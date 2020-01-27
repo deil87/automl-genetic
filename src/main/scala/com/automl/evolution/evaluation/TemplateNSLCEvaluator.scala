@@ -64,6 +64,7 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
   lazy val testSplitRatio: Double = tdConfig.getDouble("testSplitRatio")
 
   lazy val globalCVNumFolds: Int = tdConfig.getInt("globalCVNumFolds")
+  lazy val globalCVSkippingRatio: Double = tdConfig.getDouble("globalCVSkippingRatio")
 
   // Updating UI
   val webClientNotifier: ActorSelection = as.actorSelection("user/webClientNotifier")
@@ -131,8 +132,8 @@ class TemplateNSLCEvaluator[DistMetric <: MultidimensionalDistanceMetric](
             })
             evaluatedCV.append(currentPairFitness)
             bestResultSoFar.foreach { result =>
-              if (result.betterThan(currentPairFitness, 2.0)) {
-                info("!!!!! SKIPPING other folds as performance looks bad")
+              if (result.betterThan(currentPairFitness, globalCVSkippingRatio)) {
+                info("!!!!! SKIPPING evaluation of other folds as performance already looks non-promising")
                 break() // leaving one fold performance as a representative
               }
             } // TODO test
