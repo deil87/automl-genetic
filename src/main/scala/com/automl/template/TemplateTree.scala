@@ -209,7 +209,7 @@ trait TemplateMember extends EvaluationRules { self: PaddedLogging =>
     * Selects hpGroup based on the way how we decided to derive it. Either from coevolution or through regular mutation from TemplateTree
     */
   //TODO !!!! If we make Members to provide it's own HPGroups we don't need to select between two hp fields ( i.e. from Coevolutin or default random field)
-  def getRelevantHPGroupFromActiveHPField(config: Config, hpFieldFromCoevolution: Option[HyperParametersField]): Option[HyperParametersGroup[_]] = {
+  def getRelevantHPGroupFromActiveHPField( hpFieldFromCoevolution: Option[HyperParametersField]): Option[HyperParametersGroup[_]] = {
 
     hpFieldFromCoevolution
       .flatMap(_.modelsHParameterGroups.find(_.isRelevantTo(this)))

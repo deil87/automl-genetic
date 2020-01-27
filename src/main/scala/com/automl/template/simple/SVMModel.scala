@@ -17,6 +17,7 @@ import org.apache.spark.sql._
 
 import scala.util.Random
 
+//TODO consider OneVsRestSVM for multiclass. Use this for binary and regression problems
 case class SVMModel(hpGroup: SVMHPGroup = SVMHPGroup(),
                     seed: Long = Random.nextLong())(implicit val logPaddingSize: Int = 0)
   extends LinearModelMember
@@ -103,7 +104,7 @@ case class SVMModel(hpGroup: SVMHPGroup = SVMHPGroup(),
           .setPredictionCol("prediction")
           .setMetricName("f1")
 
-        val activeHPGroup: HyperParametersGroup[_] = getRelevantHPGroupFromActiveHPField(config, hpFieldFromCoevolution).getOrElse(hpGroup)
+        val activeHPGroup: HyperParametersGroup[_] = getRelevantHPGroupFromActiveHPField(hpFieldFromCoevolution).getOrElse(hpGroup)
 
         // We can't train CV on `train+test` data and then predict on itself -> overfitted resuls.
         // We need at least `test` split  to get predictions which could be used to find phenotypic similarity.

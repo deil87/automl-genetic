@@ -67,7 +67,7 @@ case class LogisticRegressionModel(hpGroup: LogisticRegressionHPGroup = Logistic
           .setLabelCol("indexedLabel")
           .setMaxIter(20)
 
-        val activeHPGroup: HyperParametersGroup[_] = getRelevantHPGroupFromActiveHPField(config, hpFieldFromCoevolution).getOrElse(hpGroupInternal)
+        val activeHPGroup: HyperParametersGroup[_] = getRelevantHPGroupFromActiveHPField(hpFieldFromCoevolution).getOrElse(hpGroupInternal)
 
         val preparedTrainingDF = trainDF
           .applyTransformation(scaler)

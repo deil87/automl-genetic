@@ -110,7 +110,7 @@ case class DecisionTree(hpGroup: DecisionTreeHPGroup = DecisionTreeHPGroup(),
          } else { // non-HPGridSearch version
 
            // could be also moved to TemplateMember
-           val activeHPGroup: HyperParametersGroup[_] = getRelevantHPGroupFromActiveHPField(config, hpFieldFromCoevolution).getOrElse(hpGroup)
+           val activeHPGroup: HyperParametersGroup[_] = getRelevantHPGroupFromActiveHPField(hpFieldFromCoevolution).getOrElse(hpGroup)
 
            // We can't train CV on `train+test` data and then predict on itself -> overfitted resuls.
            // We need at least `test` split  to get predictions which could be used to find phenotypic similarity.

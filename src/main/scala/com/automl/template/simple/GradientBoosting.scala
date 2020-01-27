@@ -1,7 +1,7 @@
 package com.automl.template.simple
 
-import com.automl.PaddedLogging
-import com.automl.evolution.dimension.hparameter.{HyperParametersField, HyperParametersGroup, MutableHParameter}
+import com.automl.{LogLossCustom, PaddedLogging}
+import com.automl.evolution.dimension.hparameter.{DecisionTreeHPGroup, HyperParametersField, HyperParametersGroup, MutableHParameter}
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
 import com.automl.problemtype.ProblemType.{BinaryClassificationProblem, MultiClassClassificationProblem, RegressionProblem}
@@ -14,7 +14,7 @@ import org.apache.spark.ml.feature.{IndexToString, StringIndexer, VectorIndexer}
 import org.apache.spark.ml.regression.GBTRegressor
 import org.apache.spark.sql._
 
-case class GradientBoosting()(implicit val logPaddingSize: Int = 0) extends SimpleModelMember with PaddedLogging{
+case class GradientBoosting(hpGroup: DecisionTreeHPGroup = DecisionTreeHPGroup())(implicit val logPaddingSize: Int = 0) extends SimpleModelMember with PaddedLogging{
   override def name: String = "Gradient boosting " + super.name
 
   override def canHandleProblemType: PartialFunction[ProblemType, Boolean] = {
@@ -23,9 +23,13 @@ case class GradientBoosting()(implicit val logPaddingSize: Int = 0) extends Simp
     case RegressionProblem => true
   }
 
+  var hpGroupInternal: HyperParametersGroup[_ <: MutableHParameter[Double, _]] = hpGroup
+
   override def fitnessError(magnet: EvaluationMagnet): FitnessResult = null
 
-  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hyperParametersField: Option[HyperParametersField]): FitnessResult = {
+  override def fitnessError(trainDF: DataFrame, testDF: DataFrame, problemType: ProblemType, hpFieldFromCoevolution: Option[HyperParametersField]): FitnessResult = {
+
+    val activeHPGroup: HyperParametersGroup[_] = getRelevantHPGroupFromActiveHPField( hpFieldFromCoevolution).getOrElse(hpGroup)
 
     problemType match {
       case RegressionProblem =>
@@ -45,66 +49,40 @@ case class GradientBoosting()(implicit val logPaddingSize: Int = 0) extends Simp
         logger.info(s"$name : RMSE = " + rmse)
         FitnessResult(Map("rmse" -> rmse), problemType, predictions)
 
-      case MultiClassClassificationProblem =>
-        FitnessResult(???, ???, ???)
+      case MultiClassClassificationProblem => throw new UnsupportedOperationException()
           // NOTE @note Multiclass labels are not currently supported by GBTClassifier
 
       case BinaryClassificationProblem =>
 
-        // Index labels, adding metadata to the label column.
-        // Fit on whole dataset to include all labels in index.
-        val wholeData = trainDF.union(testDF)
-
-//        wholeData.show(10)
-        val labelIndexer = new StringIndexer()
-          .setInputCol("label")
-          .setOutputCol("indexedLabel")
-          .setStringOrderType("alphabetAsc")
-          .fit(wholeData)
-
-        // Automatically identify categorical features, and index them.
-        // Set maxCategories so features with > 4 distinct values are treated as continuous.
-        val featureIndexer = new VectorIndexer()
-          .setInputCol("features")
-          .setOutputCol("indexedFeatures")
-          .setMaxCategories(4)
-          .fit(wholeData)
-
         val gbt = new GBTClassifier()
           .setLabelCol("indexedLabel")
-          .setFeaturesCol("indexedFeatures")
-          .setMaxIter(100)
+          .setFeaturesCol("features")
+          .setMaxIter(5)
 
-        // Convert indexed labels back to original labels.
-        val labelConverter = new IndexToString()
-          .setInputCol("prediction")
-          .setOutputCol("predictedLabel")
-          .setLabels(labelIndexer.labels)
-
-        // Chain indexers and GBT in a Pipeline.
-        val pipeline = new Pipeline()
-          .setStages(Array(labelIndexer, featureIndexer, gbt, labelConverter))
 
         // Train model. This also runs the indexers.
-        val model = pipeline.fit(trainDF)
+        val model = gbt.fit(trainDF)
 
         // Make predictions.
         val predictions = model.transform(testDF)
 
-//        predictions.select("predictedLabel", "label", "features").show(5)
+        predictions.show(5, false)
 
         // Select (prediction, true label) and compute test error.
         val evaluator = new MulticlassClassificationEvaluator()
-          .setLabelCol("label")
+          .setLabelCol("indexedLabel")
           .setPredictionCol("prediction")
           .setMetricName("f1")
 
         val f1 = evaluator.evaluate(predictions)
-        logger.info(s"$name : F1 = " + f1)
+
+        val logLoss = LogLossCustom.compute(predictions)
+
+        val mapOfMetrics = Map("f1" -> f1, "logloss" -> logLoss)
+        info(s"Finished. ${name} ${activeHPGroup.hpParameters.mkString(",")} : ${mapOfMetrics.map{ nameToValue => nameToValue._1 + " = " + nameToValue._2}.mkString("",",", "")}. Number of rows = train:${trainDF.count()} / test:${testDF.count()}")
+
         FitnessResult(Map("f1" -> f1), problemType, predictions)
     }
   }
 
-  //TODO move to constructor
-  var hpGroupInternal: HyperParametersGroup[_ <: MutableHParameter[Double, _]] = null
 }

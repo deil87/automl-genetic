@@ -28,7 +28,7 @@ object SimpleModelMember {
   def RF: SimpleModelMember = new RandomForest()
   def KNN: SimpleModelMember = new KNearestNeighbours()
   def LogisticRegression: SimpleModelMember = new LogisticRegressionModel()
-  def OneVsRestModel: SimpleModelMember = new OneVsRestModel()
+  def OneVsRestModel: SimpleModelMember = new OneVsRestGBTModel()
   def SVM: SimpleModelMember = new SVMModel()
   def SupportVectorRegression: SimpleModelMember = new SupportVectorRegression()
   def LinearPerceptron: SimpleModelMember = new LinearPerceptron()

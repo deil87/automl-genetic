@@ -88,7 +88,7 @@ case class Bayesian(hpGroup: BayesianHPGroup = BayesianHPGroup())(implicit val l
           .setPredictionCol("prediction")
           .setMetricName("f1")
 
-        val activeHPGroup: HyperParametersGroup[_] = getRelevantHPGroupFromActiveHPField(config, hpFieldFromCoevolution).getOrElse(hpGroup)
+        val activeHPGroup: HyperParametersGroup[_] = getRelevantHPGroupFromActiveHPField(hpFieldFromCoevolution).getOrElse(hpGroup)
 
 
         if(validationStrategy == "cv") {
