@@ -149,8 +149,8 @@ trait DoubleHPRange[V <: MutableHParameter[Double, V]] extends HPRange[Double] w
   }
 
   def getNextWithinTheRange: Double = {
-    val range = min to max by step
-    range(new Random().nextInt(range.length))
+    val range = BigDecimal(min) to BigDecimal(max) by BigDecimal(step)
+    range(new Random().nextInt(range.length)).toDouble
   }
 
   def getNextClosestWithinTheRange(currentValue: Double): Double = {
