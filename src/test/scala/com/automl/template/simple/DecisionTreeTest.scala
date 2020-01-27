@@ -15,8 +15,8 @@ import scala.util.Random
 
 class DecisionTreeTest extends FunSuite with SparkSessionProvider with Matchers{
 
-
-  test("grid search over hyperparameters helps on average") {
+   // unstable as there is no guaranty that it should be true
+  ignore("grid search over hyperparameters helps on average") {
 
     val decisionTreeHPFieldOpt = Some(HyperParametersField(
       Seq(
@@ -51,7 +51,7 @@ class DecisionTreeTest extends FunSuite with SparkSessionProvider with Matchers{
 
 
     def getFitnessWithRGS(seed: Long) = {
-      val testOverride: Config = ConfigFactory.parseString(
+      ConfigProvider.clearOverride.addOverride(
         """
           |evolution {
           |  hpGridSearch = true
@@ -59,8 +59,7 @@ class DecisionTreeTest extends FunSuite with SparkSessionProvider with Matchers{
           |    multiclass.metric = "f1"
           |  }
           |}
-        """.stripMargin)
-      ConfigProvider.addOverride(testOverride)
+        """)
 
       val dt = DecisionTree(null)
       val preparedGlassDF = Datasets.getGlassDataFrame(seed).sampleRand(50, seed)
@@ -75,7 +74,7 @@ class DecisionTreeTest extends FunSuite with SparkSessionProvider with Matchers{
     var avgWithRGS = 0.0
     var avgBaseline = 0.0
 
-    val numberOfRestarts = 15
+    val numberOfRestarts = 3
     for(i <- 0 until numberOfRestarts) {
       val seed = new Random().nextLong()
 
