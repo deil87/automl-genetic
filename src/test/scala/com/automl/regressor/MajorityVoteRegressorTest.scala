@@ -1,8 +1,9 @@
 package com.automl.regressor
 
 import org.scalatest.{FunSuite, Matchers}
+import utils.TestBase
 
-class MajorityVoteRegressorTest extends FunSuite with Matchers{
+class MajorityVoteRegressorTest extends FunSuite with TestBase{
 
   test("majority regressor should return majority value") {
     val regressor = new MajorityVoteRegressor()

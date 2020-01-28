@@ -1,8 +1,9 @@
 package com.automl
 
 import org.scalatest.{Matchers, WordSpec}
+import utils.TestBase
 
-class AutoMLPackageObjectTest extends WordSpec with Matchers{
+class AutoMLPackageObjectTest extends WordSpec with TestBase{
 
   case class Item(name: String)
   "automl package object's methods" should {

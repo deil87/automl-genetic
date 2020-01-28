@@ -7,8 +7,9 @@ import com.automl.evolution.mutation.HPMutationStrategy
 import com.automl.problemtype.ProblemType
 import com.automl.template.simple.{Bayesian, DecisionTree, LogisticRegressionModel, RandomForest}
 import org.scalatest.{FunSuite, Matchers}
+import utils.TestBase
 
-class TemplateTreeTest extends FunSuite with Matchers {
+class TemplateTreeTest extends FunSuite with TestBase {
 
   test("testHeight") {
 

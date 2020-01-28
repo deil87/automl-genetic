@@ -1,8 +1,9 @@
 package com.automl.helper
 
 import org.scalatest.{Matchers, WordSpec}
+import utils.TestBase
 
-class EvolutionTimeBoxesBuilderSuite extends WordSpec with Matchers{
+class EvolutionTimeBoxesBuilderSuite extends WordSpec with TestBase{
 
   "EvolutionTimeBoxesBuilder" should {
 

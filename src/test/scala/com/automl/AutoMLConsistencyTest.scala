@@ -9,9 +9,10 @@ import com.automl.template._
 import com.automl.template.simple._
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{Matchers, WordSpec}
+import utils.TestBase
 
 
-class AutoMLConsistencyTest extends WordSpec with Matchers with SparkSessionProvider {
+class AutoMLConsistencyTest extends WordSpec with SparkSessionProvider with TestBase{
 
   implicit val system = ActorSystem("AutoMLSuite-system")
   implicit val logPaddingSize: Int = 0

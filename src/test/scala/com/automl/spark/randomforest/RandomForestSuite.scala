@@ -11,12 +11,13 @@ import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.ml.feature.{VectorAssembler, VectorIndexer}
 import org.apache.spark.ml.regression.RandomForestRegressor
+import org.scalatest.concurrent.TimeLimitedTests
+import org.scalatest.time.{Minutes, Span}
 import org.scalatest.{FunSuite, Matchers}
-import utils.SparkMLUtils
+import utils.{SparkMLUtils, TestBase}
 
 
-class RandomForestSuite extends FunSuite with Matchers with SparkSessionProvider{
-
+class RandomForestSuite extends FunSuite with SparkSessionProvider with TestBase{
 
   import utils.SparkMLUtils._
 

@@ -1,8 +1,11 @@
 package com.automl.dataset
 
+import org.scalatest.concurrent.TimeLimitedTests
+import org.scalatest.time.{Minutes, Span}
 import org.scalatest.{FunSuite, Matchers}
+import utils.TestBase
 
-class DatasetsTest extends FunSuite with Matchers{
+class DatasetsTest extends FunSuite with TestBase{
 
   import utils.SparkMLUtils._
 

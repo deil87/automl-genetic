@@ -5,10 +5,11 @@ import com.automl.evolution.dimension.hparameter._
 import com.automl.template.simple.{DecisionTree, LogisticRegressionModel}
 import org.bytedeco.javacpp.opencv_ml.LogisticRegression
 import org.scalatest.{FunSuite, Matchers}
+import utils.TestBase
 
 import scala.collection.mutable
 
-class TemplateMemberTest  extends FunSuite with Matchers  {
+class TemplateMemberTest  extends FunSuite with TestBase  {
 
   test ("two TemplateMembers with same hps should be equal") {
 

@@ -11,11 +11,11 @@ import org.apache.spark.ml.feature.{StandardScaler, VectorAssembler}
 import org.apache.spark.ml.regression.GBTRegressor
 import org.apache.spark.sql.functions.{monotonically_increasing_id, rand}
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Matchers}
-import utils.SparkMLUtils
+import utils.{SparkMLUtils, TestBase}
 
 import scala.util.Random
 
-class GenericStackingClassificationSuite extends FunSuite with Matchers with BeforeAndAfterAll with SparkSessionProvider {
+class GenericStackingClassificationSuite extends FunSuite with BeforeAndAfterAll with SparkSessionProvider with TestBase{
 
   ss.sparkContext.setLogLevel("ERROR")
   import ss.implicits._

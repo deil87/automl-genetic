@@ -13,10 +13,11 @@ import com.automl.template.{LeafTemplate, NodeTemplate, TemplateMember, Template
 import com.automl.template.simple.DecisionTree
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{FunSuite, Matchers}
+import utils.TestBase
 
 import scala.collection.mutable
 
-class TemplateNSLCEvaluatorTest extends FunSuite with Matchers {
+class TemplateNSLCEvaluatorTest extends FunSuite with TestBase {
 
   ignore("Evaluation of individuals which only differs by their hyperparameters should be stored in a separate entries in a cache") {
 

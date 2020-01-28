@@ -12,9 +12,9 @@ import org.apache.spark.mllib.linalg.distributed.{IndexedRow, IndexedRowMatrix}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.DataFrame
 import org.scalatest.{Matchers, WordSpec}
-import utils.LabeledVector
+import utils.{LabeledVector, TestBase}
 
-class LinearPerceptronSuite extends WordSpec with Matchers with SparkSessionProvider {
+class LinearPerceptronSuite extends WordSpec with SparkSessionProvider with TestBase{
   import ss.implicits._
 
   def fixture =

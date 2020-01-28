@@ -5,10 +5,11 @@ import org.apache.spark.ml.classification.{DecisionTreeClassificationModel, Deci
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 import org.apache.spark.ml.tuning.{CrossValidator, CrossValidatorModel, ParamGridBuilder}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import utils.TestBase
 
 import scala.util.Random
 
-class RandomGridSearchTest extends WordSpec with Matchers with BeforeAndAfterAll with SparkSessionProvider {
+class RandomGridSearchTest extends WordSpec with BeforeAndAfterAll with SparkSessionProvider with TestBase{
 
   import utils.SparkMLUtils._
 

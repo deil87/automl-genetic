@@ -5,8 +5,9 @@ import com.automl.population.{GenericPopulationBuilder, TPopulation}
 import com.automl.template.simple._
 import com.automl.template.{LeafTemplate, TemplateMember, TemplateTree}
 import org.scalatest.{Matchers, WordSpec}
+import utils.TestBase
 
-class DistinctDiversityStrategyTest extends WordSpec with Matchers{
+class DistinctDiversityStrategyTest extends WordSpec with TestBase{
 
   "DistinctDiversityStrategyTest" should {
 

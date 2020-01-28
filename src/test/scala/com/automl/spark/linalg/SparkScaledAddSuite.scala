@@ -3,8 +3,9 @@ package com.automl.spark.linalg
 import com.automl.spark.SparkSessionProvider
 import org.apache.spark.mllib.linalg.Vectors
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import utils.TestBase
 
-class SparkScaledAddSuite extends WordSpec with Matchers with BeforeAndAfterAll with SparkSessionProvider {
+class SparkScaledAddSuite extends WordSpec with BeforeAndAfterAll with SparkSessionProvider with TestBase{
 
 
   val elementWiseAddition: (Array[Double], Array[Double]) => Array[Double] = { (x:Array[Double], y: Array[Double]) =>

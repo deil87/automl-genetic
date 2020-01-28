@@ -1,10 +1,13 @@
 package com.automl.dataset
 
+import org.scalatest.concurrent.TimeLimitedTests
+import org.scalatest.time.{Minutes, Span}
 import org.scalatest.{FunSuite, Matchers}
+import utils.TestBase
 
 import scala.util.Random
 
-class StratificationTest extends FunSuite with Matchers{
+class StratificationTest extends FunSuite with TestBase{
 
   test("stratification split is working") {
     val seed = new Random().nextLong()

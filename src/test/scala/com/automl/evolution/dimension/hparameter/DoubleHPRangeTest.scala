@@ -1,11 +1,14 @@
 package com.automl.evolution.dimension.hparameter
 
 import com.typesafe.scalalogging.LazyLogging
+import org.scalatest.concurrent.TimeLimitedTests
+import org.scalatest.time.{Minutes, Span}
 import org.scalatest.{FunSuite, Matchers}
+import utils.TestBase
 
 import scala.collection.mutable
 
-class DoubleHPRangeTest extends FunSuite with Matchers with LazyLogging{
+class DoubleHPRangeTest extends FunSuite with TestBase{
 
   test("testGetNextWithinTheRange method works as expected") {
     val maxDepth = MaxDepth()

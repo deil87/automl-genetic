@@ -13,8 +13,9 @@ import com.automl.template.{LeafTemplate, NodeTemplate, TemplateMember, Template
 import com.automl.template.ensemble.stacking.GenericStacking
 import com.automl.template.simple.{Bayesian, DecisionTree, LogisticRegressionModel, RandomForest}
 import org.scalatest.{FunSuite, Matchers}
+import utils.TestBase
 
-class NeighboursFinderTest extends FunSuite with Matchers{
+class NeighboursFinderTest extends FunSuite with TestBase{
 
   implicit val system = ActorSystem("AutoMLSuite-system")
   implicit val logPaddingSize = 0

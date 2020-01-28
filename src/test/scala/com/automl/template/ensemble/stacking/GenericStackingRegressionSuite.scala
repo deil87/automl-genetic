@@ -15,12 +15,12 @@ import org.apache.spark.ml.regression.{GBTRegressor, LinearRegression}
 import org.apache.spark.mllib.util.MLUtils
 import org.apache.spark.storage.StorageLevel
 import org.scalatest.{FunSuite, Matchers}
-import utils.{BenchmarkHelper, SparkMLUtils}
+import utils.{BenchmarkHelper, SparkMLUtils, TestBase}
 
 import scala.util.Random
 
 
-class GenericStackingRegressionSuite extends FunSuite with Matchers with SparkSessionProvider with LazyLogging{
+class GenericStackingRegressionSuite extends FunSuite with SparkSessionProvider with TestBase{
 
   import utils.SparkMLUtils._
   import ss.implicits._

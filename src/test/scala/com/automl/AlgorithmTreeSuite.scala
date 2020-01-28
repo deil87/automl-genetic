@@ -5,9 +5,10 @@ import com.automl.helper.TemplateTreeHelper
 import com.automl.template._
 import com.automl.template.simple._
 import org.scalatest.{FunSuite, Matchers}
+import utils.TestBase
 
 
-class AlgorithmTreeSuite extends FunSuite with Matchers{
+class AlgorithmTreeSuite extends FunSuite with TestBase{
 
 
   val template =

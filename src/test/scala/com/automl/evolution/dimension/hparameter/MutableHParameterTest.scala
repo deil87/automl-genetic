@@ -2,10 +2,11 @@ package com.automl.evolution.dimension.hparameter
 
 import com.typesafe.scalalogging.LazyLogging
 import org.scalatest.{FunSuite, Matchers}
+import utils.TestBase
 
 import scala.collection.mutable
 
-class MutableHParameterTest extends FunSuite with Matchers with LazyLogging{
+class MutableHParameterTest extends FunSuite with TestBase {
 
   test("Mutation should return only new values") {
     var smoothing = Smoothing()

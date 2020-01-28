@@ -14,8 +14,9 @@ import com.automl.template.{LeafTemplate, NodeTemplate}
 import com.automl.template.simple._
 import org.apache.spark.ml.feature.VectorAssembler
 import org.scalatest.{Matchers, WordSpec}
+import utils.TestBase
 
-class TemplateEvolutionDimensionSuite extends WordSpec with Matchers with SparkSessionProvider {
+class TemplateEvolutionDimensionSuite extends WordSpec with SparkSessionProvider with TestBase{
   import ss.implicits._
   import utils.SparkMLUtils._
 

@@ -2,12 +2,15 @@ package com.automl.dataset
 
 import com.automl.spark.SparkSessionProvider
 import org.apache.spark.sql.DataFrame
+import org.scalatest.concurrent.TimeLimitedTests
+import org.scalatest.time.{Minutes, Seconds, Span}
 import org.scalatest.{FunSuite, Matchers, Retries}
+import utils.TestBase
 
 import scala.collection.mutable
 import scala.util.Random
 
-class StratifiedSamplingTest extends FunSuite with Matchers with SparkSessionProvider with Retries{
+class StratifiedSamplingTest extends FunSuite with SparkSessionProvider with Retries with TestBase{
 
   test("Stratified should return ratio of the data per class") {
     val stratifier = new StratifiedSampling

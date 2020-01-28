@@ -1,8 +1,9 @@
 package com.automl.evolution.diversity
 
 import org.scalatest.{FunSuite, Matchers}
+import utils.TestBase
 
-class TripletDistanceWrapperTest extends FunSuite with Matchers{
+class TripletDistanceWrapperTest extends FunSuite with TestBase{
 
   test("testComputeDistance") {
 

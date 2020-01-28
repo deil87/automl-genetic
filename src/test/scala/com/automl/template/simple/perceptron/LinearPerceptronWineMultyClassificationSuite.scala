@@ -5,10 +5,10 @@ import com.automl.spark.SparkSessionProvider
 import org.apache.spark.ml.evaluation.{BinaryClassificationEvaluator, MulticlassClassificationEvaluator}
 import org.apache.spark.ml.feature.{StandardScaler, VectorAssembler}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
-import utils.SparkMLUtils
+import utils.{SparkMLUtils, TestBase}
 
 
-class LinearPerceptronWineMultyClassificationSuite extends WordSpec with Matchers with BeforeAndAfterAll with SparkSessionProvider {
+class LinearPerceptronWineMultyClassificationSuite extends WordSpec with BeforeAndAfterAll with SparkSessionProvider with TestBase{
 
   ss.sparkContext.setLogLevel("ERROR")
   import org.apache.spark.sql.functions._

@@ -10,10 +10,11 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.spark.ml.feature.StringIndexer
 import org.scalatest.{FunSuite, Matchers}
 import utils.SparkMLUtils._
+import utils.TestBase
 
 import scala.util.Random
 
-class DecisionTreeTest extends FunSuite with SparkSessionProvider with Matchers{
+class DecisionTreeTest extends FunSuite with SparkSessionProvider with TestBase{
 
    // unstable as there is no guaranty that it should be true
   ignore("grid search over hyperparameters helps on average") {

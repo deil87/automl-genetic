@@ -1,12 +1,13 @@
 package com.weka
 
 import org.scalatest.{FunSuite, Matchers}
+import utils.TestBase
 import weka.core.converters.ConverterUtils.DataSource
 import weka.filters.Filter
 import weka.filters.supervised.instance.SMOTE
 
 
-class WEKASuite extends FunSuite with Matchers {
+class WEKASuite extends FunSuite with TestBase {
 
   ignore("Apply filter and fix imbalance in dataset") {
 

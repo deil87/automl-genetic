@@ -3,8 +3,9 @@ package com.automl.helper
 import com.automl.ConfigProvider
 import com.automl.problemtype.ProblemType.MultiClassClassificationProblem
 import org.scalatest.{FunSuite, Matchers}
+import utils.TestBase
 
-class FitnessResultTest extends FunSuite with Matchers  {
+class FitnessResultTest extends FunSuite with TestBase {
 
   test("betterThan for FitnessResult takes into account metric") {
 

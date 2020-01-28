@@ -4,8 +4,9 @@ import com.automl.problemtype.ProblemType.{MultiClassClassificationProblem, Regr
 import com.automl.spark.SparkSessionProvider
 import org.apache.spark.sql.DataFrame
 import org.scalatest.{FunSuite, Matchers}
+import utils.TestBase
 
-class ThresholdProblemTypeEstimatorTest extends FunSuite with Matchers with SparkSessionProvider{
+class ThresholdProblemTypeEstimatorTest extends FunSuite with SparkSessionProvider with TestBase{
   import ss.implicits._
 
   val testFrame: DataFrame = ss.sparkContext.parallelize(

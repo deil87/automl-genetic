@@ -5,13 +5,10 @@ import com.automl.dataset.Datasets
 import com.automl.problemtype.ProblemType
 import com.automl.spark.SparkSessionProvider
 import com.automl.template.LeafTemplate
-import org.apache.spark.ml.classification.LogisticRegression
-import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
-import org.apache.spark.ml.feature.{StandardScaler, VectorAssembler}
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Matchers}
-import utils.SparkMLUtils
+import utils.{SparkMLUtils, TestBase}
 
-class OneVsRestModelGBTTest extends FunSuite with Matchers with BeforeAndAfterAll with SparkSessionProvider {
+class OneVsRestModelGBTTest extends FunSuite with BeforeAndAfterAll with SparkSessionProvider with TestBase{
 
   ss.sparkContext.setLogLevel("ERROR")
   import ss.implicits._

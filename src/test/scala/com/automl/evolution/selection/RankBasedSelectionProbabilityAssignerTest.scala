@@ -1,8 +1,9 @@
 package com.automl.evolution.selection
 
 import org.scalatest.{Matchers, WordSpec}
+import utils.TestBase
 
-class RankBasedSelectionProbabilityAssignerTest extends WordSpec with Matchers{
+class RankBasedSelectionProbabilityAssignerTest extends WordSpec with TestBase{
 
   case class Item(name: String)
   "RankBasedSelectionProbabilityAssignerTest" should {

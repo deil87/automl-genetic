@@ -8,9 +8,9 @@ import com.automl.spark.SparkSessionProvider
 import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.sql.functions.{coalesce, lit, mean, when}
 import org.scalatest.{FunSuite, Ignore}
-import utils.SparkMLUtils
+import utils.{SparkMLUtils, TestBase}
 
-class GradientBoostingTest extends FunSuite with SparkSessionProvider{
+class GradientBoostingTest extends FunSuite with SparkSessionProvider with TestBase{
 
   import utils.SparkMLUtils._
 

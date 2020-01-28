@@ -2,12 +2,11 @@ package com.visualization
 
 import com.automl.spark.SparkSessionProvider
 import org.apache.spark.ml.feature.VectorAssembler
-import org.apache.spark.ml.linalg.Vectors
-import org.apache.spark.sql.DataFrame
 import org.scalatest.{FunSuite, Ignore}
+import utils.TestBase
 
 @Ignore
-class Plotter3DTest extends FunSuite with SparkSessionProvider {
+class Plotter3DTest extends FunSuite with SparkSessionProvider with TestBase{
   import ss.implicits._
 
   import utils.SparkMLUtils._

@@ -6,10 +6,11 @@ import com.automl.template.simple.{DecisionTree, LinearRegressionModel, SimpleMo
 import com.automl.EvaluatedTemplateData
 import com.automl.problemtype.ProblemType.MultiClassClassificationProblem
 import org.scalatest.{Matchers, WordSpec}
+import utils.TestBase
 
 import scala.util.Random
 
-class RouletteWheelSelectorTest extends WordSpec with Matchers{
+class RouletteWheelSelectorTest extends WordSpec with TestBase{
 
   case class Item(name: String)
   "CumulativeProbabilitySelectorTest" should {

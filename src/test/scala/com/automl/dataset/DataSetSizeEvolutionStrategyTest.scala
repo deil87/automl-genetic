@@ -5,12 +5,14 @@ import org.apache.spark
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.functions.monotonically_increasing_id
+import org.scalatest.concurrent.TimeLimitedTests
+import org.scalatest.time.{Minutes, Span}
 import org.scalatest.{Matchers, WordSpec}
-import utils.SparkMLUtils
+import utils.{SparkMLUtils, TestBase}
 
 import scala.util.Random
 
-class DataSetSizeEvolutionStrategyTest extends WordSpec  with Matchers with SparkSessionProvider{
+class DataSetSizeEvolutionStrategyTest extends WordSpec with SparkSessionProvider with TestBase {
 
   val total = 1000
 

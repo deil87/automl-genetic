@@ -8,8 +8,9 @@ import com.automl.problemtype.ProblemType.MultiClassClassificationProblem
 import com.automl.template.LeafTemplate
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{FunSuite, Matchers}
+import utils.TestBase
 
-class SVMModelTest extends FunSuite with Matchers{
+class SVMModelTest extends FunSuite with TestBase{
 
   val testOverride: Config = ConfigFactory.parseString(
     """

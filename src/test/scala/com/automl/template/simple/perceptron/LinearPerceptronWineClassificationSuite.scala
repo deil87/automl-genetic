@@ -3,9 +3,10 @@ package com.automl.template.simple.perceptron
 import com.automl.spark.SparkSessionProvider
 import org.apache.spark.ml.linalg.SparseVector
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import utils.TestBase
 
 
-class LinearPerceptronWineClassificationSuite extends WordSpec with Matchers with BeforeAndAfterAll with SparkSessionProvider {
+class LinearPerceptronWineClassificationSuite extends WordSpec with BeforeAndAfterAll with SparkSessionProvider with TestBase{
 
   ss.sparkContext.setLogLevel("ERROR")
 

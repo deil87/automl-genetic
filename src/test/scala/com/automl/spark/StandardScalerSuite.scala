@@ -5,8 +5,9 @@ import org.apache.spark.ml.linalg.DenseVector
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.storage.StorageLevel
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import utils.TestBase
 
-class StandardScalerSuite extends WordSpec with Matchers with BeforeAndAfterAll with SparkSessionProvider {
+class StandardScalerSuite extends WordSpec with BeforeAndAfterAll with SparkSessionProvider with TestBase{
 
   import ss.implicits._
   import utils.SparkMLUtils._

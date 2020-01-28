@@ -13,8 +13,9 @@ import com.automl.template.simple._
 import com.automl.template.{LeafTemplate, NodeTemplate, TemplateMember, TemplateTree}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{FunSuite, Matchers}
+import utils.TestBase
 
-class DepthDependentTemplateMutationStrategyTest extends FunSuite with Matchers {
+class DepthDependentTemplateMutationStrategyTest extends FunSuite with TestBase {
 
   test("mutate templateTree from base model to complex algorithm") {
 

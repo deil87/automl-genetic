@@ -12,13 +12,15 @@ import com.automl.template.simple._
 import org.apache.spark.ml.feature.{IndexToString, StringIndexer, VectorAssembler}
 import org.apache.spark.ml.regression.{GBTRegressor, LinearRegression}
 import org.apache.spark.sql.{DataFrame, Dataset, Row}
+import org.scalatest.concurrent.TimeLimitedTests
+import org.scalatest.time.{Minutes, Span}
 import org.scalatest.{FunSuite, Matchers}
-import utils.SparkMLUtils
+import utils.{SparkMLUtils, TestBase}
 
 import scala.util.Random
 
 
-class SparkGenericBaggingSuite extends FunSuite with Matchers with SparkSessionProvider{
+class SparkGenericBaggingSuite extends FunSuite with SparkSessionProvider with TestBase{
 
   import utils.SparkMLUtils._
   import ss.implicits._

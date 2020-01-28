@@ -3,8 +3,9 @@ package com
 import com.automl.spark.SparkSessionProvider
 import org.scalatest.{FunSuite, Matchers}
 import utils.SparkMLUtils._
+import utils.TestBase
 
-class SparkMLUtilsSuite extends FunSuite with Matchers with SparkSessionProvider{
+class SparkMLUtilsSuite extends FunSuite with SparkSessionProvider with TestBase{
 
   import ss.implicits._
 
