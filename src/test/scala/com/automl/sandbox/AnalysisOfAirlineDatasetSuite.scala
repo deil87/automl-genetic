@@ -5,8 +5,7 @@ import com.test.TestBase
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.ml.feature.{Bucketizer, StringIndexer, VectorAssembler, LabeledPoint => MLLabeledPoint}
 import org.apache.spark.ml.regression.RandomForestRegressor
-import org.junit.Ignore
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.{BeforeAndAfterAll, Ignore, Matchers, WordSpec}
 import utils.{FeatureImportanceHelper, SparkMLUtils}
 
 @Ignore
@@ -54,7 +53,7 @@ class AnalysisOfAirlineDatasetSuite extends WordSpec with BeforeAndAfterAll with
     .withColumnRenamed("DepDelay", "label")
     .toDouble("label")
     .filterOutNull("label")
-    .printSchema_AndContinue
+//    .printSchema_AndContinue
     .withColumn("uniqueIdColumn", monotonically_increasing_id)
 //    .showN_AndContinue(500)
     .cache()

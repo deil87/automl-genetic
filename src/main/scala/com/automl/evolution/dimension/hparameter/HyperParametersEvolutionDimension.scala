@@ -117,6 +117,7 @@ trait HyperParametersGroup[HPModelBoundedType <: MutableHParameter[Double, HPMod
   def isRelevantTo(template: TemplateMember): Boolean
 
   override def equals(obj: Any): Boolean = {
+    if (obj == null) return false
     require(obj.isInstanceOf[HyperParametersGroup[HPModelBoundedType]])
     val another = obj.asInstanceOf[HyperParametersGroup[HPModelBoundedType]]
     val diff = this.hpParameters.map(hp => (hp.currentValue, hp.getClass)).diff(another.hpParameters.map(hp => (hp.currentValue, hp.getClass)))

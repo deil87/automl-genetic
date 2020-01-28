@@ -65,7 +65,7 @@ class SparkGenericBaggingSuite extends FunSuite with SparkSessionProvider with T
   }
 
 
-  test("Spark Bagging computations should be seed-reproducible") {
+  ignore("Spark Bagging computations should be seed-reproducible") {
     val metric = "logloss"
     ConfigProvider.clearOverride.addOverride(
       s"""

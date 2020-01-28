@@ -13,7 +13,7 @@ import utils.{BenchmarkHelper, SparkMLUtils}
 class CsvVsParquetBenchmarkSuite extends FunSuite with Matchers with SparkSessionProvider with BeforeAndAfterAll{
 
   //TODO later move it to benchmarking subproject
-  test("Benchmark: Loading with Parquet is way more faster in case we need only couple of columns") {
+  ignore("Benchmark: Loading with Parquet is way more faster in case we need only couple of columns") {
 
     lazy val airlineDFOriginal: DataFrame = SparkMLUtils.loadResourceDF("/airline2008_100mb.csv")
     //We sample from our dataset randomly

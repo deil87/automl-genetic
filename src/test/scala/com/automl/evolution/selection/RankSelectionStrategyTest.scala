@@ -68,7 +68,9 @@ class RankSelectionStrategyTest extends WordSpec with TestBase{
       val populationSize = 10
       val selectionShare = 0.5
 
-      val individualsSpanned = GenericPopulationBuilder.fromSeedPopulation(new TPopulation(individuals)).withSize(populationSize).build.individuals
+      val individualsSpanned = GenericPopulationBuilder
+        .fromSeedPopulation(new TPopulation(individuals))
+        .withSize(populationSize).build.individuals
 
       val selectionStrategy = new RankSelectionStrategy
       val evaluatedTemplateData = individualsSpanned.zipWithIndex.map { case (individual, idx) =>

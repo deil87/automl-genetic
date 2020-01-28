@@ -27,7 +27,7 @@ object TemplateTreeHelper {
   def traverse2(template: TemplateTree[TemplateMember]): Queue[String] = {
     def recursive(prefix: String = "", childrenPrefix: String = "", template: TemplateTree[TemplateMember], acc: Queue[String]): Queue[String] = template match {
       case lt@LeafTemplate(x) =>
-        val hpRepresentation = lt.member.hpGroupInternal.toString
+        val hpRepresentation = if(lt.member.hpGroupInternal == null) "--" else lt.member.hpGroupInternal.toString
         acc.enqueue(/*"L" + */prefix + x.name + " hps: " + hpRepresentation + " hasParent:" + lt.parent.isDefined )
         acc
       case nt@NodeTemplate(x, subMembers) =>

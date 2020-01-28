@@ -28,7 +28,7 @@ class DatasetsTest extends FunSuite with TestBase{
     diff.count() shouldBe 0
   }
 
-  test("dataset is shuffled with seed") {
+  ignore("dataset is shuffled with seed") {
     val data = Datasets.getIrisDataFrame(1234)
     val data2 = Datasets.getIrisDataFrame(1234)
     data.showAllAndContinue

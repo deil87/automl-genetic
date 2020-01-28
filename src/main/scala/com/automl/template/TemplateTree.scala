@@ -219,7 +219,7 @@ trait TemplateMember extends EvaluationRules { self: PaddedLogging =>
   override def equals(obj: Any): Boolean = {
     require(obj.isInstanceOf[TemplateMember])
     val another = obj.asInstanceOf[TemplateMember]
-    this.hpGroupInternal == another.hpGroupInternal &&
+    (this.hpGroupInternal == another.hpGroupInternal) &&
       this.name == another.name &&
       this.getClass == another.getClass // probably unnecessary as hps are typed
   }
