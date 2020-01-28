@@ -21,5 +21,11 @@ object SparkSessionProvider {
     .config("spark.executor.memory", "6g")
     .getOrCreate()
 
+  ss.sqlContext.clearCache()
+
+//  for ((k,v) <- ss.sparkContext.getPersistentRDDs) {
+//    v.unpersist()
+//  }
+
   ss.sparkContext.setLogLevel("ERROR")
 }

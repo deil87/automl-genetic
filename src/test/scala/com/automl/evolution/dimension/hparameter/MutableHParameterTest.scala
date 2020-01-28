@@ -81,14 +81,13 @@ class MutableHParameterTest extends FunSuite with TestBase {
     }
   }
 
-  //TODO AG-133
   test("Mutation of LRRegParam should return only new values") {
     var regParam = RegParamLR()
     val firstValue = regParam.currentValue
     val newValue = regParam.mutate()
     firstValue == newValue.currentValue shouldBe false
 
-    regParam.numberOfEntries shouldEqual 6
+    regParam.numberOfEntries shouldEqual 4
 
     1 to 50 foreach { _ =>
       ignoreControllableException {

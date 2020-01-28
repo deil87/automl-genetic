@@ -28,11 +28,11 @@ class DatasetsTest extends FunSuite with TestBase{
     diff.count() shouldBe 0
   }
 
-  ignore("dataset is shuffled with seed") {
+  test("dataset is shuffled with seed( except works row-wise and order does matter)") {
     val data = Datasets.getIrisDataFrame(1234)
     val data2 = Datasets.getIrisDataFrame(1234)
-    data.showAllAndContinue
-    data2.showAllAndContinue
+//    data.showAllAndContinue
+//    data2.showAllAndContinue
     data.except(data2).count() shouldBe 0
   }
 }
