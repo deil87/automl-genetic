@@ -1,7 +1,7 @@
 package com.automl.regressor
 
 import org.scalatest.{FunSuite, Matchers}
-import utils.test.TestBase
+import com.test.TestBase
 
 class MajorityVoteRegressorTest extends FunSuite with TestBase{
 

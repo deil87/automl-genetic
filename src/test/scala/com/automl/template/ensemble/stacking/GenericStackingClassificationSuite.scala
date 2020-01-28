@@ -12,7 +12,7 @@ import org.apache.spark.ml.regression.GBTRegressor
 import org.apache.spark.sql.functions.{monotonically_increasing_id, rand}
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Matchers}
 import utils.SparkMLUtils
-import utils.test.TestBase
+import com.test.TestBase
 
 import scala.util.Random
 

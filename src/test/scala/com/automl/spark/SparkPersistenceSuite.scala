@@ -4,7 +4,7 @@ import org.apache.spark.ml.feature.{StandardScaler, VectorAssembler}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.storage.StorageLevel
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
-import utils.test.TestBase
+import com.test.TestBase
 
 class SparkPersistenceSuite extends WordSpec with BeforeAndAfterAll with SparkSessionProvider with TestBase{
 

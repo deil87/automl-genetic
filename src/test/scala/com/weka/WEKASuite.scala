@@ -1,7 +1,7 @@
 package com.weka
 
 import org.scalatest.{FunSuite, Matchers}
-import utils.test.TestBase
+import com.test.TestBase
 import weka.core.converters.ConverterUtils.DataSource
 import weka.filters.Filter
 import weka.filters.supervised.instance.SMOTE

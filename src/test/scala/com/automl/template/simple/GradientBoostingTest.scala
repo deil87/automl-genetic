@@ -9,7 +9,7 @@ import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.sql.functions.{coalesce, lit, mean, when}
 import org.scalatest.{FunSuite, Ignore}
 import utils.SparkMLUtils
-import utils.test.TestBase
+import com.test.TestBase
 
 class GradientBoostingTest extends FunSuite with SparkSessionProvider with TestBase{
 

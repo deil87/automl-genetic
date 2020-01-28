@@ -9,7 +9,7 @@ import org.scalatest.concurrent.TimeLimitedTests
 import org.scalatest.time.{Minutes, Span}
 import org.scalatest.{Matchers, WordSpec}
 import utils.SparkMLUtils
-import utils.test.TestBase
+import com.test.TestBase
 
 import scala.util.Random
 

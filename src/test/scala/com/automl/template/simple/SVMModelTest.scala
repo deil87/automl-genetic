@@ -8,7 +8,7 @@ import com.automl.problemtype.ProblemType.MultiClassClassificationProblem
 import com.automl.template.LeafTemplate
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{FunSuite, Matchers}
-import utils.test.TestBase
+import com.test.TestBase
 
 class SVMModelTest extends FunSuite with TestBase{
 

@@ -3,7 +3,7 @@ package com.automl.helper
 import com.automl.ConfigProvider
 import com.automl.problemtype.ProblemType.MultiClassClassificationProblem
 import org.scalatest.{FunSuite, Matchers}
-import utils.test.TestBase
+import com.test.TestBase
 
 class FitnessResultTest extends FunSuite with TestBase {
 

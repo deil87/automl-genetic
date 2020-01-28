@@ -15,7 +15,7 @@ import org.scalatest.concurrent.TimeLimitedTests
 import org.scalatest.time.{Minutes, Span}
 import org.scalatest.{FunSuite, Matchers}
 import utils.SparkMLUtils
-import utils.test.TestBase
+import com.test.TestBase
 
 
 class RandomForestSuite extends FunSuite with SparkSessionProvider with TestBase{

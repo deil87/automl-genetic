@@ -13,7 +13,7 @@ import com.automl.template.{LeafTemplate, NodeTemplate, TemplateMember, Template
 import com.automl.template.simple.DecisionTree
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{FunSuite, Matchers}
-import utils.test.TestBase
+import com.test.TestBase
 
 import scala.collection.mutable
 

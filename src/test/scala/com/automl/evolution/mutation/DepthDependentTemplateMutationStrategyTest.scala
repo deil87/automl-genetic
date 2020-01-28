@@ -13,7 +13,7 @@ import com.automl.template.simple._
 import com.automl.template.{LeafTemplate, NodeTemplate, TemplateMember, TemplateTree}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{FunSuite, Matchers}
-import utils.test.TestBase
+import com.test.TestBase
 
 class DepthDependentTemplateMutationStrategyTest extends FunSuite with TestBase {
 

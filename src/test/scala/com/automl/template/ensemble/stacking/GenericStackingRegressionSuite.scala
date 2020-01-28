@@ -15,7 +15,7 @@ import org.apache.spark.ml.regression.{GBTRegressor, LinearRegression}
 import org.apache.spark.mllib.util.MLUtils
 import org.apache.spark.storage.StorageLevel
 import org.scalatest.{FunSuite, Matchers}
-import utils.test.TestBase
+import com.test.TestBase
 import utils.{BenchmarkHelper, SparkMLUtils}
 
 import scala.util.Random

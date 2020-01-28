@@ -6,7 +6,7 @@ import org.apache.spark.ml.evaluation.{BinaryClassificationEvaluator, Multiclass
 import org.apache.spark.ml.feature.{StandardScaler, VectorAssembler}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 import utils.SparkMLUtils
-import utils.test.TestBase
+import com.test.TestBase
 
 
 class LinearPerceptronWineMultyClassificationSuite extends WordSpec with BeforeAndAfterAll with SparkSessionProvider with TestBase{

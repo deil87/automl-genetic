@@ -2,7 +2,7 @@ package com.automl.evolution.dimension.hparameter
 
 import com.typesafe.scalalogging.LazyLogging
 import org.scalatest.{FunSuite, Matchers}
-import utils.test.TestBase
+import com.test.TestBase
 
 import scala.collection.mutable
 

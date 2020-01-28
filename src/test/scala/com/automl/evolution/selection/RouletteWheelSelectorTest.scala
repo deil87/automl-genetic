@@ -6,7 +6,7 @@ import com.automl.template.simple.{DecisionTree, LinearRegressionModel, SimpleMo
 import com.automl.EvaluatedTemplateData
 import com.automl.problemtype.ProblemType.MultiClassClassificationProblem
 import org.scalatest.{Matchers, WordSpec}
-import utils.test.TestBase
+import com.test.TestBase
 
 import scala.util.Random
 

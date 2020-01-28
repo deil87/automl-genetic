@@ -3,7 +3,7 @@ package com.visualization
 import com.automl.spark.SparkSessionProvider
 import org.apache.spark.ml.feature.VectorAssembler
 import org.scalatest.{FunSuite, Ignore}
-import utils.test.TestBase
+import com.test.TestBase
 
 @Ignore
 class Plotter3DTest extends FunSuite with SparkSessionProvider with TestBase{

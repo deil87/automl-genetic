@@ -5,7 +5,7 @@ import com.automl.evolution.dimension.hparameter._
 import com.automl.template.simple.{DecisionTree, LogisticRegressionModel}
 import org.bytedeco.javacpp.opencv_ml.LogisticRegression
 import org.scalatest.{FunSuite, Matchers}
-import utils.test.TestBase
+import com.test.TestBase
 
 import scala.collection.mutable
 
