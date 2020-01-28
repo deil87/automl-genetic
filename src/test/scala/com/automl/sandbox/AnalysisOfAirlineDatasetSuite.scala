@@ -1,13 +1,16 @@
 package com.automl.sandbox
 
 import com.automl.spark.SparkSessionProvider
+import com.test.TestBase
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.ml.feature.{Bucketizer, StringIndexer, VectorAssembler, LabeledPoint => MLLabeledPoint}
 import org.apache.spark.ml.regression.RandomForestRegressor
+import org.junit.Ignore
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 import utils.{FeatureImportanceHelper, SparkMLUtils}
 
-class AnalysisOfAirlineDatasetSuite extends WordSpec with Matchers with BeforeAndAfterAll with SparkSessionProvider {
+@Ignore
+class AnalysisOfAirlineDatasetSuite extends WordSpec with BeforeAndAfterAll with SparkSessionProvider with TestBase{
 
   import utils.SparkMLUtils._
   import ss.implicits._
