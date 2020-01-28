@@ -3,7 +3,7 @@ package com.automl.population
 import com.automl.evolution.dimension.hparameter.BayesianHPGroup
 import com.automl.template.simple.Bayesian
 import org.scalatest.{FunSuite, Matchers}
-import utils.TestBase
+import utils.test.TestBase
 
 class HPPopulationTest extends FunSuite with TestBase{
 

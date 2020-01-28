@@ -15,7 +15,8 @@ import org.apache.spark.sql.{DataFrame, Dataset, Row}
 import org.scalatest.concurrent.TimeLimitedTests
 import org.scalatest.time.{Minutes, Span}
 import org.scalatest.{FunSuite, Matchers}
-import utils.{SparkMLUtils, TestBase}
+import utils.SparkMLUtils
+import utils.test.TestBase
 
 import scala.util.Random
 

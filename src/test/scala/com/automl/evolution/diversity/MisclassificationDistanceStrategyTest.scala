@@ -4,7 +4,7 @@ import com.automl.spark.SparkSessionProvider
 import org.apache.spark.ml.linalg.DenseVector
 import org.apache.spark.sql.DataFrame
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Matchers}
-import utils.TestBase
+import utils.test.TestBase
 
 class MisclassificationDistanceStrategyTest extends FunSuite with BeforeAndAfterAll with SparkSessionProvider with TestBase{
 

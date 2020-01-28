@@ -1,7 +1,7 @@
 package com.automl
 
 import org.scalatest.{Matchers, WordSpec}
-import utils.TestBase
+import utils.test.TestBase
 
 class AutoMLPackageObjectTest extends WordSpec with TestBase{
 

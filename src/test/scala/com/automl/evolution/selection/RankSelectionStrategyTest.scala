@@ -8,7 +8,7 @@ import com.automl.template.{LeafTemplate, TemplateMember, TemplateTree}
 import com.automl.{AutoML, ConfigProvider, EvaluatedTemplateData}
 import com.automl.template.simple.{DecisionTree, LinearRegressionModel, SimpleModelMember}
 import org.scalatest.{Matchers, WordSpec}
-import utils.TestBase
+import utils.test.TestBase
 
 import scala.util.Random
 

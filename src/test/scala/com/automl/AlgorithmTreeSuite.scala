@@ -5,7 +5,7 @@ import com.automl.helper.TemplateTreeHelper
 import com.automl.template._
 import com.automl.template.simple._
 import org.scalatest.{FunSuite, Matchers}
-import utils.TestBase
+import utils.test.TestBase
 
 
 class AlgorithmTreeSuite extends FunSuite with TestBase{

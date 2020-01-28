@@ -11,7 +11,8 @@ import org.apache.spark.ml.feature.{StandardScaler, VectorAssembler}
 import org.apache.spark.ml.regression.GBTRegressor
 import org.apache.spark.sql.functions.{monotonically_increasing_id, rand}
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Matchers}
-import utils.{SparkMLUtils, TestBase}
+import utils.SparkMLUtils
+import utils.test.TestBase
 
 import scala.util.Random
 

@@ -5,7 +5,7 @@ import org.apache.spark.ml.classification.{DecisionTreeClassificationModel, Deci
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 import org.apache.spark.ml.tuning.{CrossValidator, CrossValidatorModel, ParamGridBuilder}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
-import utils.TestBase
+import utils.test.TestBase
 
 import scala.util.Random
 

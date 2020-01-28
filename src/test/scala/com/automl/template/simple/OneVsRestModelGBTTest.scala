@@ -6,7 +6,8 @@ import com.automl.problemtype.ProblemType
 import com.automl.spark.SparkSessionProvider
 import com.automl.template.LeafTemplate
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Matchers}
-import utils.{SparkMLUtils, TestBase}
+import utils.SparkMLUtils
+import utils.test.TestBase
 
 class OneVsRestModelGBTTest extends FunSuite with BeforeAndAfterAll with SparkSessionProvider with TestBase{
 

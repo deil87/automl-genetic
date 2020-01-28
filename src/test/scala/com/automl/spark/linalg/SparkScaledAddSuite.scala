@@ -3,7 +3,7 @@ package com.automl.spark.linalg
 import com.automl.spark.SparkSessionProvider
 import org.apache.spark.mllib.linalg.Vectors
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
-import utils.TestBase
+import utils.test.TestBase
 
 class SparkScaledAddSuite extends WordSpec with BeforeAndAfterAll with SparkSessionProvider with TestBase{
 

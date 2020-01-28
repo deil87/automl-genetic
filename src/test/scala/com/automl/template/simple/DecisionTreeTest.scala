@@ -10,7 +10,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.spark.ml.feature.StringIndexer
 import org.scalatest.{FunSuite, Matchers}
 import utils.SparkMLUtils._
-import utils.TestBase
+import utils.test.TestBase
 
 import scala.util.Random
 

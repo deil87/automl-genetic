@@ -9,7 +9,7 @@ import com.automl.template._
 import com.automl.template.simple._
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{Matchers, WordSpec}
-import utils.TestBase
+import utils.test.TestBase
 
 
 class AutoMLConsistencyTest extends WordSpec with SparkSessionProvider with TestBase{

@@ -1,7 +1,7 @@
 package com.automl.evolution.selection
 
 import org.scalatest.{Matchers, WordSpec}
-import utils.TestBase
+import utils.test.TestBase
 
 class RankBasedSelectionProbabilityAssignerTest extends WordSpec with TestBase{
 

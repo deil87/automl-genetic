@@ -3,7 +3,7 @@ package com.automl.dataset
 import org.scalatest.concurrent.TimeLimitedTests
 import org.scalatest.time.{Minutes, Span}
 import org.scalatest.{FunSuite, Matchers}
-import utils.TestBase
+import utils.test.TestBase
 
 import scala.util.Random
 

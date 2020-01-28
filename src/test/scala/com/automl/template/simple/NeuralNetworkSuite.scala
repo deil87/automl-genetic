@@ -4,7 +4,7 @@ import com.automl.dataset.Datasets
 import com.automl.problemtype.ProblemType.MultiClassClassificationProblem
 import com.automl.spark.SparkSessionProvider
 import org.scalatest.{FunSuite, Ignore, Matchers, WordSpec}
-import utils.TestBase
+import utils.test.TestBase
 
 class NeuralNetworkSuite extends FunSuite with SparkSessionProvider with TestBase {
   import ss.implicits._

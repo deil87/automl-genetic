@@ -4,7 +4,7 @@ import com.automl.template.ensemble.EnsemblingModelMember
 import com.automl.template.ensemble.bagging.BaggingMember
 import com.automl.template.simple.SimpleModelMember
 import org.scalatest.{Matchers, WordSpec}
-import utils.TestBase
+import utils.test.TestBase
 
 class MutationProbabilitiesSuite extends WordSpec with TestBase{
 

@@ -9,7 +9,8 @@ import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 import org.apache.spark.ml.feature.{StandardScaler, VectorAssembler}
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Matchers}
-import utils.{SparkMLUtils, TestBase}
+import utils.SparkMLUtils
+import utils.test.TestBase
 
 class LogisticRegressionModelTest extends FunSuite with BeforeAndAfterAll with SparkSessionProvider with TestBase {
 

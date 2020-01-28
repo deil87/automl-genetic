@@ -14,7 +14,8 @@ import org.apache.spark.ml.regression.RandomForestRegressor
 import org.scalatest.concurrent.TimeLimitedTests
 import org.scalatest.time.{Minutes, Span}
 import org.scalatest.{FunSuite, Matchers}
-import utils.{SparkMLUtils, TestBase}
+import utils.SparkMLUtils
+import utils.test.TestBase
 
 
 class RandomForestSuite extends FunSuite with SparkSessionProvider with TestBase{

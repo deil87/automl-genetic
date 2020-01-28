@@ -8,7 +8,7 @@ import com.automl.spark.SparkSessionProvider
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.LazyLogging
 import org.scalatest.{FunSuite, Matchers}
-import utils.TestBase
+import utils.test.TestBase
 
 class BayesianTest extends FunSuite with SparkSessionProvider with TestBase{
   import utils.SparkMLUtils._

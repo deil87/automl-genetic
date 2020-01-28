@@ -3,7 +3,7 @@ package com.automl.benchmark
 import akka.actor.ActorSystem
 import com.automl.spark.SparkSessionProvider
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
-import utils.TestBase
+import utils.test.TestBase
 
 
 class GlassAutoMLSuite extends WordSpec with BeforeAndAfterAll with SparkSessionProvider with TestBase{

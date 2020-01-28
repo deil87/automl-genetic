@@ -13,7 +13,7 @@ import com.automl.template.{LeafTemplate, NodeTemplate, TemplateMember, Template
 import com.automl.template.ensemble.stacking.GenericStacking
 import com.automl.template.simple.{Bayesian, DecisionTree, LogisticRegressionModel, RandomForest}
 import org.scalatest.{FunSuite, Matchers}
-import utils.TestBase
+import utils.test.TestBase
 
 class NeighboursFinderTest extends FunSuite with TestBase{
 
