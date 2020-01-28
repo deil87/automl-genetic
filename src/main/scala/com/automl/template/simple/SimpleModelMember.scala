@@ -21,7 +21,7 @@ trait SimpleModelMember extends TemplateMember { self: PaddedLogging =>
 object SimpleModelMember {
 
   def DeepNeuralNetwork: SimpleModelMember = new DeepNeuralNetwork()
-  def NeuralNetwork: SimpleModelMember = new NeuralNetwork(Array(4,3,2,1))
+  def NeuralNetwork: SimpleModelMember = new NeuralNetwork()
   def Bayesian: SimpleModelMember = new Bayesian()
   def GLM: SimpleModelMember = new LinearRegressionModel()
   def DT: SimpleModelMember = new DecisionTree()
@@ -34,7 +34,7 @@ object SimpleModelMember {
   def LinearPerceptron: SimpleModelMember = new LinearPerceptron()
   def GradientBoosting: SimpleModelMember = new GradientBoosting() // Can we consider this as a simple model? It is actually an ensemble of trees
 
-  def poolOfSimpleModels: Seq[SimpleModelMember] = Seq(/*DeepNeuralNetwork,*/ Bayesian, GLM, DT, RF/*, SVM*//*,GradientBoosting,  KNN, LogisticRegression, SupportVectorRegression, LinearPerceptron*/)
+  def poolOfSimpleModels: Seq[SimpleModelMember] = Seq(/*DeepNeuralNetwork,*/ Bayesian, GLM, DT, RF, NeuralNetwork, LogisticRegression/*, SVM*//*,GradientBoosting,  KNN, LogisticRegression, SupportVectorRegression, LinearPerceptron*/)
 
   def poolOfSimpleModels(problemType: ProblemType): Seq[SimpleModelMember] = {
     poolOfSimpleModels.filter(_.canHandleProblemType(problemType))
@@ -49,6 +49,7 @@ object SimpleModelMember {
     case "decision_tree" => DT
     case "random_forest" => RF
     case "bayesian" => Bayesian
+    case "neural_network" => NeuralNetwork
   }
 
   def randomMember(problemType: ProblemType): SimpleModelMember = randomMemberWithExclusion(Some(problemType), Nil).get //there should not be and empty list when we don't use exclusion

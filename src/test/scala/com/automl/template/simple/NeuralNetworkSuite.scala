@@ -1,42 +1,36 @@
 package com.automl.template.simple
 
+import com.automl.dataset.Datasets
+import com.automl.problemtype.ProblemType.MultiClassClassificationProblem
 import com.automl.spark.SparkSessionProvider
 import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.sql.DataFrame
-import org.scalatest.{Ignore, Matchers, WordSpec}
+import org.scalatest.concurrent.{TimeLimitedTests, TimeLimits, Timeouts}
+import org.scalatest.time.{Millis, Minutes, Seconds, Span}
+import org.scalatest.{FunSuite, Ignore, Matchers, WordSpec}
 
-@Ignore
-class NeuralNetworkSuite extends WordSpec with Matchers with SparkSessionProvider {
+class NeuralNetworkSuite extends FunSuite with Matchers with SparkSessionProvider with TimeLimitedTests {
   import ss.implicits._
 
-  "NeuralNetwork" should {
+  val timeLimit: Span = Span(200, Seconds)
 
-    "should check that size of input layer correlates with number of features" in {
+  test("should check that size of input layer correlates with number of features") {
+      val car = Datasets.getCarDataFrame(1234)
 
-      // Note that MultilayerPerceptronClassifier will use numbers from `label` column
-      // to estimate number of output classes (starting from 0 to max number in this column)
-      val dataset: DataFrame = ss.sparkContext.parallelize(
-        Array(
-          (1 , 2 , 1),
-          (3 , 4 , 2),
-          (4 , 5 , 3),
-          (5 , 6 , 4)
-        )
-      ).toDF("param1", "param2", "label")
+      car.show(5, false)
+      val Array(trainDF, testDF) = car.randomSplit(Array(0.8, 0.2))
 
-      val assembler = new VectorAssembler()
-        .setInputCols(Array("param1", "param2"))
-        .setOutputCol("features")
+//      assertThrows[IllegalArgumentException] {
+//        NeuralNetwork(Array(4, 3, 3)).fitnessError(trainDF, testDF, MultiClassClassificationProblem, None)
+//      }
+//
+//      assertThrows[IllegalArgumentException] {
+//        NeuralNetwork(Array(5, 3, 5)).fitnessError(trainDF, testDF, MultiClassClassificationProblem, None)
+//      }
 
-      val preparedTrainDS = assembler.transform(dataset)
+    NeuralNetwork().fitnessError(trainDF, testDF, MultiClassClassificationProblem, None)
+//      noException should be thrownBy NeuralNetwork(Array(5, 3, 5)).fitnessError(trainDF, testDF, MultiClassClassificationProblem, None)
 
-      assertThrows[IllegalArgumentException] {
-        NeuralNetwork(Array(3, 3, 5)).fitnessError(preparedTrainDS, preparedTrainDS)
-      }
-
-      noException should be thrownBy NeuralNetwork(Array(2,3,5)).fitnessError(preparedTrainDS, preparedTrainDS)
-
-    }
   }
 }
 

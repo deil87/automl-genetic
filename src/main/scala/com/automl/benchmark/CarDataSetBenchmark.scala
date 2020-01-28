@@ -21,7 +21,7 @@ class CarDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvider
         |evolution {
         |  templateDimension {
         |    populationSize = 10
-        |    poolOfSimpleModels = ["logistic_regression", "decision_tree", "bayesian", "random_forest"]
+        |    poolOfSimpleModels = ["logistic_regression", "decision_tree", "bayesian", "random_forest", "neural_network"]
         |    poolOfEnsemblingModels = ["bagging", "stacking"]
         |    maxEnsembleDepth = 3
         |    globalCVNumFolds = 5
@@ -41,13 +41,13 @@ class CarDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvider
       LeafTemplate(Bayesian()),
       LeafTemplate(RandomForest()),
 //      LeafTemplate(OneVsRestModel()),
-//      LeafTemplate(NeuralNetwork()),
-      NodeTemplate(GenericStacking(), Seq(
-        LeafTemplate(LogisticRegressionModel()),
-        LeafTemplate(Bayesian()),
-        LeafTemplate(DecisionTree()),
-        LeafTemplate(RandomForest())
-      )),
+      LeafTemplate(NeuralNetwork()),
+//      NodeTemplate(GenericStacking(), Seq(
+//        LeafTemplate(LogisticRegressionModel()),
+//        LeafTemplate(Bayesian()),
+//        LeafTemplate(DecisionTree()),
+//        LeafTemplate(RandomForest())
+//      )),
       /*NodeTemplate(SparkGenericBagging(), Seq( // TODO SparkGenericBagging does not have relevant default HPs
         LeafTemplate(LogisticRegressionModel(LogisticRegressionHPGroup(Seq(RegParamLR(Some(0.2)), ElasticNet(Some(0.2)))))),
         LeafTemplate(Bayesian(BayesianHPGroup(Seq(Smoothing(Some(7)))))),
