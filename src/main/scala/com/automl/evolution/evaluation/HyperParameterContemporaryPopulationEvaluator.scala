@@ -1,6 +1,6 @@
 package com.automl.evolution.evaluation
 
-import com.automl.dataset.StratifiedSampling
+import com.automl.dataset.StratifiedRowsSampling
 import com.automl.evolution.dimension.TemplateEvolutionDimension
 import com.automl.evolution.dimension.hparameter._
 import com.automl.population.HPPopulation
@@ -24,7 +24,7 @@ class HyperParameterContemporaryPopulationEvaluator(parentTemplateEvDimension: T
                                   (implicit cache: mutable.Map[( HyperParametersField, Long), Double]): Seq[EvaluatedHyperParametersField] = {
     val hpdConfig = ConfigProvider.config.getConfig("evolution.hyperParameterDimension")
     val samplingRatio = hpdConfig.getDouble("evaluationSamplingRatio")
-    val sampledWorkingDF = new StratifiedSampling().sampleRatio(workingDF, samplingRatio, seed).cache() //TODO every time we will compute and therefore deal with different samples.
+    val sampledWorkingDF = new StratifiedRowsSampling().sampleRatio(workingDF, samplingRatio, seed).cache() //TODO every time we will compute and therefore deal with different samples.
     val sampledWorkingDFCount = sampledWorkingDF.count()
     debug(s"Sampling of the workingDF for hyper parameter evaluations ( $sampledWorkingDFCount out of ${workingDF.count()} )")
 

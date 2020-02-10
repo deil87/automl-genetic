@@ -102,7 +102,7 @@ class AutoML(data: DataFrame,
     case _ => true
   }
 
-  implicit val samplingStrategy: SamplingStrategy = if(isDataSetBalanced) new RandomSampling() else new StratifiedSampling()
+  implicit val samplingStrategy: SamplingStrategy = if(isDataSetBalanced) new RandomRowsSampling() else new StratifiedRowsSampling()
 
   val metaDB = new MetaDB() // TODO How it should look like?
 

@@ -19,6 +19,14 @@ trait EnsemblingModelMember extends TemplateMember { self: PaddedLogging =>
     throw new IllegalStateException("We should call ensemblingFitnessError method for ensembling classifiers")
   }
 
+  def generateTrainingDataForSubMembers[A <: TemplateMember](trainDF: DataFrame,
+                                                             subMembers: Seq[TemplateTree[A]],
+                                                             hyperParamsMap: Option[HyperParametersField],
+                                                             seed: Long): Seq[(TemplateTree[A], DataFrame)] = {
+    debug(s"Default behavior of sampling data for submembers of $name is being used. CONSIDER to override!!!")
+    subMembers.map(sm => (sm, trainDF))
+  }
+
   def ensemblingFitnessErrorWithValidation[A <: TemplateMember](trainDF: DataFrame,
                                                   testDF: DataFrame,
                                                   subMembers: Seq[TemplateTree[A]],

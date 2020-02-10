@@ -46,10 +46,12 @@ case class GenericStacking(unusedMetaLearner: PipelineStage = new LinearRegressi
     logger.debug(s"Stacking number of folds is set to $stackingNumberOfFolds")
     stacking.foldingStage(trainDF, testDF)
 
-    subMembers.foldLeft(stacking)((stackingModel, nextMember) => {
+    generateTrainingDataForSubMembers(trainDF, subMembers, hyperParamsField, seed)
+      .foldLeft(stacking) {
+        case (stackingModel, (nextMember, trainingSample)) =>
+          stackingModel.addModel(nextMember, trainingSample, testDF, problemType, hyperParamsField)
+      }
 
-      stackingModel.addModel(nextMember, trainDF, testDF, problemType, hyperParamsField)
-    })
     logger.debug(s"All Stacking submembers were added to a Stacking model")
 
     problemType match {

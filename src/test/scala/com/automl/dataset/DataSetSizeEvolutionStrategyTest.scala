@@ -30,7 +30,7 @@ class DataSetSizeEvolutionStrategyTest extends WordSpec with SparkSessionProvide
       val currentSize: Long = currentSubSet.count()
       val nextSize = total / 2
 
-      val anySamplingStrategy = new RandomSampling()
+      val anySamplingStrategy = new RandomRowsSampling()
 
       val evolutionStrategy = new AppendDataSetSizeEvolutionStrategy()
       val evolvedDF =  evolutionStrategy.evolve(currentSubSet, nextSize, 5, testDF, seed = seed + 1)(anySamplingStrategy)
@@ -50,7 +50,7 @@ class DataSetSizeEvolutionStrategyTest extends WordSpec with SparkSessionProvide
       val currentSize: Long = currentSubSet.count()
       val nextSize = total / 2
 
-      val anySamplingStrategy = new RandomSampling()
+      val anySamplingStrategy = new RandomRowsSampling()
 
       val evolutionStrategy = new RandomDataSetSizeEvolutionStrategy()
       val evolvedDF =  evolutionStrategy.evolve(currentSubSet, nextSize, 5, testDF, seed = seed + 1)(anySamplingStrategy)

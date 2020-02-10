@@ -1,8 +1,8 @@
 package com.automl.classifier.ensemble.bagging
 
 import com.automl.{ConsistencyChecker, LogLossCustom, PaddedLogging}
-import com.automl.dataset.{RandomSampling, StratifiedSampling}
-import com.automl.evolution.dimension.hparameter.{StackingHPGroup, HyperParametersField, HyperParametersGroup, MutableHParameter}
+import com.automl.dataset.{RandomColumnsSampling, RandomRowsSampling, StratifiedRowsSampling}
+import com.automl.evolution.dimension.hparameter.{HyperParametersField, HyperParametersGroup, MutableHParameter, StackingHPGroup}
 import com.automl.evolution.evaluation.EvaluationContextInfo
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
@@ -37,6 +37,20 @@ case class SparkGenericBagging(hpg: StackingHPGroup = StackingHPGroup())(implici
     case MultiClassClassificationProblem | BinaryClassificationProblem => new MajorityVoteRegressor()
   }
 
+
+  override def generateTrainingDataForSubMembers[A <: TemplateMember](trainDF: DataFrame,
+                                                                      subMembers: Seq[TemplateTree[A]],
+                                                                      hyperParamsMap: Option[HyperParametersField],
+                                                                      seed: Long): Seq[(TemplateTree[A], DataFrame)] = {
+    debug(s"Sampling(stratified/random) without replacement for submembers of $name")
+    //    val sampler = new RandomSampling
+    val rowsSampling = new StratifiedRowsSampling // TODO subject to hyper parameter
+    val colsSamplingStrategy = new RandomColumnsSampling //TODO hyper parameters for ratio or use heuristic APM page 199
+
+    new BootstrapingRandomPredictorsRVStrategy(rowsSampling, 0.5, colsSamplingStrategy, 0.7)
+      .generateTrainingSamples(trainDF, subMembers, hyperParamsMap, seed)
+  }
+
   override def ensemblingFitnessError[A <: TemplateMember](trainDF: DataFrame,
                                                            testDF: DataFrame,
                                                            subMembers: Seq[TemplateTree[A]],
@@ -53,14 +67,8 @@ case class SparkGenericBagging(hpg: StackingHPGroup = StackingHPGroup())(implici
     val THE_LESS_THE_BETTER = ! theBiggerTheBetter(problemType)
 
     debug(s"Evaluating $name")
-    debug(s"Sampling(stratified/random) without replacement for submembers of $name")
-//    val sampler = new RandomSampling
-    val sampler = new StratifiedSampling
-    val trainingSamplesForSubmembers = subMembers.zipWithIndex.map { case (member, idx) =>
-//      val samplingSeed = new Random(seed).nextLong()//seed + idx
-      val sample = sampler.sampleRatio(trainDF, 0.5, seed + idx)
-      (member, sample)
-    }
+
+    val trainingSamplesForSubmembers: Seq[(TemplateTree[A], DataFrame)] = generateTrainingDataForSubMembers(trainDF, subMembers, hyperParamsMap, seed)
 
     BenchmarkHelper.time("SparkBagging consistency check") {
       consistencyCheck {

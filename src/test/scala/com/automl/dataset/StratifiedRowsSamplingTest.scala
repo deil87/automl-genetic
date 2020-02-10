@@ -10,10 +10,10 @@ import com.test.TestBase
 import scala.collection.mutable
 import scala.util.Random
 
-class StratifiedSamplingTest extends FunSuite with SparkSessionProvider with Retries with TestBase{
+class StratifiedRowsSamplingTest extends FunSuite with SparkSessionProvider with Retries with TestBase{
 
   test("Stratified should return ratio of the data per class") {
-    val stratifier = new StratifiedSampling
+    val stratifier = new StratifiedRowsSampling
 
     val seed = new Random().nextLong()
 
@@ -29,7 +29,7 @@ class StratifiedSamplingTest extends FunSuite with SparkSessionProvider with Ret
   ignore("Stratified should preserve all levels") {
     val seed = new Random().nextLong()
 
-    val stratifier = new StratifiedSampling
+    val stratifier = new StratifiedRowsSampling
     import utils.SparkMLUtils._
     import ss.implicits._
 
@@ -61,7 +61,7 @@ class StratifiedSamplingTest extends FunSuite with SparkSessionProvider with Ret
 
   test("StratifiedSampling.sampleExact should sample different rows depending on seed by same number of them") {
 
-    val stratifier = new StratifiedSampling
+    val stratifier = new StratifiedRowsSampling
 
     val irisDF = Datasets.getIrisDataFrame(1234).cache()
 
@@ -79,7 +79,7 @@ class StratifiedSamplingTest extends FunSuite with SparkSessionProvider with Ret
 
   test("StratifiedSampling.sample should sample different rows depending on seed by same number of them") {
 
-    val stratifier = new StratifiedSampling
+    val stratifier = new StratifiedRowsSampling
 
     val irisDF = Datasets.getIrisDataFrame(1234).cache()
 

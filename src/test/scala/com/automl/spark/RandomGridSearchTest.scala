@@ -1,6 +1,6 @@
 package com.automl.spark
 
-import com.automl.dataset.{Datasets, Stratification, StratifiedSampling}
+import com.automl.dataset.{Datasets, Stratification, StratifiedRowsSampling}
 import org.apache.spark.ml.classification.{DecisionTreeClassificationModel, DecisionTreeClassifier}
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 import org.apache.spark.ml.tuning.{CrossValidator, CrossValidatorModel, ParamGridBuilder}
