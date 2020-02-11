@@ -1,9 +1,10 @@
 package com.automl.dataset
 
+import org.apache.spark.ml.linalg.{DenseVector, SparseVector}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Dataset, Row}
 
-import scala.collection.immutable
+import scala.collection.{immutable, mutable}
 import scala.util.Random
 
 trait SamplingStrategy {
@@ -82,8 +83,25 @@ class RandomColumnsSampling extends ColumnsSamplingStrategy {
   }
 
   override def sampleExactSize(df: DataFrame, sampleSize: Long, seed: Long, byColumn: String): DataFrame = {
-    val originalColumns = df.columns.toList
-    val selectedColumns: immutable.Seq[String] = new Random(seed).shuffle(originalColumns).take(sampleSize.toInt) // We do not support Long number of columns cases
-    df.select(selectedColumns.head, selectedColumns.tail:_*)
+    import utils.SparkMLUtils._
+    import df.sparkSession.implicits._
+
+    require(sampleSize >= 1)
+
+    def sampleFeatures = {
+      import org.apache.spark.sql.functions.udf
+      import org.apache.spark.ml.linalg.{Vector => MLVector}
+      udf { features: MLVector =>
+        val featuresAsArray = features.toArray.toSeq
+        if(featuresAsArray.size <= sampleSize)
+          features
+        else {
+          val sampledArray = new Random(seed).shuffle(featuresAsArray).take(sampleSize.toInt).toArray
+          new DenseVector(sampledArray)
+        }
+      }
+    }
+
+    df.withColumnReplace("features", sampleFeatures($"features"))
   }
 }

@@ -116,6 +116,13 @@ trait HyperParametersGroup[HPModelBoundedType <: MutableHParameter[Double, HPMod
   //TODO maybe it is better to use Map as for now we have only one HPGroup per model
   def isRelevantTo(template: TemplateMember): Boolean
 
+//  import scala.reflect.api.TypeTags
+//  def find[T <: HPModelBoundedType : TypeTags]: HPModelBoundedType = {
+//    hpParameters.find{
+//      case param if param.isInstanceOf[T] => true
+//    }.getOrElse(throw new IllegalStateException(s"Could not found hyper parameter of type ${classOf[T]}"))
+//  }
+
   override def equals(obj: Any): Boolean = {
     if (obj == null) return false
     require(obj.isInstanceOf[HyperParametersGroup[HPModelBoundedType]])
@@ -178,11 +185,6 @@ trait DoubleHPRange[V <: MutableHParameter[Double, V]] extends HPRange[Double] w
 
   def newInstance: V
 
-  var currentValue: Double = {
-    val defaultValue = initialValue.getOrElse(getDefaultRandomly)
-    defaultValue
-  }
-
   override def mutate(): V = { // TODO could be simplified. Return Double type.
     if(min == max) {
       this.asInstanceOf[V]
@@ -198,15 +200,27 @@ trait DoubleHPRange[V <: MutableHParameter[Double, V]] extends HPRange[Double] w
   def validate(value: Double): Unit = require(value <= max && value >=min, "Mutated value is outside of the allowed range")
 }
 
-sealed trait HParameter[+T] {
+//trait BooleanHParameter[V <: MutableHParameter[Boolean, V]] extends LazyLogging{ this: MutableHParameter[Boolean, V] =>
+//  override def mutate(): V = {
+//    val ni = newInstance
+//    ni.currentValue = !this.currentValue
+//    ni
+//  }
+//
+//  def newInstance: V
+//
+//  override def getDefaultRandomly: Boolean = Random.nextBoolean()
+//}
+
+sealed trait HParameter[T] {
   def getDefaultRandomly:T
   def initialValue:Option[T]
+  var currentValue: T = initialValue.getOrElse(getDefaultRandomly)
+  def currentValueAsBoolean: Boolean = currentValue == 1.0
 }
 
 trait MutableHParameter[T, V <: MutableHParameter[T, V]] extends HParameter[T] {
-  var currentValue: T
   def mutate(): V
-
   override def toString: String = currentValue.toString
 }
 

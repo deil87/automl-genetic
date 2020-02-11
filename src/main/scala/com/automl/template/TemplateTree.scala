@@ -184,6 +184,9 @@ trait TemplateMember extends EvaluationRules { self: PaddedLogging =>
   // We can have a real type of HyperParametersGroup in subclasses if we introduce type parameter for TemplateMember
   var hpGroupInternal: HyperParametersGroup[_ <: MutableHParameter[Double, _]]
 
+  def activeHPGroup(hpFieldFromCoevolution: Option[HyperParametersField]): HyperParametersGroup[_] =
+    getRelevantHPGroupFromActiveHPField(hpFieldFromCoevolution).getOrElse(hpGroupInternal)
+
   def canHandleProblemType: PartialFunction[ProblemType, Boolean]
 
   @Deprecated() //"Consider to remove if there is no way to improve flexibility of evaluation API"

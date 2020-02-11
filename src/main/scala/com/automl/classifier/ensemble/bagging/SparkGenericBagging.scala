@@ -2,7 +2,7 @@ package com.automl.classifier.ensemble.bagging
 
 import com.automl.{ConsistencyChecker, LogLossCustom, PaddedLogging}
 import com.automl.dataset.{RandomColumnsSampling, RandomRowsSampling, StratifiedRowsSampling}
-import com.automl.evolution.dimension.hparameter.{HyperParametersField, HyperParametersGroup, MutableHParameter, StackingHPGroup}
+import com.automl.evolution.dimension.hparameter._
 import com.automl.evolution.evaluation.EvaluationContextInfo
 import com.automl.helper.FitnessResult
 import com.automl.problemtype.ProblemType
@@ -19,7 +19,7 @@ import org.apache.spark.ml.linalg.{DenseVector, Vector => MLVector}
 import scala.collection.{immutable, mutable}
 
 //TODO consider moving closer to BaggingMember
-case class SparkGenericBagging(hpg: StackingHPGroup = StackingHPGroup())(implicit val logPaddingSize: Int = 0) extends BaggingMember
+case class SparkGenericBagging(hpg: BaggingHPGroup = BaggingHPGroup())(implicit val logPaddingSize: Int = 0) extends BaggingMember
   with PaddedLogging with ConsistencyChecker{
 
   import utils.SparkMLUtils._
@@ -30,24 +30,38 @@ case class SparkGenericBagging(hpg: StackingHPGroup = StackingHPGroup())(implici
     case RegressionProblem => ??? // TODO enable
   }
 
-  var hpGroupInternal: HyperParametersGroup[_ <: MutableHParameter[Double, _]] = hpg
+  var hpGroupInternal: HyperParametersGroup[_ <: MutableHParameter[Double, _]] = hpg // todo do we need hpGroupInternal?
 
   override def ensemblingRegressor[_](problemType: ProblemType): EnsemblingRegressor[_] = problemType match {
     case RegressionProblem => new AverageRegressor()
     case MultiClassClassificationProblem | BinaryClassificationProblem => new MajorityVoteRegressor()
   }
 
-
   override def generateTrainingDataForSubMembers[A <: TemplateMember](trainDF: DataFrame,
                                                                       subMembers: Seq[TemplateTree[A]],
                                                                       hyperParamsMap: Option[HyperParametersField],
                                                                       seed: Long): Seq[(TemplateTree[A], DataFrame)] = {
     debug(s"Sampling(stratified/random) without replacement for submembers of $name")
-    //    val sampler = new RandomSampling
-    val rowsSampling = new StratifiedRowsSampling // TODO subject to hyper parameter
-    val colsSamplingStrategy = new RandomColumnsSampling //TODO hyper parameters for ratio or use heuristic APM page 199
 
-    new BootstrapingRandomPredictorsRVStrategy(rowsSampling, 0.5, colsSamplingStrategy, 0.7)
+    var withReplacement = true
+    var withStratification = false
+    var rowsSamplingRatio = 1.0
+    var columnsSamplingRatio = 1.0
+    activeHPGroup(hyperParamsMap).hpParameters.foreach{
+      case p@BaggingReplacement(_) =>
+        withReplacement = p.currentValueAsBoolean
+      case p@BaggingRowsSamplingStrategy(_) =>
+        withStratification = p.currentValueAsBoolean
+      case p@BaggingRowsSamplingRatio(_) =>
+        rowsSamplingRatio = p.currentValue
+      case p@BaggingColumnsSamplingRatio(_) =>
+        columnsSamplingRatio = p.currentValue
+      case p@BaggingExaggeration(_) =>  //TODO
+    }
+    val rowsSamplingStrategy = if( withStratification) new StratifiedRowsSampling else new RandomRowsSampling
+    val colsSamplingStrategy = new RandomColumnsSampling
+
+    new BootstrapingRandomPredictorsRVStrategy(rowsSamplingStrategy, rowsSamplingRatio, colsSamplingStrategy, columnsSamplingRatio)
       .generateTrainingSamples(trainDF, subMembers, hyperParamsMap, seed)
   }
 
@@ -255,7 +269,7 @@ case class SparkGenericBagging(hpg: StackingHPGroup = StackingHPGroup())(implici
               .applyTransformation(fitnessWeightsAssembler)
               .applyTransformation(probabilitiesAssembler)
               // TODO `majority_prediction` could be skipped as it is just experimental
-              .withColumn("majority_prediction", generateMajorityVoteUDF($"$baseModelsPredictionsColName", $"$baseModelsFitnessWeights"))
+//              .withColumn("majority_prediction", generateMajorityVoteUDF($"$baseModelsPredictionsColName", $"$baseModelsFitnessWeights"))
               .withColumn("probability", generateWeightedProbabilitiesUDF( $"$baseModelsPredictionsColName", $"$baseModelsFitnessWeights", $"$baseModelsProbabilities"))
               .withColumn("prediction", generateProbabilityBasedPredictionUDF( $"probability"))
               .withColumn("isDisputable", markDisputableInstanceUDF($"$baseModelsPredictionsColName")) // TODO this is for debug purposes
