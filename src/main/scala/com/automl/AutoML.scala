@@ -153,7 +153,7 @@ class AutoML(data: DataFrame,
         presentLabels.show(false)
         val numberOfClasses = presentLabels.count().toInt
         workingDataSet.show(false)
-        val (buckets, counts) = workingDataSet.select("indexedLabel").rdd.map(value => value.getDouble(0)).histogram(numberOfClasses + 1)
+        val (buckets, counts) = workingDataSet.select("indexedLabel").rdd.map(value => value.getDouble(0)).histogram(numberOfClasses)
         logger.debug("Buckets:" + buckets.mkString(","))
         logger.debug(s"Distribution of classes for classification after sampling: ${counts.mkString(" , ")} ")
 

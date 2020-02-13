@@ -91,6 +91,7 @@
 <br>
 <br>
 
+<div id="timeboxes_container"></div>
 <div id="line_chart_container"></div>
 <div id="table_container"></div>
 <!-- Load React. -->
@@ -120,8 +121,23 @@
           if(tableRelevantKeys.includes(serverDataJson.key)) {
             console.log("Forwarding data to tableRef")
             ag_global_vars.tableRef.update(serverDataJson)
-          } else {
+          }
+          else {
+            console.log(JSON.stringify(serverDataJson))
             console.log("Update to other components")
+
+          }
+
+          if(serverDataJson.key == "evolutionProgress") {
+            if(typeof serverDataJson.evolution !== 'undefined') {
+             updateProgressBar(JSON.stringify(serverDataJson.evolution))
+             console.log("Evolution:"+ JSON.stringify(serverDataJson.evolution))
+             console.log("Generation:"+ JSON.stringify(serverDataJson.generation))
+            }
+            console.log(JSON.stringify(serverDataJson))
+          }
+          if(serverDataJson.key == "timeboxesSetup") {
+            steps = ['0', '1', '2'];
           }
       };
       ag_global_vars.myWebSocket.onopen = function(evt) {
@@ -149,7 +165,116 @@
 
 </script>
 
+<script>
+
+    var colors = { green: '#4DC87F', lightGreen: '#D9F0E3' };
+    var width = 960, height = 70, offset = 48;
+
+    width += offset * 2;
+    height += offset * 2;
+    var dimensions = '' + 0 + ' ' + 0 + ' ' + width + ' ' + height;
+
+    var svg = d3.select('#timeboxes_container').append('svg')
+        .attr('id', 'scene', true)
+        .attr('preserveAspectRatio', 'xMinYMin meet')
+        .attr('viewBox', dimensions)
+        .classed('svg-content', true);
+
+    var steps = ['0'];
+    stepWidth = (width - offset * 2) / (steps.length - 1),
+    currentStep = '0';
+
+    var progressBar = svg.append('g')
+                  .attr('transform', 'translate(' + offset + ',' + offset + ')')
+                  .style('pointer-events', 'none');
+
+    var progressBackground = progressBar.append('rect')
+        .attr('fill', colors.lightGreen)
+        .attr('height', 8)
+        .attr('width', width - offset * 2)
+        .attr('rx', 4)
+        .attr('ry', 4);
+
+    var progress = progressBar.append('rect')
+        .attr('fill', colors.green)
+        .attr('height', 8)
+        .attr('width', 0)
+        .attr('rx', 4)
+        .attr('ry', 4);
+
+    progress.transition()
+        .duration(1000)
+        .attr('width', function(){
+            var index = steps.indexOf(currentStep);
+            return (index + 1) * stepWidth;
+        });
+
+    progressBar.selectAll('circle')
+    .data(steps)
+    .enter()
+    .append('circle')
+    .attr('id', function(d, i){ return 'step_' + i; })
+    .attr('cx', function(d, i){ return i * stepWidth; })
+    .attr('cy', 4)
+    .attr('r', 20)
+    .attr('fill', '#FFFFFF')
+    .attr('stroke', colors.lightGreen)
+    .attr('strokeWidth', 6)
+
+    progressBar.selectAll('text')
+    .data(steps)
+    .enter()
+    .append('text')
+    .attr('id', function(d, i){ return 'label_' + i; })
+    .attr('dx', function(d, i){ return i * stepWidth; })
+    .attr('dy', 10)
+    .attr('text-anchor', 'middle')
+    .text(function(d, i) { return i + 1; })
+
+
+
+    function setupProgressBar(data_){
+
+    var output = [];
+    for(var i = 0; i < data_.length; i++){ output.push(data_[i].id.toString()); }
+    return output;
+
+    }
+
+    function updateProgressBar(step_){
+
+        progress.transition()
+            .duration(1000)
+            .attr('fill', colors.green)
+            .attr('width', function(){
+                var index = steps.indexOf(step_);
+                return (index) * stepWidth;
+            });
+
+        for(var i = 0; i < steps.length; i++){
+
+            if(i <= steps.indexOf(step_)) {
+
+                d3.select('#step_' + i).attr('fill', colors.green).attr('stroke', colors.green);
+                d3.select('#label_' + i).attr('fill', '#FFFFFF');
+
+
+            } else {
+
+                d3.select('#step_' + i).attr('fill', '#FFFFFF').attr('stroke', colors.lightGreen);
+                d3.select('#label_' + i).attr('fill', '#000000');
+
+            }
+
+        }
+
+    }
+
+
+</script>
+
 <script src="linechart.js" ></script>
+<!--<script type="text/babel" src="timeboxes.js" ></script>-->
 <script type="text/babel" src="table.js" ></script>
 
 </body>

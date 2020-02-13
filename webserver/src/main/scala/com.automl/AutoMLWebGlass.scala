@@ -7,7 +7,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
-import com.automl.benchmark.glass.GlassDataSetBenchmark
+import com.automl.benchmark.{CarDataSetBenchmark, GlassDataSetBenchmark}
 import com.automl.route.{ClientConnectionActor, StaticResourcesRoute, WebClientNotifierActor, WebSocketServiceRoute}
 
 import scala.io.StdIn
@@ -37,7 +37,8 @@ object AutoMLWebGlass extends App {
   if (Desktop.isDesktopSupported && Desktop.getDesktop.isSupported(Desktop.Action.BROWSE))
     Desktop.getDesktop.browse(new URI(webInterfaceURL))
 
-  val benchmark = new GlassDataSetBenchmark().run()
+//  val benchmark = new GlassDataSetBenchmark().run()
+  val benchmark = new CarDataSetBenchmark().run()
 
 //  StdIn.readLine() // let it run until user presses return
 
