@@ -44,18 +44,18 @@ case class SparkGenericBagging(hpg: BaggingHPGroup = BaggingHPGroup())(implicit 
     debug(s"Sampling(stratified/random) without replacement for submembers of $name")
 
     var withReplacement = true
-    var withStratification = false
+    var withStratification = true
     var rowsSamplingRatio = 1.0
     var columnsSamplingRatio = 1.0
     activeHPGroup(hyperParamsMap).hpParameters.foreach{
       case p@BaggingReplacement(_) =>
         withReplacement = p.currentValueAsBoolean
-      case p@BaggingRowsSamplingStrategy(_) =>
-        withStratification = p.currentValueAsBoolean
+//      case p@BaggingRowsSamplingStrategy(_) =>
+//        withStratification = p.currentValueAsBoolean
       case p@BaggingRowsSamplingRatio(_) =>
         rowsSamplingRatio = p.currentValue
-      case p@BaggingColumnsSamplingRatio(_) =>
-        columnsSamplingRatio = p.currentValue
+//      case p@BaggingColumnsSamplingRatio(_) =>
+//        columnsSamplingRatio = p.currentValue
       case p@BaggingExaggeration(_) =>  //TODO
     }
     val rowsSamplingStrategy = if( withStratification) new StratifiedRowsSampling else new RandomRowsSampling
@@ -88,7 +88,7 @@ case class SparkGenericBagging(hpg: BaggingHPGroup = BaggingHPGroup())(implicit 
       consistencyCheck {
         val numberOfLevels = trainingSamplesForSubmembers.map(_._2.select("indexedLabel").distinct().count())
         if (!numberOfLevels.forall(_ == numberOfLevels.head)) {
-          throw new IllegalStateException("Number of levels should be preserved during stratified sampling for submemers of Bagging ensemble node.")
+          throw new IllegalStateException("Number of levels should be preserved during sampling for submemers of Bagging ensemble node.")
         }
       }
     }

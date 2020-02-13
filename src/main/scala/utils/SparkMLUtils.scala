@@ -133,6 +133,11 @@ object SparkMLUtils {
       scalerModel.transform(df)
     }
 
+    def applyTransformation(scaler: MinMaxScaler): sql.DataFrame = {
+      val scalerModel = scaler.fit(df)
+      scalerModel.transform(df)
+    }
+
     def applyVectorAssembler(fun: Array[String] => Transformer, exclude: Array[String]): sql.DataFrame = {
       val scaler: Transformer = fun(df.schema.names.diff(exclude))
       scaler.transform(df)

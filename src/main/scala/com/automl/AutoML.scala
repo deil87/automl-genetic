@@ -149,7 +149,12 @@ class AutoML(data: DataFrame,
         logger.info(s"$timeBox is skipped as it is less than 10 secs left.")
       } else {
 
-        val (_, counts) = workingDataSet.select("indexedLabel").rdd.map(value => value.getDouble(0)).histogram(2)
+        val presentLabels = workingDataSet.select("indexedLabel").distinct()
+        presentLabels.show(false)
+        val numberOfClasses = presentLabels.count().toInt
+        workingDataSet.show(false)
+        val (buckets, counts) = workingDataSet.select("indexedLabel").rdd.map(value => value.getDouble(0)).histogram(numberOfClasses + 1)
+        logger.debug("Buckets:" + buckets.mkString(","))
         logger.debug(s"Distribution of classes for classification after sampling: ${counts.mkString(" , ")} ")
 
         val (timeBoxCalculationsCancellationFun, timeBoxCalculations) = FutureCancellable {

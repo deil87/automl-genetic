@@ -8,7 +8,7 @@ import scala.util.Random
 
 
 case class BaggingHPGroup(hpParameters:Seq[BaggingHParameter] =
-                          Seq(BaggingReplacement(), BaggingExaggeration(), BaggingRowsSamplingStrategy(), BaggingRowsSamplingRatio(), BaggingColumnsSamplingRatio()))
+                          Seq(BaggingReplacement(), BaggingExaggeration()/* BaggingRowsSamplingStrategy()*/, BaggingRowsSamplingRatio()/*, BaggingColumnsSamplingRatio()*/))
   extends HyperParametersGroup[BaggingHParameter] {
 
   override def isRelevantTo(templateTree: TemplateMember): Boolean = templateTree.isInstanceOf[SparkGenericBagging]
@@ -53,7 +53,7 @@ case class BaggingReplacement(initialValue: Option[Double] = None) extends Baggi
   override def toString: String = "bagging replacement:" + currentValue.toString
 }
 
-// 1.0 stands for Stratification, 0.0 stands for Random
+// 1.0 stands for Stratification, 0.0 stands for Random //TODO Disabled!
 case class BaggingRowsSamplingStrategy(initialValue: Option[Double] = None) extends BaggingHParameter with DoubleHPRange[BaggingHParameter] {
   override def min: Double = 0.0
 
@@ -81,7 +81,7 @@ case class BaggingRowsSamplingRatio(initialValue: Option[Double] = None) extends
 }
 
 case class BaggingColumnsSamplingRatio(initialValue: Option[Double] = None) extends BaggingHParameter with DoubleHPRange[BaggingHParameter] {
-  override def min: Double = 0.7
+  override def min: Double = 1.0 // disabling
 
   override def max: Double = 1.0
 

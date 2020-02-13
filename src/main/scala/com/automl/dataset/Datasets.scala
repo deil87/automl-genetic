@@ -1,7 +1,7 @@
 package com.automl.dataset
 
 import com.automl.spark.SparkSessionProvider
-import org.apache.spark.ml.feature.{StandardScaler, StringIndexer, VectorAssembler}
+import org.apache.spark.ml.feature.{MinMaxScaler, StandardScaler, StringIndexer, VectorAssembler}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.functions.{monotonically_increasing_id, rand}
 import utils.SparkMLUtils
@@ -188,6 +188,49 @@ object Datasets extends SparkSessionProvider {
 //      .showAllAndContinue
       .cache()
     preparedCarDF
+  }
+
+  def getCoverTypeDataFrame(shufflingSeed: Long): DataFrame = {
+    val coverTypeDF = SparkMLUtils.loadResourceDF("/dataset/covertype/covtype.csv")
+
+    val featuresForScaling = Array("Elevation", "Aspect", "Slope", "Horizontal_Distance_To_Hydrology", "Vertical_Distance_To_Hydrology", "Horizontal_Distance_To_Roadways", "Hillshade_9am", "Hillshade_Noon", "Hillshade_3pm", "Horizontal_Distance_To_Fire_Points")
+    val features = Array(
+      "WA_1", "WA_2", "WA_3", "WA_4",
+      "ST_1","ST_2","ST_3","ST_4","ST_5","ST_6","ST_7","ST_8","ST_9","ST_10","ST_11","ST_12","ST_13","ST_14","ST_15","ST_16","ST_17","ST_18","ST_19","ST_20","ST_21","ST_22","ST_23","ST_24","ST_25","ST_26","ST_27","ST_28","ST_29","ST_30","ST_31","ST_32","ST_33","ST_34","ST_35","ST_36","ST_37","ST_38","ST_39","ST_40"
+      )
+
+    val featuresColName: String = "features"
+
+    def featuresAssembler(featuresToAssemble: Array[String]) = {
+      new VectorAssembler()
+        .setInputCols(featuresToAssemble)
+        .setOutputCol(featuresColName)
+    }
+
+//    val scaler = new StandardScaler()
+//      .setInputCol("features")
+//      .setOutputCol("scaledFeatures")
+//      .setWithStd(true)
+//      .setWithMean(false)
+
+    val scaler = new MinMaxScaler()
+      .setInputCol("features")
+      .setOutputCol("scaledFeatures")
+
+    val featuresToAssebleAfterScaling = Array("scaledFeatures") ++ features
+    val preparedCoverTypeDF = coverTypeDF
+      .orderBy(rand(shufflingSeed))  // Shuffling
+      .applyTransformation(featuresAssembler(featuresForScaling))
+      .applyTransformation(scaler)
+      .drop("features")
+      .applyTransformation(featuresAssembler(featuresToAssebleAfterScaling))
+      .drop("scaledFeatures")
+      .withColumn("uniqueIdColumn", monotonically_increasing_id)
+      .withColumnRenamed("Cover_Type", "indexedLabel")
+      .withColumnReplace("indexedLabel", $"indexedLabel" - 1) // to make it 0-based
+      .toDouble("indexedLabel")
+      .cache()
+    preparedCoverTypeDF
   }
 
 

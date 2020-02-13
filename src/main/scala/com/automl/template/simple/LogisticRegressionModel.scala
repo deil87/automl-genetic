@@ -57,23 +57,11 @@ case class LogisticRegressionModel(hpGroup: LogisticRegressionHPGroup = Logistic
 
         val validationStrategy = config.getString("templateDimension.validationStrategy")
 
-        val scaler = new StandardScaler()
-          .setInputCol("features")
-          .setOutputCol("scaledFeatures")
-          .setWithStd(true)
-          .setWithMean(false)
-
         val lrEstimator = new LogisticRegression()
           .setLabelCol("indexedLabel")
           .setMaxIter(20)
 
         val activeHPGroup: HyperParametersGroup[_] = getRelevantHPGroupFromActiveHPField(hpFieldFromCoevolution).getOrElse(hpGroupInternal)
-
-        val preparedTrainingDF = trainDF
-          .applyTransformation(scaler)
-          .drop("features")
-          .withColumnRenamed("scaledFeatures", "features")
-          .cache()
 
         val evaluator = new MulticlassClassificationEvaluator()
           .setLabelCol("indexedLabel")
@@ -115,7 +103,7 @@ case class LogisticRegressionModel(hpGroup: LogisticRegressionHPGroup = Logistic
               debug(s"LogisticRegression elastic_net hyper-parameter was set to ${p.currentValue}")
               res.setElasticNetParam(p.currentValue)
           })
-          val lrModel = lrWithHP.fit(preparedTrainingDF)
+          val lrModel = lrWithHP.fit(trainDF)
           val predictions = lrModel.transform(testDF).cache()
 
 
