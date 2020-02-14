@@ -4,7 +4,7 @@ var d3Array = require('d3-array');
 var d3Selection = require('d3-selection');
 var d3Scale = require('d3-scale');
 
-class Timeboxes extends React.Component {
+class Barchart extends React.Component {
    constructor(props){
       super(props)
       this.createTBProgressBar = this.createTBProgressBar.bind(this)
@@ -52,9 +52,9 @@ class Timeboxes extends React.Component {
    }
 }
 
-const timeboxesReactElement = <Timeboxes data={[5,10,1,3, 4,15,9]} size={[500,500]}/>;
+const timeboxesReactElement = <Barchart data={[5,10,1,3, 4,15,9]} size={[500,500]}/>;
 
-const tableDOMContainer = document.getElementById('timeboxes_react');
-ag_global_vars.timeboxesRef = ReactDOM.render(timeboxesReactElement, tableDOMContainer);
+const tableDOMContainer = document.getElementById('barchart_container');
+ag_global_vars.barchartRef = ReactDOM.render(timeboxesReactElement, tableDOMContainer);
 
 });
