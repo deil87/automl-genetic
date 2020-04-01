@@ -82,7 +82,7 @@
 <br>
 
 <div id="timeboxes_container"></div>
-<div id="barchart_container"></div>
+<!--<div id="barchart_container"></div>-->
 <div id="linechart_container"></div>
 <div id="table_container"></div>
 <!-- Load React. -->
@@ -101,6 +101,11 @@ require.config({
     },
     jsx: {
         fileExtension: '.jsx' // how to configure JSX with requirejs https://github.com/philix/jsx-requirejs-plugin
+    },
+    map: {
+        '*': {
+            'jquery-3.3.1.slim.min': 'jquery'
+        }
     },
     waitSeconds: 15
   });
@@ -135,14 +140,15 @@ require(['jsx!reactcomponents/Barchart', 'jsx!reactcomponents/Table', 'jsx!react
 
           if(serverDataJson.key == "evolutionProgress") {
             if(typeof serverDataJson.evolution !== 'undefined') {
-            ag_global_vars.timeboxesRef.updateProgressBar(JSON.stringify(serverDataJson.evolution))
+            ag_global_vars.timeboxesRef.updateProgressBar(JSON.stringify(serverDataJson.evolution - 1))
              console.log("Evolution:"+ JSON.stringify(serverDataJson.evolution))
              console.log("Generation:"+ JSON.stringify(serverDataJson.generation))
             }
             console.log(JSON.stringify(serverDataJson))
           }
           if(serverDataJson.key == "timeboxesSetup") {
-            steps = ['0', '1', '2'];
+            console.log("Timeboxes:"+ JSON.stringify(serverDataJson.timeboxes))
+            ag_global_vars.timeboxesRef.setupProgressBar(serverDataJson.timeboxes)
           }
 
 

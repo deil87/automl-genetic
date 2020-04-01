@@ -52,9 +52,9 @@ class Barchart extends React.Component {
    }
 }
 
-const timeboxesReactElement = <Barchart data={[5,10,1,3, 4,15,9]} size={[500,500]}/>;
+/*const timeboxesReactElement = <Barchart data={[5,10,1,3, 4,15,9]} size={[500,500]}/>;
 
 const tableDOMContainer = document.getElementById('barchart_container');
 ag_global_vars.barchartRef = ReactDOM.render(timeboxesReactElement, tableDOMContainer);
-
+*/
 });

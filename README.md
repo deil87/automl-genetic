@@ -67,3 +67,8 @@ Description of AutoML class input parameters:
 | maxGenerations | Maximum number of generations (cycles of selection and mutation) within one evolution. After this number of generations algoritm will increase portion of `data` and essentially run new evolution.|
 | seedPopulation | If we don't use metaDB ( `useMetaDB` is set to false) then we need to solve problem of cold start. Seed population is a set of classifiers that will be used to construct initial population. |
 | initialPopulationSize | Size of initial population. Based on this value we will be drawing from the `seedPopulation` in order to get needed size. |
+
+
+WebUI
+
+In order to be able to run web interface AutoMLWeb class should be used. As of now there is no way to configure which dataset to use so this should be done manually. TODO

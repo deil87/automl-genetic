@@ -123,7 +123,7 @@ const RenderRow = (props) =>{
                 {
                         currentPopulation.map((item, index)=>(
                         <g>
-                          <rect y="10" x={index*80} width="30" height="30" fill="white" stroke="black" stroke-width="1" alt="item" onMouseOver={() => console.log('over:' + index) } onMouseOut={() => console.log('out' + index) }></rect>
+                          <rect y="10" x={index*80} width="30" height="30" fill="white" stroke="black" strokeWidth="1" alt="item" onMouseOver={() => console.log('over:' + index) } onMouseOut={() => console.log('out' + index) }></rect>
                           <text y="10" x={index*80} fontSize="15" fill="blue">{item}</text>
                         </g>
                         ))

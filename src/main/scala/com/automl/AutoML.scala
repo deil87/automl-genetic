@@ -28,9 +28,14 @@ class MetaDB() {
 }
 
 case class EvolutionProgressDTO( evolution: Int, generation: Int, timeBox: String, stage: String, key: String = "evolutionProgress")
+case class TimeboxesDTO( timeboxes: Seq[Long], key: String = "timeboxesSetup")
 
 object EvaluatedTemplateDataDTOJsonProtocol extends DefaultJsonProtocol {
   implicit val format = jsonFormat5(EvolutionProgressDTO.apply)
+}
+
+object TimeboxesDTOJsonProtocol extends DefaultJsonProtocol {
+  implicit val format = jsonFormat2(TimeboxesDTO.apply)
 }
 
 /**
@@ -135,6 +140,10 @@ class AutoML(data: DataFrame,
 
     val timeBoxes = calculateTimeBoxes(isDataBig)
     logger.info("TimeBoxes schedule: " + timeBoxes.timeBoxes.map(_.upperBoundary).mkString(","))
+    import TimeboxesDTOJsonProtocol._
+    import spray.json._
+    val timeboxesDTO = TimeboxesDTO(timeBoxes.timeBoxes.map(_.upperBoundary)).toJson
+    webClientNotifier ! UpdateWebWithJson(timeboxesDTO.prettyPrint)
 
     def totalTimeLeft = (maxTime - System.currentTimeMillis() + startTime) / 1000
 
