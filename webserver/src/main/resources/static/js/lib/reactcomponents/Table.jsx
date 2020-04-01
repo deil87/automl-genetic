@@ -106,6 +106,16 @@ class Table extends React.Component {
  }
 }
 
+function create_UUID(){
+    var dt = new Date().getTime();
+    var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = (dt + Math.random()*16)%16 | 0;
+        dt = Math.floor(dt/16);
+        return (c=='x' ? r :(r&0x3|0x8)).toString(16);
+    });
+    return uuid;
+}
+
 const RenderRow = (props) =>{
  return props.keys.map((key, index)=>{
     var evolutionProgress = props.data['evolutionProgress']
@@ -117,12 +127,14 @@ const RenderRow = (props) =>{
     var currentPopulation = typeof props.currentPopulation === 'undefined' ? [] : props.currentPopulation['individuals']
 //    console.log("currentPopulation:" + JSON.stringify(currentPopulation))
 //    console.log("EvolutionNumber:" + JSON.stringify(evolutionNumber))
+    unique_key = props.data[key] + create_UUID()
+    console.log(create_UUID())
     if(key == "Population") {
-        return <td key={props.data[key]}>
+        return <td key={unique_key}>
             <svg version="1.1" id="Capa_1" x="0px" y="0px" width="500px" height="50px">
                 {
                         currentPopulation.map((item, index)=>(
-                        <g>
+                        <g key={unique_key + index}>
                           <rect y="10" x={index*80} width="30" height="30" fill="white" stroke="black" strokeWidth="1" alt="item" onMouseOver={() => console.log('over:' + index) } onMouseOut={() => console.log('out' + index) }></rect>
                           <text y="10" x={index*80} fontSize="15" fill="blue">{item}</text>
                         </g>
@@ -131,11 +143,11 @@ const RenderRow = (props) =>{
             </svg>
         </td>
     } else if(key == "Evolution") {
-        return <td key={props.data[key]}>{evolutionNumber}</td>
+        return <td key={unique_key}>{evolutionNumber}</td>
     } else if(key == "Generation") {
-        return <td key={props.data[key]}>{generationNumber}</td>
+        return <td key={unique_key}>{generationNumber}</td>
     } else {
-        return <td key={props.data[key]}>{props.data[key]}</td>
+        return <td key={unique_key}>{props.data[key]}</td>
     }
  })
 }
