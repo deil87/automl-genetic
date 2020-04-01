@@ -127,3 +127,6 @@ ShowmaxAutoMLSuite.scala
 
 # NPM modules
 webserver/src/main/resources/static/automl-app/node_modules/*
+
+# WebUI
+webserver/src/main/resources/static/automl-app/dist/*
