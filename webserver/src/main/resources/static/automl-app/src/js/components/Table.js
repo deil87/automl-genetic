@@ -1,6 +1,7 @@
-define(function(require){
+import React, { Component } from 'react'
+import ReactDOM from "react-dom"
 
-class Table extends React.Component {
+class Table extends Component {
 
  constructor(props){
  super(props);
@@ -127,7 +128,7 @@ const RenderRow = (props) =>{
     var currentPopulation = typeof props.currentPopulation === 'undefined' ? [] : props.currentPopulation['individuals']
 //    console.log("currentPopulation:" + JSON.stringify(currentPopulation))
 //    console.log("EvolutionNumber:" + JSON.stringify(evolutionNumber))
-    unique_key = props.data[key] + create_UUID()
+    var unique_key = props.data[key] + create_UUID()
     console.log(create_UUID())
     if(key == "Population") {
         return <td key={unique_key}>
@@ -158,6 +159,3 @@ const tableElement = <Table data={dataObj }/>;
 
 const tableDOMContainer = document.getElementById('table_container');
 ag_global_vars.tableRef = ReactDOM.render(tableElement, tableDOMContainer);
-
-
-});

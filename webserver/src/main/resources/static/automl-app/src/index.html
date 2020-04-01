@@ -5,18 +5,80 @@
     <title>AutoML genetic</title>
 </head>
 <body>
+<style> <!--TODO move to an asset-->
+
+    body {
+        font: 12px "Helvetica Neue", Helvetica, Arial, sans-serif;
+        position: relative;
+    }
+
+    .axis path,
+    .axis line {
+        fill: none;
+        stroke: #000;
+        shape-rendering: crispEdges;
+    }
+
+    .x.axis path {
+        display: none;
+    }
+
+    .line {
+        fill: none;
+        stroke: steelblue;
+        stroke-width: 1.5px;
+    }
+
+    .overlay {
+        fill: none;
+        pointer-events: all;
+    }
+
+    .focus circle {
+        fill: steelblue;
+    }
+
+    .tooltip {
+        width: 94px;
+        padding: 4px 10px;
+        border: 1px solid #aaa;
+        border-radius: 4px;
+        box-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        position: absolute;
+        background-color: white;
+        font-size: 14px;
+        pointer-events: none;
+        -webkit-transition: all 0.25s;
+        -moz-transition: all 0.25s;
+        -ms-transition: all 0.25s;
+        -o-transition: all 0.25s;
+        transition: all 0.25s;
+    }
+
+    .tooltip div {
+        margin: 3px 0;
+    }
+
+    .tooltip-date, .tooltip-likes {
+        font-weight: bold;
+    }
+
+</style>
+<div class="container">
+    <h1>AutoML Genetic</h1>
+</div>
 <div id="container"></div>
 <!--<div id="timeboxes_container"></div>-->
 <div id="barchart_container"></div>
 <!--<div id="linechart_container"></div>-->
-<!--<div id="table_container"></div>-->
+<div id="table_container"></div>
 
-<!--<script type="text/javascript" >
+<script type="text/javascript" >
 
     var ag_global_vars = { }
 
     var connectToWS = function() {
-      var endpoint = 'ws://localhost:8088/ws';
+      var endpoint = 'ws://localhost:8098/ws';
       if (ag_global_vars.myWebSocket !== undefined) {
           ag_global_vars.myWebSocket.close()
       }
@@ -75,7 +137,7 @@
 
     connectToWS()
 
-</script>-->
+</script>
 
 </body>
 </html>
