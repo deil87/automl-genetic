@@ -27,7 +27,7 @@ object AutoMLWebGlass extends App {
   val wsRoute = new WebSocketServiceRoute(notifier).route
 
 
-  private val port = 8088
+  private val port = 8098
   val bindingFuture = Http().bindAndHandle(staticRoute ~ wsRoute, "localhost", port)
   val webInterfaceURL = s"http://localhost:$port/automl/"
   println(s"Server online at $webInterfaceURL\n Press RETURN to stop...")

@@ -8,9 +8,9 @@ class StaticResourcesRoute {
   val staticResources =
     (get & pathPrefix("automl")){
       (pathEndOrSingleSlash /*& redirectToTrailingSlashIfMissing(TemporaryRedirect)*/) {
-        getFromResource("static/index.html")
+        getFromResource("static/automl-app/dist/index.html")
       } ~  {
-        getFromResourceDirectory("static")
+        getFromResourceDirectory("static/automl-app/dist")
       }
     }
 }

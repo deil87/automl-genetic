@@ -124,3 +124,6 @@ project/plugins/project/
 /src/test/resources/airline2008.csv
 ShowmaxBenchmark.scala
 ShowmaxAutoMLSuite.scala
+
+# NPM modules
+webserver/src/main/resources/static/automl-app/node_modules/*

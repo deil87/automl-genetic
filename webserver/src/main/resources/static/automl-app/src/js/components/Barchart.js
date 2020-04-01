@@ -1,10 +1,11 @@
-define(function(require){
+import React, { Component } from 'react'
+import ReactDOM from "react-dom"
 
-var d3Array = require('d3-array');
-var d3Selection = require('d3-selection');
-var d3Scale = require('d3-scale');
+import { scaleLinear } from 'd3-scale'
+import { max } from 'd3-array'
+import { select } from 'd3-selection'
 
-class Barchart extends React.Component {
+class Barchart extends Component {
    constructor(props){
       super(props)
       this.createTBProgressBar = this.createTBProgressBar.bind(this)
@@ -18,24 +19,24 @@ class Barchart extends React.Component {
 
    createTBProgressBar() {
       const node = this.node
-      const dataMax = d3Array.max(this.props.data)
-      const yScale = d3Scale.scaleLinear()
+      const dataMax = max(this.props.data)
+      const yScale = scaleLinear()
          .domain([0, dataMax])
          .range([0, this.props.size[1]])
 
-      d3Selection.select(node)
+      select(node)
          .selectAll('rect')
          .data(this.props.data)
          .enter()
          .append('rect')
 
-      d3Selection.select(node)
+      select(node)
          .selectAll('rect')
          .data(this.props.data)
          .exit()
          .remove()
 
-      d3Selection.select(node)
+      select(node)
          .selectAll('rect')
          .data(this.props.data)
          .style('fill', '#fe9922')
@@ -52,9 +53,7 @@ class Barchart extends React.Component {
    }
 }
 
-/*const timeboxesReactElement = <Barchart data={[5,10,1,3, 4,15,9]} size={[500,500]}/>;
+export default Barchart;
 
-const tableDOMContainer = document.getElementById('barchart_container');
-ag_global_vars.barchartRef = ReactDOM.render(timeboxesReactElement, tableDOMContainer);
-*/
-});
+const wrapper = document.getElementById("barchart_container");
+wrapper ? ReactDOM.render(<Barchart data={[5,10,1,3, 4,15,9]} size={[500,500]}/>, wrapper) : false;
