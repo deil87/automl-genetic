@@ -1,8 +1,12 @@
-define(function(require){
+import React, { Component } from 'react'
+import ReactDOM from "react-dom"
 
-var d3 = require('d3');
+import { select } from 'd3-selection'
+import $ from "jquery"
+import * as d3 from "d3"
+//import ErrorBoundary from "./ErrorBoundary";
 
-class TimeboxProgressBar extends React.Component {
+class TimeboxProgressBar extends Component {
    constructor(props){
       super(props)
       this.createTBProgressBar = this.createTBProgressBar.bind(this);
@@ -12,8 +16,8 @@ class TimeboxProgressBar extends React.Component {
       this.colors = { green: '#4DC87F', lightGreen: '#D9F0E3' }
 
       this.setupHappened = false
-
    }
+
    componentDidMount() {
       this.createTBProgressBar()
    }
@@ -24,10 +28,10 @@ class TimeboxProgressBar extends React.Component {
    setupProgressBar(steps) {
      this.steps = steps.map(function(x,i){ return i.toString()})
      console.log(this.steps)
-           this.width = 960
-           this.height = 100
-           this.offset = 48
-           this.stepWidth = (this.width - this.offset * 2) / (this.steps.length - 1)
+     this.width = 1300
+     this.height = 40
+     this.offset = 48
+     this.stepWidth = (this.width - this.offset * 2) / (this.steps.length - 1)
      this.setupHappened = true
      this.createTBProgressBar()
    }
@@ -41,36 +45,41 @@ class TimeboxProgressBar extends React.Component {
       var offset = this.offset
       var stepWidth = this.stepWidth
 
+      var radius = 10
+
       const self = this
 
       width += offset * 2;
-      height += offset * 2;
+//      height += offset * 2;
       var dimensions = '' + 0 + ' ' + 0 + ' ' + width + ' ' + height;
-
 
       var svg = d3.select("#timeboxes_container")
               .append("svg")
               .attr('id', 'scene', true)
               .attr('preserveAspectRatio', 'xMinYMin meet')
+              .attr('preserveAspectRatio', 'none')
               .attr('viewBox', dimensions)
               .classed('svg-content', true);
 
       var currentStep = '0'
 
+      var offset_l = 50
+      var offset_t = 10
+
       this.progressBar = svg.append('g')
-                        .attr('transform', 'translate(' + offset + ',' + offset + ')')
+                        .attr('transform', 'translate(' + offset_l + ',' + offset_t + ')')
                         .style('pointer-events', 'none')
 
       this.progressBackground = this.progressBar.append('rect')
           .attr('fill', this.colors.lightGreen)
-          .attr('height', 8)
+          .attr('height', 4)
           .attr('width', width - offset * 2)
           .attr('rx', 4)
           .attr('ry', 4);
 
       this.progress = this.progressBar.append('rect')
           .attr('fill', this.colors.green)
-          .attr('height', 8)
+          .attr('height', 4)
           .attr('width', 0)
           .attr('rx', 4)
           .attr('ry', 4);
@@ -92,7 +101,7 @@ class TimeboxProgressBar extends React.Component {
                 return i * stepWidth;
           })
           .attr('cy', 4)
-          .attr('r', 20)
+          .attr('r', radius)
           .attr('fill', '#FFFFFF')
           .attr('stroke', this.colors.lightGreen)
           .attr('strokeWidth', 6)
@@ -109,10 +118,7 @@ class TimeboxProgressBar extends React.Component {
 
       this.updateProgressBar("0");
 
-      //self-running demo
-     // setInterval(function() { self.updateProgressBar(Math.floor(Math.random() * (self.steps.length - 1)).toString()); } , 2500)
-
-        }
+      }
    }
 
     updateProgressBar(step_){
@@ -150,7 +156,7 @@ class TimeboxProgressBar extends React.Component {
     }
 
    render() {
-      return d3.select("#timeboxes_container").select('svg')
+      return <div></div>
    }
 }
 
@@ -158,5 +164,3 @@ const timeboxesReactElement = <TimeboxProgressBar />;
 
 const tableDOMContainer = document.getElementById('timeboxes_container');
 ag_global_vars.timeboxesRef = ReactDOM.render(timeboxesReactElement, tableDOMContainer);
-
-});
