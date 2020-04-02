@@ -25,7 +25,7 @@ class Linechart extends Component {
                 width = 960 - margin.left - margin.right,
                 height = 500 - margin.top - margin.bottom;
 
-        var parseDate = d3.timeFormat("%m/%e/%Y"),
+        var parseDate = d3.timeParse("%m/%e/%Y"),
             bisectDate = d3.bisector(function(d) { return d.date; }).left,
             formatValue = d3.format(","),
             dateFormatter = d3.timeFormat("%m/%d/%y");
@@ -52,8 +52,8 @@ class Linechart extends Component {
             .append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-        var tooltip = d3.select("#line_chart_container").append("div")
-            .attr("class", "tooltip")
+        var tooltip = d3.select("#linechart_container").append("div")
+            .attr("class", styles.tooltip)
             .style("display", "none");
 
 
@@ -74,16 +74,18 @@ class Linechart extends Component {
                 return a.date - b.date;
             });
 
+            console.log("Linechart data points parsed:" + JSON.stringify(data))
+
             x.domain([data[0].date, data[data.length - 1].date]);
             y.domain(d3.extent(data, function(d) { return d.likes; }));
 
             svg.append("g")
-                .attr("class", "x axis")
+                .attr("class", styles.x + " " + styles.axis)
                 .attr("transform", "translate(0," + height + ")")
                 .call(xAxis);
 
             svg.append("g")
-                .attr("class", "y axis")
+                .attr("class", styles.y + " " + styles.axis)
                 .call(yAxis)
                 .append("text")
                 .attr("transform", "rotate(-90)")
@@ -94,29 +96,29 @@ class Linechart extends Component {
 
             svg.append("path")
                 .datum(data)
-                .attr("class", "line")
+                .attr("class", styles.line)
                 .attr("d", line);
 
             var focus = svg.append("g")
-                .attr("class", "focus")
+                .attr("class", styles.focus)
                 .style("display", "none");
 
             focus.append("circle")
                 .attr("r", 5);
 
             var tooltipDate = tooltip.append("div")
-                .attr("class", "tooltip-date");
+                .attr("class", styles.tooltipDate);
 
             var tooltipLikes = tooltip.append("div");
             tooltipLikes.append("span")
-                .attr("class", "tooltip-title")
+                .attr("class", styles.tooltipTitle)
                 .text("Likes: ");
 
             var tooltipLikesValue = tooltipLikes.append("span")
-                .attr("class", "tooltip-likes");
+                .attr("class", styles.tooltipLikes);
 
             svg.append("rect")
-                .attr("class", "overlay")
+                .attr("class", styles.overlay)
                 .attr("width", width)
                 .attr("height", height)
                 .on("mouseover", function() { focus.style("display", null); tooltip.style("display", null);  })
@@ -133,8 +135,8 @@ class Linechart extends Component {
                 console.log("Mouse over" + x0)
                 focus.attr("transform", "translate(" + x(d.date) + "," + y(d.likes) + ")");
                 tooltip.attr("style", "left:" + (x(d.date) + 64) + "px;top:" + y(d.likes) + "px;");
-                tooltip.select(".tooltip-date").text(dateFormatter(d.date));
-                tooltip.select(".tooltip-likes").text(formatValue(d.likes));
+                tooltip.select("." + styles.tooltipDate).text(dateFormatter(d.date));
+                tooltip.select("." + styles.tooltipLikes).text(formatValue(d.likes));
             }
         });
 

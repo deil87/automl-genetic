@@ -1,3 +1,7 @@
+#linechart_container {
+        font: 10px "Helvetica Neue", Helvetica, Arial, sans-serif;
+        position: relative;
+    }
 
 .axis path,
 .axis line {
@@ -7,6 +11,10 @@
 }
 
 .x.axis path {
+    display: none;
+}
+
+.y.axis path {
     display: none;
 }
 
