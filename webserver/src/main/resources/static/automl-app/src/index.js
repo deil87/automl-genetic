@@ -7,12 +7,15 @@ import Linechart from "./js/components/linechart/Linechart";
 
 import './main-styles.css';
 
-function component() {
-  const element = document.createElement('div');
+import 'bootstrap'; // bootstraps's JS
+import './app.scss'; // bootstraps's css
 
-  element.innerHTML = _.join(['Hello', 'webpack in AutoML'], ' ');
-
-  return element;
-}
-
-document.body.appendChild(component());
+//function component() {
+//  const element = document.createElement('div');
+//
+//  element.innerHTML = _.join(['Hello', 'webpack in AutoML'], ' ');
+//
+//  return element;
+//}
+//
+//document.body.appendChild(component());

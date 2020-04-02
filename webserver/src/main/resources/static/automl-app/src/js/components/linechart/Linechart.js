@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import ReactDOM from "react-dom";
 
-import styles from './linechart.css';
+import styles from './linechart.module.css';
 import * as d3 from "d3"
 import * as d3time from "d3-time"
 import { scaleLinear } from 'd3-scale'
