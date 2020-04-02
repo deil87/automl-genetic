@@ -3,6 +3,9 @@ import _ from 'lodash';
 //import Barchart from "./js/components/Barchart";
 import Table from "./js/components/Table";
 import TimeboxProgressBar from "./js/components/TimeboxProgressBar";
+import Linechart from "./js/components/linechart/Linechart";
+
+import './main-styles.css';
 
 function component() {
   const element = document.createElement('div');
