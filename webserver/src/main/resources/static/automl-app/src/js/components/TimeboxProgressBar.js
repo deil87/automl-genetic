@@ -2,7 +2,7 @@ import React, { Component } from 'react'
 import ReactDOM from "react-dom"
 
 import { select } from 'd3-selection'
-import $ from "jquery"
+//import $ from "jquery"
 import * as d3 from "d3"
 //import ErrorBoundary from "./ErrorBoundary";
 
