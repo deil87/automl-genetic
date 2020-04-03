@@ -82,7 +82,7 @@ class Table extends Component {
   getRowsData(){
       var items = this.state.data.population;
       var cp = this.state.data.currentPopulation;
-      console.log("getRowsData: " + JSON.stringify(cp));
+//      console.log("getRowsData: " + JSON.stringify(cp));
       var keys = this.getKeys();
       return items.map((row, index)=>{
         return <tr key={index}><RenderRow key={index} data={row} keys={keys} currentPopulation={cp}/></tr>
@@ -124,12 +124,12 @@ const RenderRow = (props) =>{
     var evolutionNumber = evolutionProgress.evolution
     var generationNumber = evolutionProgress.generation
 //    console.log("Props:" + JSON.stringify(props.data))
-    console.log("currentPopulation:" + JSON.stringify(props.currentPopulation))
+//    console.log("currentPopulation:" + JSON.stringify(props.currentPopulation))
     var currentPopulation = typeof props.currentPopulation === 'undefined' ? [] : props.currentPopulation['individuals']
 //    console.log("currentPopulation:" + JSON.stringify(currentPopulation))
 //    console.log("EvolutionNumber:" + JSON.stringify(evolutionNumber))
     var unique_key = props.data[key] + create_UUID()
-    console.log(create_UUID())
+//    console.log(create_UUID())
     if(key == "Population") {
         return <td key={unique_key}>
             <svg version="1.1" id="Capa_1" x="0px" y="0px" width="500px" height="50px">
@@ -153,9 +153,4 @@ const RenderRow = (props) =>{
  })
 }
 
-var dataObj = [ {'Evolution': 'Apple', 'Generation': 200, 'Population': 'current', 'Stage': 'evaluation', 'Description': 'Min/Max/Avg performance', 'evolutionProgress': {'evolution': "-1", 'generation': "-1"}} ]
-
-const tableElement = <Table data={dataObj }/>;
-
-const tableDOMContainer = document.getElementById('table_container');
-ag_global_vars.tableRef = ReactDOM.render(tableElement, tableDOMContainer);
+export default Table;

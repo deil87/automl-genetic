@@ -1,19 +1,15 @@
 package com.automl
 import java.net.URI
-import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorSystem, Props}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
-import akka.util.Timeout
 import com.automl.benchmark.{CarDataSetBenchmark, GlassDataSetBenchmark}
 import com.automl.route.{ClientConnectionActor, StaticResourcesRoute, WebClientNotifierActor, WebSocketServiceRoute}
 
-import scala.io.StdIn
-import scala.util.{Failure, Success}
 
-object AutoMLWebGlass extends App {
+object AutoMLWebUI extends App {
 
 
   implicit val system = ActorSystem("AutoML-system")

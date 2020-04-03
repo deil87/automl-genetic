@@ -69,7 +69,7 @@ class CarDataSetBenchmark(implicit as: ActorSystem) extends SparkSessionProvider
 //    preparedCarDF.show(20, false)
 
     //Note we are passing whole dataset and inside it is being splitted as train/test. Maybe it is a good idea to hold test split for a final examination.
-    val autoMl = new AutoML(
+    val autoMl = new AutoML(projectName = "CarsDataset",
       data = preparedCarDF,
       responseColumn = "indexedLabel",
       maxTime = 3 * 60000,

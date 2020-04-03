@@ -30,6 +30,10 @@ class MetaDB() {
 case class EvolutionProgressDTO( evolution: Int, generation: Int, timeBox: String, stage: String, key: String = "evolutionProgress")
 case class TimeboxesDTO( timeboxes: Seq[Long], key: String = "timeboxesSetup")
 
+case class AutoMLRunDescriptionDTO(projectName: String,
+                                   initialPopulationSize: Int,
+                                   key: String = "runDescription")
+
 object EvaluatedTemplateDataDTOJsonProtocol extends DefaultJsonProtocol {
   implicit val format = jsonFormat5(EvolutionProgressDTO.apply)
 }
@@ -38,10 +42,15 @@ object TimeboxesDTOJsonProtocol extends DefaultJsonProtocol {
   implicit val format = jsonFormat2(TimeboxesDTO.apply)
 }
 
+object AutoMLRunDescriptionDTOJsonProtocol extends DefaultJsonProtocol {
+  implicit val format = jsonFormat3(AutoMLRunDescriptionDTO.apply)
+}
+
 /**
   * Consider using Builder pattern for setting all the parameters.
   */
-class AutoML(data: DataFrame,
+class AutoML(projectName: String = "undefined",
+             data: DataFrame,
              idColumn: Option[String] = None,
              responseColumn: String = null, // TODO move logic for preparation of the DataSet inside AutoML
              maxTime: Long,
@@ -144,6 +153,10 @@ class AutoML(data: DataFrame,
     import spray.json._
     val timeboxesDTO = TimeboxesDTO(timeBoxes.timeBoxes.map(_.upperBoundary)).toJson
     webClientNotifier ! UpdateWebWithJson(timeboxesDTO.prettyPrint)
+
+    import AutoMLRunDescriptionDTOJsonProtocol._
+    val runDescriptionDTO = AutoMLRunDescriptionDTO(projectName, initialPopulationSize.getOrElse(0)).toJson(AutoMLRunDescriptionDTOJsonProtocol.format)
+    webClientNotifier ! UpdateWebWithJson(runDescriptionDTO.prettyPrint)
 
     def totalTimeLeft = (maxTime - System.currentTimeMillis() + startTime) / 1000
 

@@ -87,7 +87,8 @@ module.exports = {
     new MiniCssExtractPlugin(),
     new HtmlWebPackPlugin({
       template: "./src/index.html",
-      filename: "./index.html"
+      filename: "./index.html",
+      favicon: "./src/favicon.ico"
     })
   ]
 };

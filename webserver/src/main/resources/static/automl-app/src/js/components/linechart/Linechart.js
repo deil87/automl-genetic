@@ -60,9 +60,9 @@ class Linechart extends Component {
 
         d3.csv("data.csv").then(function( data) {
 
-            data.forEach(function(d) {
-                console.log("Linechart data point:" + JSON.stringify(d))
-              });
+//            data.forEach(function(d) {
+//                console.log("Linechart data point:" + JSON.stringify(d))
+//              });
 
 
             data.forEach(function(d) {
@@ -74,7 +74,7 @@ class Linechart extends Component {
                 return a.date - b.date;
             });
 
-            console.log("Linechart data points parsed:" + JSON.stringify(data))
+//            console.log("Linechart data points parsed:" + JSON.stringify(data))
 
             x.domain([data[0].date, data[data.length - 1].date]);
             y.domain(d3.extent(data, function(d) { return d.likes; }));
@@ -132,7 +132,7 @@ class Linechart extends Component {
                     d0 = data[i - 1],
                     d1 = data[i],
                     d = x0 - d0.date > d1.date - x0 ? d1 : d0;
-                console.log("Mouse over" + x0)
+//                console.log("Mouse over" + x0)
                 focus.attr("transform", "translate(" + x(d.date) + "," + y(d.likes) + ")");
                 tooltip.attr("style", "left:" + (x(d.date) + 64) + "px;top:" + y(d.likes) + "px;");
                 tooltip.select("." + styles.tooltipDate).text(dateFormatter(d.date));
@@ -147,7 +147,4 @@ class Linechart extends Component {
    }
 }
 
-const tableElement = <Linechart/>;
-
-const tableDOMContainer = document.getElementById('linechart_container');
-ag_global_vars.linechartRef = ReactDOM.render(tableElement, tableDOMContainer);
+export default Linechart;

@@ -3,46 +3,13 @@
 <head>
     <meta charset="utf-8">
     <title>AutoML genetic</title>
+    <link rel="icon"
+          type="image/png"
+          href="favicon.ico">
 </head>
 <body>
-<div class="jumbotron">
-<div class="container">
-    <h1>AutoML Genetic</h1>
-</div>
-</div>
-
-<div class="container-fluid">
-    <!-- Stack the columns on mobile by making one full-width and the other half-width -->
-    <div class="row">
-        <div class="col-6 col-md-4" align="center">Fitness ( Phenotypic performance ) </div>
-        <div class="col-6 col-md-4">Complexity ( Avg. number of nodes per individual ) </div>
-        <div class="col-6 col-md-4">Gene frequencies</div>
-    </div>
-    <div class="row">
-        <div class="col-6 col-md-4"><div id="linechart_container"></div></div>
-        <div class="col-6 col-md-4">Chart 2</div>
-        <div class="col-6 col-md-4">Chart 3</div>
-    </div>
-
-
-    <!-- Columns start at 50% wide on mobile and bump up to 33.3% wide on desktop -->
-    <div class="row">
-        <div class="col-6 col-md-4">Repetitions of individuals during evolution</div>
-        <div class="col-6 col-md-4">Avg depth of individuals</div>
-        <div class="col-6 col-md-4">.col-6 .col-md-4</div>
-    </div>
-
-    <!-- Columns are always 50% wide, on mobile and desktop -->
-    <div class="row">
-        <div class="col-6">.col-6</div>
-        <div class="col-6">.col-6</div>
-    </div>
-</div>
-
-<div id="timeboxes_container"></div>
-<!--<div id="barchart_container"></div>-->
-
-<div id="table_container"></div>
+<div id="root"></div>
+<!--
 
 <script type="text/javascript" >
 
@@ -82,6 +49,12 @@
             console.log("Timeboxes:"+ JSON.stringify(serverDataJson.timeboxes))
             ag_global_vars.timeboxesRef.setupProgressBar(serverDataJson.timeboxes)
           }
+          if(serverDataJson.key == "runDescription") {
+            console.log("RunDescription:"+ JSON.stringify(serverDataJson.projectName))
+            console.log("RunDescription:"+ JSON.stringify(serverDataJson.initialPopulationSize))
+            ag_global_vars.runDescriptionRef.data = serverDataJson;
+            //ag_global_vars.runDescriptionRef.setupComponent(serverDataJson)
+          }
 
 
       };
@@ -109,6 +82,6 @@
     connectToWS()
 
 </script>
-
+-->
 </body>
 </html>

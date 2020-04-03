@@ -160,7 +160,4 @@ class TimeboxProgressBar extends Component {
    }
 }
 
-const timeboxesReactElement = <TimeboxProgressBar />;
-
-const tableDOMContainer = document.getElementById('timeboxes_container');
-ag_global_vars.timeboxesRef = ReactDOM.render(timeboxesReactElement, tableDOMContainer);
+export default TimeboxProgressBar;
